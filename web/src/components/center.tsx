@@ -339,7 +339,7 @@ function DecisionList() {
 	useLang();
 	const decisions = useAppState((state) => state.decisions);
 	const more = useAction(() => loadDecisions(true));
-	const now = Date.now();
+	const now = useNow();
 	if (!decisions.loaded) return <p className="hint">{t("loading")}</p>;
 	if (decisions.items.length === 0) return <p className="empty-box">{t("decisionsEmpty")}</p>;
 	return (

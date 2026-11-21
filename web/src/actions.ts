@@ -266,23 +266,15 @@ function connect(sessionId: string | null, after: number | null): void {
 		if (stream.readyState === EventSource.CLOSED) void recover();
 	});
 	stream.addEventListener("hello", () => {
-		// Sidebar and approval center events are not replayed, so a reconnect reloads them.
 		if (connectedOnce) {
 			void reloadIfReplaced();
-			void loadUpdates();
-			void reloadSessions();
-			void loadCenter();
-			setState((current) => ({ letterTick: current.letterTick + 1 }));
-			if (getState().schedules) void loadSchedules();
-			if (getState().artifacts) void loadArtifacts();
+			resync();
 		}
 		connectedOnce = true;
 	});
 	stream.addEventListener("reset", () => {
 		if (source !== stream) return;
-		void reloadSessions();
-		void loadCenter();
-		setState((current) => ({ letterTick: current.letterTick + 1 }));
+		resync();
 		if (sessionId) void loadTranscript(sessionId);
 	});
 	stream.addEventListener("global", (message) => {
@@ -313,6 +305,23 @@ function connect(sessionId: string | null, after: number | null): void {
 	});
 }
 
+/**
+ * Sidebar and approval center events are not replayed, so after a break in the stream the lists are read
+ * again: the decision history and the letters too once they have been opened. Otherwise a card decided
+ * on the phone while this window slept never shows up in the history.
+ */
+function resync(): void {
+	void loadUpdates();
+	void reloadSessions();
+	void loadCenter();
+	setState((current) => ({ letterTick: current.letterTick + 1 }));
+	const state = getState();
+	if (state.schedules) void loadSchedules();
+	if (state.artifacts) void loadArtifacts();
+	if (state.decisions.loaded) void loadDecisions();
+	if (state.letters.loaded) void loadLetters();
+}
+
 /** The stream closed for good: the server restarted or the cookie expired. */
 async function recover(): Promise<void> {
 	try {
@@ -321,6 +330,7 @@ async function recover(): Promise<void> {
 		const selected = getState().selectedId;
 		if (selected) await selectSession(selected);
 		else connect(null, null);
+		resync();
 	} catch (error) {
 		if (error instanceof ApiError && error.status === 401) setState({ phase: "signin" });
 		else setTimeout(() => void recover(), 3000);
@@ -797,8 +807,9 @@ export async function loadCenter(): Promise<void> {
 export function openCenter(tab: CenterTab = getState().centerTab): void {
 	setState({ page: "center", centerTab: tab, drawerOpen: false });
 	rememberView(`center:${tab}`);
-	if (tab === "letters" && !getState().letters.loaded) void loadLetters();
-	if (tab === "decided" && !getState().decisions.loaded) void loadDecisions();
+	// Read again on every visit: the list on screen stays until the fresh one arrives.
+	if (tab === "letters") void loadLetters();
+	if (tab === "decided") void loadDecisions();
 }
 
 // --- scheduled tasks (M3 plan, section 9) ---
