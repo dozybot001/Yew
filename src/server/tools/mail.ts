@@ -372,7 +372,7 @@ export const openSessionTool: ToolDefinition = {
 const TEXT = { type: "string" } as const;
 
 /**
- * manage_yew: the model changes Yew itself (blueprint 6.2, item 10). One call, all changes; Yew plans it
+ * manage_yew: the model changes Yew itself. One call, all changes; Yew plans it
  * to rank how far it reaches and to show the person every change, then applies all or none.
  */
 export const manageYewTool: ToolDefinition = {

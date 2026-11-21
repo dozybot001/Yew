@@ -164,7 +164,7 @@ export const TodoActiveIcon = () => <CircleDot {...props} size={14} />;
 export const TodoDoneIcon = () => <CircleCheck {...props} size={14} />;
 
 /**
- * Yew's mark (blueprint, section 12): a yew berry, red with its dark green seed, and one leaf. The
+ * Yew's mark: a yew berry, red with its dark green seed, and one leaf. The
  * berry and the seed keep their colours; the leaf is the theme's mark ink.
  */
 export function YewMark({ className, size }: { className?: string; size: number }) {
@@ -200,7 +200,7 @@ export function YewWordmark({ className }: { className?: string }) {
 }
 
 /**
- * The product's name where the lockup shows it (blueprint, section 12): the "Yew" wordmark with a
+ * The product's name where the lockup shows it: the "Yew" wordmark with a
  * smaller "Harness" after it on the same baseline. Single "Yew" is the red-haired girl's name.
  */
 export function ProductName({ className }: { className?: string }) {

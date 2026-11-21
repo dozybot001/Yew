@@ -753,7 +753,7 @@ const zh = {
 	usageCacheRead: "缓存读取",
 	usageTotal: "合计",
 	usageDayEmpty: "这一天没有会话用过模型。",
-	// the sessions map, a session's progress and how long things have waited (blueprint 6.9)
+	// the sessions map, a session's progress and how long things have waited
 	map: "会话关系",
 	mapEmpty: "还没有会话。",
 	mapPicture: "会话关系图",
@@ -1023,7 +1023,7 @@ const zh = {
 	decisionLog: "审批记录文件",
 	decisionLogHelp:
 		"每做一个决定，Yew Harness 在这个 Markdown 文件末尾加一行，不改已有内容。留空就不同步。",
-	decisionLogPlaceholder: "例如 ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications (blueprint 6.10)
+	decisionLogPlaceholder: "例如 ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications
 	modelProviders: "模型服务商",
 	searchServices: "搜索服务",
 	searchHelp:
@@ -2258,7 +2258,7 @@ const en: Record<MessageKey, string> = {
 	decisionLog: "Approval log file",
 	decisionLogHelp:
 		"Yew Harness adds a line to the end of this Markdown file for each decision and leaves the rest alone. Leave it empty to turn this off.",
-	decisionLogPlaceholder: "e.g. ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications (blueprint 6.10)
+	decisionLogPlaceholder: "e.g. ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications
 	modelProviders: "Model providers",
 	searchServices: "Search services",
 	searchHelp:

@@ -1,5 +1,5 @@
 /*
- * Yew's design tokens: a black, white and grey interface (blueprint, section 12). Primary buttons,
+ * Yew's design tokens: a black, white and grey interface. Primary buttons,
  * focus rings and unread counts are near-black on light themes and near-white on dark ones; links
  * are underlined. Yew's forest green is the mark's leaf and wordmark and a switch that is on; the
  * red of the berry is only in the mark. Text contrast is at least 4.5:1. Borders are deliberately
@@ -44,7 +44,7 @@
 	--scroll-thumb: #00000030;
 	--mark-ink: #1f3a2e;
 	--switch-on: #2f7d4f;
-	/* The faint wordmark behind sessions and the home page (blueprint, section 12). */
+	/* The faint wordmark behind sessions and the home page. */
 	--watermark: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 -840 2091 1000%27%3E%3Cpath fill=%27%231f3a2e%27 fill-opacity=%270.04%27 d=%27M769 -750Q784 -750 784 -735V-705Q784 -690 769 -690Q736 -690 704.5 -667Q673 -644 644 -594L490 -333Q485 -326 485 -314V-155Q485 -115 499.5 -87.5Q514 -60 552 -60H559Q574 -60 574 -45V-15Q574 0 559 0H251Q236 0 236 -15V-45Q236 -60 251 -60H257Q295 -60 310 -87.5Q325 -115 325 -155V-309Q325 -318 319 -327L139 -594Q105 -644 81 -667Q57 -690 25 -690Q10 -690 10 -705V-735Q10 -750 25 -750H372Q387 -750 387 -735V-705Q387 -690 372 -690Q345 -690 323.5 -679.5Q302 -669 302 -643Q302 -622 319 -594L436 -407L544 -594Q566 -634 566 -657Q566 -690 520 -690Q505 -690 505 -705V-735Q505 -750 520 -750ZM829 -179Q846 -137 883.5 -104Q921 -71 979 -71Q1011 -71 1046 -89Q1081 -107 1107 -145Q1110 -150 1115 -150Q1120 -150 1125.5 -147Q1131 -144 1155 -130Q1159 -127 1159 -122Q1159 -115 1153 -105Q1125 -53 1077 -20Q1029 13 952 13Q869 13 809 -24Q749 -61 716.5 -122Q684 -183 684 -255Q684 -324 704.5 -373.5Q725 -423 759 -453.5Q793 -484 835.5 -498.5Q878 -513 922 -513Q972 -513 1010 -493.5Q1048 -474 1074.5 -444Q1101 -414 1114.5 -380.5Q1128 -347 1128 -318Q1128 -310 1119 -306ZM978 -322Q978 -370 955 -401Q932 -432 897 -432Q856 -432 832 -399.5Q808 -367 808 -318Q808 -303 809.5 -281Q811 -259 817 -241ZM2070 -500Q2085 -500 2085 -485V-455Q2085 -440 2070 -440H2055Q2039 -440 2026.5 -428Q2014 -416 1997 -378L1838 -11Q1834 0 1823 0H1766Q1755 0 1750 -11L1618 -317L1486 -11Q1482 0 1470 0H1414Q1403 0 1398 -11L1240 -377Q1224 -415 1213 -427.5Q1202 -440 1182 -440H1180Q1165 -440 1165 -455V-485Q1165 -500 1180 -500H1411Q1426 -500 1426 -485V-455Q1426 -440 1411 -440H1409Q1390 -440 1382.5 -432.5Q1375 -425 1375 -411Q1375 -398 1381.5 -381Q1388 -364 1396 -345L1476 -158L1562 -371Q1575 -401 1575 -419Q1575 -440 1554 -440H1532Q1519 -440 1519 -455V-485Q1519 -500 1533 -500H1773Q1788 -500 1788 -485V-455Q1788 -440 1773 -440H1761Q1742 -440 1734.5 -432.5Q1727 -425 1727 -411Q1727 -398 1733 -381Q1739 -364 1747 -345L1828 -158L1914 -371Q1927 -401 1927 -419Q1927 -440 1906 -440H1886Q1871 -440 1871 -455V-485Q1871 -500 1886 -500Z%27/%3E%3C/svg%3E");
 }
 
@@ -99,10 +99,10 @@
 	--radius-s: 8px;
 	--radius: 10px;
 	--radius-l: 16px;
-	/* Long content in the conversation keeps this height and scrolls inside (spec 9.5–9.6). */
+	/* Long content in the conversation keeps this height and scrolls inside. */
 	--cap: clamp(160px, 40dvh, 360px);
 	--cap-tall: clamp(240px, 60dvh, 600px);
-	/* Dialog size tiers (spec 9.1): width × height. Dialogs use only these. */
+	/* Dialog size tiers: width × height. Dialogs use only these. */
 	--dialog-s-w: 440px;
 	--dialog-s-h: 320px;
 	--dialog-m-w: 640px;
@@ -164,9 +164,9 @@ a {
 	*,
 	*::before,
 	*::after {
-		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation (spec 4.6) */
+		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation */
 		animation: none !important;
-		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation (spec 4.6) */
+		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation */
 		transition: none !important;
 	}
 }
@@ -208,7 +208,7 @@ a {
 	font-size: var(--fs-s);
 }
 
-/* --- brand: logomark + wordmark (spec 1.2); the Tenon mark only in the publisher mark (1.4) --- */
+/* --- brand: logomark + wordmark; the Tenon mark only in the publisher mark --- */
 
 .lockup {
 	display: inline-flex;
@@ -315,7 +315,7 @@ a {
 }
 
 /*
- * --- Yew floating over the window (blueprint, section 12) ---
+ * --- Yew floating over the window ---
  * Placed by companion.tsx at her own edges away from the bubble. Above the sidebar and the page,
  * below dialogs, menus and the opening. Only her picture and a bubble that goes somewhere take clicks.
  */
@@ -441,7 +441,7 @@ a {
 	}
 }
 
-/* --- the opening (blueprint, section 12) --- */
+/* --- the opening --- */
 
 .opening {
 	position: fixed;
@@ -579,7 +579,7 @@ a {
 	}
 }
 
-/* --- controls (spec 7: no browser default looks) --- */
+/* --- controls: no browser default looks --- */
 
 .btn {
 	display: inline-flex;
@@ -838,7 +838,7 @@ a.btn {
 	gap: 8px;
 	min-height: 32px;
 	padding: 4px 10px;
-	/* Rows keep a gap so neighbouring highlights stay apart (spec 7.4). */
+	/* Rows keep a gap so neighbouring highlights stay apart. */
 	margin: 2px 0;
 	border-radius: var(--radius-s);
 	cursor: pointer;
@@ -939,7 +939,7 @@ a.btn {
 	}
 }
 
-/* i toggletip (spec 5): only the glyph changes, never a background */
+/* i toggletip: only the glyph changes, never a background */
 .info-button {
 	display: inline-grid;
 	place-items: center;
@@ -980,7 +980,7 @@ a.btn {
 	line-height: 1.6;
 }
 
-/* --- dialogs (spec 9) --- */
+/* --- dialogs --- */
 
 .dialog {
 	padding: 0;
@@ -1047,7 +1047,7 @@ a.btn {
 	margin-right: auto;
 }
 
-/* --- the settings window (blueprint 6.10, item 45): the sections on the left, the chosen one on the
+/* --- the settings window: the sections on the left, the chosen one on the
    right, in the large dialog size. A settings dialog shown there is a panel, not a dialog of its own. --- */
 
 .settings-window {
@@ -1110,7 +1110,7 @@ a.btn {
 	flex: none;
 	color: var(--text-2);
 }
-/* The chosen section has a grey fill and bold text, as the sidebar's selected row (spec 4.3). */
+/* The chosen section has a grey fill and bold text, as the sidebar's selected row. */
 .settings-nav-item[aria-current="true"] {
 	background: var(--selected);
 	font-weight: 600;
@@ -1174,7 +1174,7 @@ body.scroll-locked {
 	grid-template-columns: 56px minmax(0, 1fr);
 }
 /*
- * Atmospheric full-height Yew backdrop behind sessions and the home stage (blueprint, section 12).
+ * Atmospheric full-height Yew backdrop behind sessions and the home stage.
  * Shown gently on desktop when 「界面里的 Yew」 is on: clearer on the open home screen, quieter while
  * reading conversations, with soft edge feathering and translucent frosted panels so UI surfaces
  * sit naturally in the same space without reducing text contrast.
@@ -1551,7 +1551,7 @@ body.scroll-locked {
 	flex: none;
 	color: var(--text-2);
 }
-/* The selected row has a grey fill and bold text: the fill alone is below 3:1 (spec 4.3). */
+/* The selected row has a grey fill and bold text: the fill alone is below 3:1. */
 .nav-row[aria-current="page"] {
 	background: var(--selected);
 	font-weight: 600;
@@ -1906,7 +1906,7 @@ body.scroll-locked {
 	background-size: min(44%, 560px) auto;
 }
 
-/* Home: one composer in the middle of the page (spec 12.3: one primary action). */
+/* Home: one composer in the middle of the page, the one primary action. */
 .main-home {
 	position: relative;
 	grid-template-rows: minmax(0, 1fr);
@@ -2866,7 +2866,7 @@ body.scroll-locked {
 	gap: 8px;
 }
 /*
- * Versions and updates (blueprint, "版本与更新"): one card under the lockup. An icon for how it
+ * Versions and updates: one card under the lockup. An icon for how it
  * stands, a title and a detail line, the one button there is something to do with on the right;
  * the command or the failure's output, when there is one, on a row of its own below.
  */
@@ -3021,7 +3021,7 @@ button.about-row {
 .about-label {
 	color: var(--text-2);
 }
-/* The publisher mark (spec 1.4): the T 18px, the name 0.75 of it in semibold, 0.3 of it apart. */
+/* The publisher mark: the T 18px, the name 0.75 of it in semibold, 0.3 of it apart. */
 .publisher-mark {
 	display: inline-flex;
 	align-items: center;
@@ -3129,7 +3129,7 @@ button.about-row {
 	color: var(--text);
 }
 
-/* Scroll shadows (spec 9.7): a fade where more content lies beyond the edge. */
+/* Scroll shadows: a fade where more content lies beyond the edge. */
 .transcript,
 .dialog-body,
 .sidebar-list,
@@ -3285,7 +3285,7 @@ button.about-row {
 	font-size: var(--fs-s);
 }
 
-/* The approval center: a page of its own in place of the session (blueprint section 8). */
+/* The approval center: a page of its own in place of the session. */
 .center-main {
 	grid-template-rows: auto minmax(0, 1fr);
 }
@@ -3343,7 +3343,7 @@ button.about-row {
 	font-weight: 600;
 }
 
-/* A decision card: the top line, the question, a few lines of context, options to click, a note (blueprint 6.4). */
+/* A decision card: the top line, the question, a few lines of context, options to click, a note. */
 .decision-card {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
@@ -3472,7 +3472,7 @@ button.about-row {
 	font-weight: 500;
 }
 
-/* Letters in a conversation read as letters, not as the person's words (blueprint 7.2). */
+/* Letters in a conversation read as letters, not as the person's words. */
 .letter-card {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
@@ -3573,7 +3573,7 @@ button.about-row {
 	font-weight: 500;
 	color: var(--text);
 }
-/* The letters list: one line per letter that unfolds in place, in the same card (blueprint 7.2). */
+/* The letters list: one line per letter that unfolds in place, in the same card. */
 /*
  * One grid for the whole list, so direction, kind and summary line up from row to row. The gap between
  * rows is always there, so two unfolded letters stay apart and unfolding moves nothing.
@@ -3742,7 +3742,7 @@ button.about-row {
 }
 
 /*
- * Fixed heights with inner scrolling (spec 9.5–9.7): thinking, long messages and letters, code blocks
+ * Fixed heights with inner scrolling: thinking, long messages and letters, code blocks
  * and an opened run of steps keep the conversation from growing without end. The limit shows only when
  * it is reached: the block then fades out at the bottom while more lies below.
  */
@@ -4237,7 +4237,7 @@ button.about-row {
 	font-weight: 400;
 }
 
-/* --- usage: today against the limit, a bar per day, the sessions of one day (blueprint 6.9) --- */
+/* --- usage: today against the limit, a bar per day, the sessions of one day --- */
 
 .usage-today {
 	display: grid;
@@ -4380,7 +4380,7 @@ button.about-row {
 	stroke-linejoin: round;
 }
 
-/* --- the sessions map: who opened whom, where letters went, each session's status (blueprint 6.9) --- */
+/* --- the sessions map: who opened whom, where letters went, each session's status --- */
 
 .map-page {
 	display: grid;
@@ -4520,7 +4520,7 @@ button.about-row {
 }
 
 /*
- * --- the time a session's turn or wait has taken, in the middle of its header (blueprint 6.9) ---
+ * --- the time a session's turn or wait has taken, in the middle of its header ---
  * While it shows, the header becomes three columns with equal sides, so the time sits in the middle
  * whatever the title and the usage take, with a wide gap so it does not read as part of them; a
  * narrow header keeps it in line after the title.
@@ -4556,7 +4556,7 @@ button.about-row {
 	overflow-wrap: anywhere;
 }
 
-/* --- message attachments (blueprint 6.12, item 46) --- */
+/* --- message attachments --- */
 
 .composer-box-dragging {
 	border-style: dashed;
@@ -4735,7 +4735,7 @@ button.about-row {
 	width: 100%;
 }
 
-/* --- multi-directory workspace settings (blueprint 6.12, item 48) --- */
+/* --- multi-directory workspace settings --- */
 
 .extra-dir-list {
 	list-style: none;
@@ -4783,7 +4783,7 @@ button.about-row {
 	flex: none;
 }
 
-/* --- composer quick-insert menu & context renew divider (blueprint 6.12, items 50-51) --- */
+/* --- composer quick-insert menu & context renew divider --- */
 
 .composer-menu {
 	position: absolute;

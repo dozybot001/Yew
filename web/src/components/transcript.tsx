@@ -1021,8 +1021,8 @@ function summarize(steps: Step[]): string {
 }
 
 /**
- * Under a message from the person and under a finished reply, shown on hover or focus (blueprint
- * 6.11, item 42): when it was written, copy it, take the conversation back to it, fork from it.
+ * Under a message from the person and under a finished reply, shown on hover or focus: when it was
+ * written, copy it, take the conversation back to it, fork from it.
  * Taken back or forked from the person's message, that message waits in the message box again.
  */
 function MessageActions({
@@ -1493,7 +1493,7 @@ function EntryView({ entry, sessionId }: { entry: Entry; sessionId: string }) {
 
 /**
  * The conversation. It follows new content only while you are at the bottom; when you have scrolled
- * up it leaves the view alone and offers a "new messages" button instead (spec 9.8).
+ * up it leaves the view alone and offers a "new messages" button instead.
  */
 export function Transcript({ transcript }: { transcript: TranscriptState }) {
 	useLang();
@@ -1516,7 +1516,7 @@ export function Transcript({ transcript }: { transcript: TranscriptState }) {
 	const onFollow = useCallback((following: boolean) => {
 		if (following) setBehind(false);
 	}, []);
-	// Follows new content only while you are at the bottom; any scroll up stops it at once (spec 9.8).
+	// Follows new content only while you are at the bottom; any scroll up stops it at once.
 	const following = useStickToBottom(scroller, onFollow);
 	const loadMore = useAction(loadEarlier);
 
@@ -1577,7 +1577,7 @@ export function Transcript({ transcript }: { transcript: TranscriptState }) {
 			className="transcript"
 			aria-label={session?.name ?? ""}
 			aria-live="off"
-			// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 			tabIndex={0}
 			data-last-seq={lastSeq}
 		>
