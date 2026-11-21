@@ -613,6 +613,23 @@ function plainGitSetup(argv: string[]): boolean {
 	return false;
 }
 
+/**
+ * How git reports that it may not write a repository's settings file, or the hooks folder that init
+ * and clone fill: macOS refuses the write, bubblewrap's read-only file cannot be replaced.
+ */
+const GIT_SETTINGS_REFUSED =
+	/(?:could not (?:write|lock) config file [^\n]*\.git\/[^\n]*|\.git\/hooks\/?): (?:Operation not permitted|Permission denied|Read-only file system|Device or resource busy)/;
+
+/**
+ * What a command's result says when git was refused a repository's settings: when Yew Harness lets
+ * them through (classifyGuardMode and the guard's profile), so the session can run the command that
+ * way and does not take it for a protection it cannot get past. Null when git was not refused them.
+ */
+export function gitSettingsNote(output: string): string | null {
+	if (!GIT_SETTINGS_REFUSED.test(output)) return null;
+	return "git could not change the repository's settings (.git/config): Yew Harness keeps them closed to commands. It opens them for one command when all of this holds: it runs outside the sandbox; it is a git init, clone, remote or config on its own, run in the working folder (no cd, -C, -c, environment variables or other commands on the line); git config sets only user.*, remote.<name>.url, pushurl or fetch, branch.<name>.remote, merge, rebase, pushRemote or description, or init.defaultBranch; and the repository is in a folder this session may write. Settings that can make git run programs are for the person to change.";
+}
+
 /** Desktop apps that would run commands for whoever asks them: never launched with the guard open. */
 const COMMAND_APPS =
 	/^(terminal|iterm|iterm2|warp|ghostty|alacritty|kitty|wezterm|hyper|tabby|script editor|automator|shortcuts|console)$/i;

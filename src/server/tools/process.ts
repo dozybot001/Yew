@@ -3,6 +3,7 @@ import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { type GuardMode, guardedArgs } from "../guard.ts";
 import { newId } from "../ids.ts";
+import { gitSettingsNote } from "../permissions/shell.ts";
 import {
 	activeSandbox,
 	checkRepositories,
@@ -214,7 +215,9 @@ export async function startCommand(options: {
 		// sees why.
 		const { blocked, notes } = box?.finish() ?? { blocked: [], notes: [] };
 		const auditNotes = gitAudit ? checkRepositories(gitAudit) : [];
-		const allNotes = [...notes, ...auditNotes];
+		// A repository's settings refused by the sandbox or the guard: say when they are let through.
+		const settings = box || guarded ? gitSettingsNote(output.render()) : null;
+		const allNotes = [...notes, ...auditNotes, ...(settings ? [settings] : [])];
 		if (allNotes.length > 0) {
 			output.push(`\n[Yew Harness, after the command]\n${allNotes.join("\n")}\n`);
 		}

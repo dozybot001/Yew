@@ -14,6 +14,7 @@ import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "../src/server/
 import { PermissionEngine } from "../src/server/permissions/engine.ts";
 import {
 	classifyGuardMode,
+	gitSettingsNote,
 	mustConfirmReason,
 	parseShell,
 	sshPreview,
@@ -224,6 +225,33 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 			engine.decide({ kind: "command", tool: "shell", command: "open -a Xcode" }, skipSession),
 			{ effect: "allow", note: { risk: ["launch-app"] } },
 		);
+	});
+
+	test("a command refused a repository's settings is told when they are let through", () => {
+		for (const output of [
+			// The guard, git config and git remote on a line with cd or -C.
+			"error: could not write config file .git/config: Operation not permitted\nfatal: could not set 'remote.a.url' to 'https://example.com/a.git'",
+			// The sandbox.
+			"error: could not lock config file .git/config: Operation not permitted",
+			// git init or clone on a line with other commands: the hooks folder is refused first.
+			"/private/tmp/w/r/.git/hooks/: Operation not permitted",
+			// bubblewrap's read-only settings file.
+			"error: could not write config file /home/u/r/.git/config: Device or resource busy",
+		]) {
+			const note = gitSettingsNote(output);
+			assert.ok(note, output);
+			assert.match(note, /outside the sandbox/);
+			assert.match(note, /on its own/);
+			assert.match(note, /no cd, -C/);
+		}
+		for (const output of [
+			"error: could not lock config file /Users/u/.gitconfig: Operation not permitted",
+			"cp: .git/hooks/pre-commit: Operation not permitted",
+			"error: No such remote: 'origin2'",
+			"",
+		]) {
+			assert.equal(gitSettingsNote(output), null, output);
+		}
 	});
 
 	test("sshPreview formats ssh, scp and rsync commands cleanly", () => {
