@@ -49,7 +49,7 @@ export interface ToolContext {
 	 */
 	permit?(request: PermissionRequest, until?: AbortSignal): Promise<boolean>;
 	mail: MailContext;
-	/** Sends a helper with a task and waits for its answer (blueprint 6.11, item 43). */
+	/** Sends a helper with a task and waits for its answer. */
 	helper(task: string): Promise<{ text: string; calls: number; stopped?: string }>;
 }
 

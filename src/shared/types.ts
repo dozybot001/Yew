@@ -24,7 +24,7 @@ export interface PermissionRule {
 	pattern?: string;
 }
 
-/** An additional directory a session can read or write alongside its main working folder (blueprint 6.12, item 48). */
+/** An additional directory a session can read or write alongside its main working folder. */
 export const EXTRA_DIR_ACCESS = ["read", "write"] as const;
 export type ExtraDirAccess = (typeof EXTRA_DIR_ACCESS)[number];
 
@@ -39,7 +39,7 @@ export interface SessionOptions {
 	/** Before 0.1: let write and edit change files without asking. Read as the default mode now. */
 	directEdits?: boolean;
 	/**
-	 * How permission (授权) works for the session's calls (blueprint 6.1, item 6): default (calls run
+	 * How permission (授权) works for the session's calls: default (calls run
 	 * unless risky or marked with confirm), review (what would be asked goes to a separate check by
 	 * the model first) or skip (no permission is asked; what would have been asked is marked).
 	 * Approvals (审批) are another thing: what a session puts to the person to decide, with ask_user
@@ -50,9 +50,9 @@ export interface SessionOptions {
 	readerOnly?: boolean;
 	/** Additional folders this session may read or write alongside cwd. */
 	extraDirs?: ExtraDir[];
-	/** Additional domains this session's sandboxed commands may reach without asking (blueprint 6.12, item 49). */
+	/** Additional domains this session's sandboxed commands may reach without asking. */
 	allowedDomains?: string[];
-	/** What happens to letters from other sessions: delivered, held for the person, or refused (blueprint 7.1). */
+	/** What happens to letters from other sessions: delivered, held for the person, or refused. */
 	receive?: ReceivePolicy;
 	/** Letters the session may send per message or decision from the person; null or absent: the default. */
 	letterQuota?: number | null;
@@ -71,7 +71,10 @@ export interface SessionOptions {
 export const RECEIVE_POLICIES = ["accept", "hold", "refuse"] as const;
 export type ReceivePolicy = (typeof RECEIVE_POLICIES)[number];
 
-/** Letters a session may send between two messages or decisions from the person (blueprint 7.1). */
+/**
+ * Letters a session may send between two messages or decisions from the person, so sessions cannot
+ * keep writing to each other without the person.
+ */
 export const DEFAULT_LETTER_QUOTA = 10;
 export const MAIN_LETTER_QUOTA = 30;
 
@@ -113,8 +116,7 @@ export const COMPACT_CAP = 300_000;
 /**
  * The context size at which a session's history is compacted unless the session sets its own: 80% of
  * the model's window, at most COMPACT_CAP. A window of a million tokens would otherwise fill to
- * 800,000 before compacting, and every request is billed for the context it carries (blueprint 6.1,
- * item 1).
+ * 800,000 before compacting, and every request is billed for the context it carries.
  */
 export function defaultCompactAt(contextWindow: number): number {
 	return Math.min(Math.floor(contextWindow * 0.8), COMPACT_CAP);
@@ -196,7 +198,10 @@ export interface Session {
 	parentId: string | null;
 	/** How a task session ended, as it recorded with finish_task. */
 	outcome: TaskOutcome | null;
-	/** Times the person stepped in: messages, approvals and answers (evaluation data, blueprint 6.2). */
+	/**
+	 * Times the person stepped in: messages, approvals and answers. Kept with the outcome as
+	 * evaluation data.
+	 */
 	interventions: number;
 	/** Letters sent since the person's last message or decision; the quota counts these. */
 	lettersSent: number;
@@ -211,7 +216,7 @@ export type LetterStatus = "queued" | "held" | "delivered" | "done" | "refused" 
 /** Who sent a letter: a session, the person (decisions), the command line (`yew send`) or Yew itself. */
 export type SenderKind = "session" | "person" | "cli" | "yew";
 
-/** A letter between sessions (blueprint section 7). Stored before it is delivered, so a restart loses none. */
+/** A letter between sessions. Stored before it is delivered, so a restart loses none. */
 export interface Letter {
 	id: string;
 	threadId: string;
@@ -228,7 +233,7 @@ export interface Letter {
 	status: LetterStatus;
 	/** Why the letter was held, refused or dropped. */
 	statusReason: string | null;
-	/** Sessions that sent letters along this chain, oldest first (loop checks, blueprint 7.2). */
+	/** Sessions that sent letters along this chain, oldest first (for the hop and loop limits). */
 	path: string[];
 	/** Yew sent the session's final reply on its behalf. */
 	auto: boolean;
@@ -254,8 +259,8 @@ export interface LetterFlow {
 }
 
 /**
- * What the sessions map adds to the session list (blueprint 6.9, item 26): who wrote to whom since
- * `since`, the busiest pair first. Archived sessions are left out.
+ * What the sessions map adds to the session list: who wrote to whom since `since`, the busiest
+ * pair first. Archived sessions are left out.
  */
 export interface SessionMap {
 	since: number;
@@ -269,7 +274,11 @@ export interface CardOption {
 
 export type CardStatus = "pending" | "decided" | "withdrawn";
 
-/** A decision card in the approval center (blueprint 6.4): the six points, options and the person's answer. */
+/**
+ * A decision card in the approval center: what is to be decided, the options with the recommended
+ * one, the deadline, the sessions involved, whether it can be undone, who does what once it is
+ * decided, and the person's answer.
+ */
 export interface Card {
 	id: string;
 	/** The decision number sessions quote, #1, #2… */
@@ -356,9 +365,9 @@ export type ConfirmReason =
 	| "discard-changes"
 	| "rewrite-history"
 	| "push"
-	// Setting up a repository (.git/config): git init, clone, remote or local config (blueprint, section 11).
+	// Setting up a repository (.git/config): git init, clone, remote or local config.
 	| "git-setup"
-	// Launching a desktop application (open -a) outside the sandbox (blueprint, section 11).
+	// Launching a desktop application (open -a) outside the sandbox.
 	| "launch-app"
 	| "publish-package"
 	| "change-package"
@@ -376,7 +385,7 @@ export type ConfirmReason =
 	| "write-credentials"
 	| "admin"
 	| "write-outside"
-	// A command that runs outside the system sandbox (blueprint, section 11).
+	// A command that runs outside the system sandbox.
 	| "outside-sandbox"
 	// A command in the sandbox connecting to a site that is not on its list; asked while it runs.
 	| "connect-site"
@@ -390,7 +399,7 @@ export type ConfirmReason =
 	| "browser-script"
 	// An MCP tool that sends, publishes or deletes something in the service it connects to.
 	| "service-action"
-	// manage_yew changes that widen what a session may do (blueprint 6.2, item 10)
+	// manage_yew changes that widen what a session may do
 	| "widen-permission"
 	| "change-folder"
 	| "open-letters"
@@ -404,7 +413,7 @@ export interface PermissionRequest {
 	tool: string;
 	/** One line describing what will happen, e.g. the command or the file. */
 	summary: string;
-	/** Must-confirm operations can only be allowed once (spec 21.2). */
+	/** Must-confirm operations can only be allowed once; "always allow" is not offered for them. */
 	mustConfirm: boolean;
 	/** Rules "allow and remember" would add; absent when remembering is not offered. */
 	rememberRules?: PermissionRule[];
@@ -429,9 +438,9 @@ export interface PermissionRequest {
 	 */
 	running?: { kind: "command" | "job" | "mcp"; text: string }[];
 	/**
-	 * A permission only the person gives (the card marks it; blueprint 6.1, item 6): the operation
-	 * cannot be taken back on this computer or reaches other people, so the automatic mode's check
-	 * is not asked (personOnly says when).
+	 * A permission only the person gives (the card marks it): the operation cannot be taken back on
+	 * this computer or reaches other people, so the automatic mode's check is not asked (personOnly
+	 * says when).
 	 */
 	matter?: boolean;
 	/** The automatic mode's check did not allow the call: why, in its words, for the person to see. */
@@ -439,7 +448,7 @@ export interface PermissionRequest {
 }
 
 /**
- * Permissions (授权) only the person gives (blueprint 6.1, item 6): what cannot be taken back on
+ * Permissions (授权) only the person gives: what cannot be taken back on
  * this computer or reaches other people, and Yew Harness's own command line, which manages the
  * person's keys and the service. The default mode asks about them like any risky call; the
  * automatic mode does not put them to its check; skip mode asks about no permission, these
@@ -475,7 +484,7 @@ export function personOnly(reasons: readonly ConfirmReason[], mode: PermissionMo
 	);
 }
 
-/** What a call that ran without being asked about carried (blueprint 6.1, item 6), for its row. */
+/** What a call that ran without being asked about carried, for its row. */
 export interface PermissionNote {
 	/** Skip mode: what it would have been asked about in the default mode. */
 	risk?: ConfirmReason[];
@@ -561,8 +570,8 @@ export type ScheduleStatus = "running" | "done" | "error" | "stopped" | "skipped
 export type ScheduleSkip = "busy" | "archived" | "missed";
 
 /**
- * A scheduled task (blueprint 6.5, M3 plan section 9): at the times its cron expression names, Yew either
- * writes a letter to a standing session (`letter`) or opens a fresh task session (`task_session`).
+ * A scheduled task: at the times its cron expression names, Yew either writes a letter to a
+ * standing session (`letter`) or opens a fresh task session (`task_session`).
  */
 export interface Schedule {
 	id: string;
@@ -598,7 +607,7 @@ export interface Schedule {
 export const ARTIFACT_KINDS = ["markdown", "html", "json", "chart"] as const;
 export type ArtifactKind = (typeof ARTIFACT_KINDS)[number];
 
-/** Something a session made for the person to keep: a document, a page, data or a chart (blueprint 6.6). */
+/** Something a session made for the person to keep: a document, a page, data or a chart. */
 export interface Artifact {
 	id: string;
 	sessionId: string;
@@ -612,7 +621,7 @@ export interface Artifact {
 	updatedAt: number;
 }
 
-/** A phone paired with this Mac through the relay (M3 plan, section 4). */
+/** A phone paired with this Mac through the relay. */
 export interface Device {
 	id: string;
 	name: string;
@@ -724,7 +733,7 @@ export interface Transcript {
 /** How this Yew Harness was installed: a global npm package, a source checkout, or some other way. */
 export type InstallKind = "npm" | "source" | "other";
 
-/** Versions and updates, for the About page and the floating Yew (blueprint, "版本与更新"). */
+/** Versions and updates, for the About page and the floating Yew. */
 export interface UpdateState {
 	/** What is running now. */
 	version: string;

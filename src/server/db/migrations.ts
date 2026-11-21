@@ -146,7 +146,7 @@ CREATE TABLE auth_tokens (
 	last_used_at INTEGER
 ) STRICT;
 `,
-	// M2: letters between sessions, decision cards, and the session tree (blueprint sections 6 and 7).
+	// Letters between sessions, decision cards, and the session tree.
 	`
 ALTER TABLE sessions ADD COLUMN parent_id TEXT REFERENCES sessions (id) ON DELETE SET NULL;
 ALTER TABLE sessions ADD COLUMN outcome TEXT CHECK (outcome IN ('done', 'given_up', 'failed'));
@@ -212,7 +212,7 @@ ALTER TABLE cards ADD COLUMN undoable INTEGER;
 UPDATE sessions SET rules = replace(rules, '"tool":"organize_sessions"', '"tool":"manage_jig","pattern":"organize"')
 WHERE rules LIKE '%"tool":"organize_sessions"%';
 `,
-	// Phones paired through the relay (M3 plan, section 4): their Noise static keys, never a secret.
+	// Phones paired through the relay: their Noise static keys, never a secret.
 	`
 CREATE TABLE devices (
 	id TEXT PRIMARY KEY,
@@ -224,7 +224,7 @@ CREATE TABLE devices (
 	last_seen_at INTEGER
 ) STRICT;
 `,
-	// Scheduled tasks (M3 plan, section 9): letters Yew sends a standing session at set times.
+	// Scheduled tasks: letters Yew sends a standing session at set times.
 	`
 CREATE TABLE schedules (
 	id TEXT PRIMARY KEY,
@@ -246,7 +246,7 @@ CREATE TABLE schedules (
 CREATE UNIQUE INDEX schedules_name ON schedules (name COLLATE NOCASE);
 ALTER TABLE letters ADD COLUMN schedule_id TEXT REFERENCES schedules (id) ON DELETE SET NULL;
 `,
-	// What each session used on each local calendar day, for the daily spending limits (M3 plan, section 10).
+	// What each session used on each local calendar day, for the daily spending limits.
 	`
 CREATE TABLE usage_daily (
 	session_id TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
@@ -260,7 +260,7 @@ CREATE TABLE usage_daily (
 ) STRICT, WITHOUT ROWID;
 CREATE INDEX usage_daily_day ON usage_daily (day);
 `,
-	// Artifacts (M4 plan, section 6): the list here, each version's file in the data folder.
+	// Artifacts: the list here, each version's file in the data folder.
 	`
 CREATE TABLE artifacts (
 	id TEXT PRIMARY KEY,
@@ -282,8 +282,8 @@ CREATE TABLE artifact_versions (
 	PRIMARY KEY (artifact_id, version)
 ) STRICT, WITHOUT ROWID;
 `,
-	// Taking a conversation back (blueprint 6.11, item 42): entries after the point stay in the
-	// database, marked, and are no longer shown or sent to the model.
+	// Taking a conversation back: entries after the point stay in the database, marked, and are no
+	// longer shown or sent to the model.
 	"ALTER TABLE messages ADD COLUMN rewound INTEGER NOT NULL DEFAULT 0;",
 	// Rewinding deletes what was taken back; entries taken back before that lose their content now.
 	`UPDATE messages SET body = json_object('role', role, 'content', json('[]'), 'timestamp', created_at)
@@ -292,9 +292,9 @@ DELETE FROM approvals WHERE tool_call_id IN (SELECT tool_calls.id FROM tool_call
 	JOIN messages ON messages.id = tool_calls.message_id WHERE messages.rewound = 1);
 UPDATE tool_calls SET args = '{}', detail = NULL
 	WHERE message_id IN (SELECT id FROM messages WHERE rewound = 1);`,
-	// Jig was renamed Yew (blueprint, section 12): stored values that carried the old name take the
-	// new one. A letter sent by Yew itself (a scheduled task) was from kind 'jig', and the check on
-	// that column can only change by rebuilding the table; nothing refers to it, so it is copied over.
+	// Jig was renamed Yew: stored values that carried the old name take the new one. A letter sent by
+	// Yew itself (a scheduled task) was from kind 'jig', and the check on that column can only change
+	// by rebuilding the table; nothing refers to it, so it is copied over.
 	`CREATE TABLE letters_yew (
 	id TEXT PRIMARY KEY,
 	thread_id TEXT NOT NULL,
@@ -343,9 +343,9 @@ DELETE FROM session_events;`,
 	// as Yew's, so they still count as Yew's own words and not the person's.
 	`UPDATE messages SET body = replace(body, '[From Jig, not from the person]', '[From Yew, not from the person]')
 	WHERE body LIKE '%[From Jig, not from the person]%';`,
-	// Permission modes (blueprint 6.1, item 6): "auto" (ask when needed) is the default mode now and
-	// "manual" (ask each time) is gone, so both become "default". The table of scheduled tasks checks
-	// its modes, so it is made again; letters keep the task they belong to.
+	// Permission modes: "auto" (ask when needed) is the default mode now and "manual" (ask each time)
+	// is gone, so both become "default". The table of scheduled tasks checks its modes, so it is made
+	// again; letters keep the task they belong to.
 	`
 UPDATE sessions SET options = json_set(options, '$.permissionMode', 'default')
 	WHERE json_extract(options, '$.permissionMode') IN ('auto', 'manual');
@@ -382,7 +382,7 @@ UPDATE letters SET schedule_id = (
 	SELECT schedule_letters.schedule_id FROM schedule_letters WHERE schedule_letters.id = letters.id
 ) WHERE id IN (SELECT id FROM schedule_letters);
 DROP TABLE schedule_letters;`,
-	// Message attachments (blueprint 6.12, item 46): metadata here, files in ~/.yew/attachments/.
+	// Message attachments: metadata here, files in ~/.yew/attachments/.
 	`
 CREATE TABLE attachments (
 	id TEXT PRIMARY KEY,
@@ -400,7 +400,8 @@ CREATE TABLE attachments (
 ) STRICT;
 CREATE INDEX attachments_session ON attachments (session_id, created_at);
 CREATE INDEX attachments_entry ON attachments (entry_id) WHERE entry_id IS NOT NULL;`,
-	// Dual-mode scheduled tasks (blueprint 6.5) and server-stamped origin tracing for review mode (6.1).
+	// Scheduled tasks that write a letter or open a task session, and server-stamped origin tracing
+	// for review mode.
 	`ALTER TABLE schedules ADD COLUMN mode TEXT NOT NULL DEFAULT 'letter' CHECK (mode IN ('letter', 'task_session'));
 ALTER TABLE schedules ADD COLUMN auto_archive INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE schedules ADD COLUMN last_session_id TEXT REFERENCES sessions (id) ON DELETE SET NULL;

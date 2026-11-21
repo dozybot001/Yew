@@ -142,7 +142,11 @@ export interface NewLetter {
 	quotes?: PersonQuote[];
 }
 
-/** The six points of a decision card (blueprint 6.4), as a session writes them. */
+/**
+ * What a session writes on a decision card: what is to be decided, the options with the recommended
+ * one, the deadline, the sessions involved, whether it can be undone, and who does what once it is
+ * decided.
+ */
 export interface CardFields {
 	title: string;
 	context: string;
@@ -303,7 +307,7 @@ export class MailStore {
 
 	/**
 	 * Server-stamped main-conversation entry IDs carried by letters delivered to `sessionId`,
-	 * newest first (for authentic human traceability in review mode, blueprint 6.1, item 6).
+	 * newest first (for authentic human traceability in review mode).
 	 */
 	recentOriginEntries(sessionId: string, limit = 5): string[] {
 		const rows = this.#q(

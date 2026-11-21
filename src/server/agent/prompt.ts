@@ -116,9 +116,9 @@ function withoutCode(text: string): string {
 
 /**
  * Loads instruction files: `~/.yew/AGENTS.md`, then one file per folder from the project root (the
- * folder with `.git`) down to the working folder, AGENTS.md before CLAUDE.md (prior-art 4.5).
+ * folder with `.git`) down to the working folder, AGENTS.md before CLAUDE.md.
  * `@path` lines import other files: up to 5 levels, never outside the project root (or Yew's folder
- * for the global file), each file once. The total is capped at 32 KiB.
+ * for the global file), each file once. The total is capped at 32 KiB (docs/prior-art.md, 4.5).
  */
 export function loadInstructions(
 	cwd: string | null,
@@ -187,7 +187,7 @@ export function loadInstructions(
 	return files;
 }
 
-/** What is read besides Yew's own and the project's files (M4 plan, section 4). */
+/** What is read besides Yew's own and the project's files. */
 export interface InstructionExtras {
 	/** Folders of notes the person keeps across sessions. */
 	memoryDirs?: string[];
@@ -232,8 +232,8 @@ export function renderInstructions(files: InstructionFile[], cwd: string | null)
 }
 
 /**
- * What the session's permission mode means for the model, in the words of the settings (blueprint
- * 6.1, item 6). Each text stands on its own: it is also what a session is told when the mode
+ * What the session's permission mode means for the model, in the words of the settings. Each text
+ * stands on its own: it is also what a session is told when the mode
  * changes, and what a scheduled run is told about its own mode. Where Yew asks, the person's answer
  * is the confirmation instructions ask for; skip mode asks about no permission, so there the session
  * puts to the person what its role or the instructions keep for them. It does not tell a session in
@@ -247,7 +247,7 @@ export const PERMISSION_MODE: Record<PermissionMode, string> = {
 	skip: "Permission mode: skip. Yew asks nothing before your calls, publishing and commands on other machines included, and marks the risky ones in the record; check the state before anything that cannot be undone. Yew does not get the person's go-ahead for you in this mode: what your role or the project's instructions keep for the person to approve, put to them before you do it.",
 };
 
-/** The main conversation's part in the organization (blueprint 3 and 6.4). */
+/** The main conversation's part in the organization. */
 export const MAIN_ROLE = `You are the person's main conversation. The person works with you; the other sessions work on their own roles.
 - Hand work to the session whose role covers it: send a request to a standing session, or open a task session with open_session. Use wait when you need a short answer now; otherwise the report comes back as a letter.
 - When reports come back, tell the person the outcome in a few lines; they can open the session for the details.
@@ -274,8 +274,8 @@ Reply with JSON only, in this shape: {"options":[{"label":"...","detail":"..."}]
 - When the question has no fixed set of answers, such as one that asks for a name, a number or a text, reply {"options":[]}.`;
 
 /**
- * How the session works with the person (blueprint 3): on its own, stopping only for what only they can
- * decide. A question left at the end of a reply reaches them anyway: Yew puts it in the approval center.
+ * How the session works with the person: on its own, stopping only for what only they can decide.
+ * A question left at the end of a reply reaches them anyway: Yew puts it in the approval center.
  */
 function personSection(session: Session, snapshot: ContextSnapshot): string {
 	const main = snapshot.main;
@@ -320,7 +320,7 @@ function sessionsSection(session: Session, snapshot: ContextSnapshot): string {
 /**
  * Yew's own system prompt (AGENTS.md: written for Yew, not copied from any other product). It tells the
  * session what it is in Yew: one named member of the person's organization, with a role, a group and a
- * kind (blueprint 2, 4 and 5), working on its own and stopping only for decisions the person must make.
+ * kind, working on its own and stopping only for decisions the person must make.
  */
 export function systemPrompt(
 	session: Session,
@@ -390,8 +390,8 @@ export const RENEW_PROMPT = `The person is renewing this standing session's cont
 Be brief, concrete, and factual. Include only what the transcript shows. Do not add a preamble.`;
 
 /**
- * What a helper is told (blueprint 6.11, item 43): one task, tools that only look, nobody to ask, and
- * that its reply goes back as it is.
+ * What a helper is told: one task, tools that only look, nobody to ask, and that its reply goes back
+ * as it is.
  */
 export function helperPrompt(sender: string, cwd: string | null, now = new Date()): string {
 	return [

@@ -6,7 +6,7 @@ import type { Store } from "../store.ts";
 import { isOwnNote, usageTotals } from "./context.ts";
 
 /**
- * The automatic mode's check (blueprint 6.1, item 6): a permission that would be asked about goes to
+ * The automatic mode's check: a permission that would be asked about goes to
  * one separate call of the session's own model first. The call sees only authentic human text read
  * directly by Yew from its database: what the person wrote directly to this session (`<person>`),
  * verified decisions the person made on decision cards (`<person_decisions>`), and — when enabled

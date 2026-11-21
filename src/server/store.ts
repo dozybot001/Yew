@@ -52,7 +52,7 @@ export interface NewSession {
 export interface SessionPatch {
 	name?: string;
 	groupId?: string | null;
-	/** A folder makes it a code session; null makes it a chat (blueprint, principle 1). */
+	/** A folder makes it a code session; null makes it a chat. */
 	cwd?: string | null;
 	responsibility?: string;
 	provider?: string;
@@ -344,7 +344,7 @@ export function validateSessionName(name: unknown): string {
  * with the session's next sequence number; events are published on the bus only after the transaction
  * that wrote them commits.
  */
-/** What a taken-back entry keeps: its role and time, without content (blueprint 6.11, item 42). */
+/** What a taken-back entry keeps: its role and time, without content. */
 const TAKEN_BACK = "json_object('role', role, 'content', json('[]'), 'timestamp', created_at)";
 
 export interface AttachmentHooks {
@@ -451,7 +451,7 @@ export class Store {
 		this.#q("DELETE FROM session_events WHERE created_at < ?").run(olderThan);
 	}
 
-	// --- devices (M3 plan, section 4) ---
+	// --- devices ---
 
 	listDevices(): Device[] {
 		const rows = this.#q(
@@ -752,16 +752,10 @@ export class Store {
 	}
 
 	/**
-	 * A copy of a session to take another way from here: the same settings, team, workspace, task list
-	 * and conversation (with its tool calls), under a new name. Usage starts at zero; letters, approvals
-	 * and the main-conversation role stay with the original. Not while the original is working, since its
-	 * last calls would have no results.
-	 */
-	/**
-	 * A new session that goes on from one point of another (blueprint 6.11, item 39): the same
-	 * settings, and the conversation up to that point: through a finished reply, or up to just before
-	 * a message from the person. The original goes on as it is, working or not. The new one starts with
-	 * a fresh view of its folder and instruction files.
+	 * A new session that goes on from one point of another: the same settings, and the conversation
+	 * up to that point: through a finished reply, or up to just before a message from the person. The
+	 * original goes on as it is, working or not. The new one starts with a fresh view of its folder
+	 * and instruction files.
 	 */
 	forkSession(id: string, entryId: string, name: string): Session {
 		return this.tx(() => {
@@ -810,7 +804,7 @@ export class Store {
 	}
 
 	/**
-	 * Takes the conversation back to just after `throughSeq` (blueprint 6.11, item 42). What came after
+	 * Takes the conversation back to just after `throughSeq`. What came after
 	 * is deleted, since a rewind is often for a key or something private pasted by mistake: each entry
 	 * keeps a row without content, so numbering and references stay whole, and its tool calls'
 	 * arguments and results, the approvals asked for them, its search entries and the session's event
@@ -950,6 +944,12 @@ export class Store {
 		return baseTokens + Math.ceil(extraChars / 4);
 	}
 
+	/**
+	 * A copy of a session to take another way from here: the same settings, team, workspace, task list
+	 * and conversation (with its tool calls), under a new name. Usage starts at zero; letters, approvals
+	 * and the main-conversation role stay with the original. Not while the original is working, since its
+	 * last calls would have no results.
+	 */
 	duplicateSession(id: string, name: string): Session {
 		return this.tx(() => {
 			const source = this.getSession(id);
@@ -1172,7 +1172,7 @@ export class Store {
 		});
 	}
 
-	/** The person stepped in: a message, an approval or an answer (blueprint 6.2, item 9). */
+	/** The person stepped in: a message, an approval or an answer. */
 	addIntervention(id: string): void {
 		this.tx(() => {
 			this.#q("UPDATE sessions SET interventions = interventions + 1 WHERE id = ?").run(id);
@@ -1775,8 +1775,8 @@ export class Store {
 
 	/**
 	 * After a restart nothing is running. Work that was in flight is marked "needs review" and is not
-	 * redone automatically (blueprint 7.3): a tool call that was running may or may not have finished;
-	 * a call that was only waiting for approval never ran and will be asked again.
+	 * redone automatically: a tool call that was running may or may not have finished; a call that
+	 * was only waiting for approval never ran and will be asked again.
 	 */
 	recoverAfterRestart(): string[] {
 		return this.tx(() => {

@@ -97,7 +97,7 @@ export type Sender =
 	| { kind: "schedule"; schedule: Schedule };
 
 export interface Outgoing {
-	/** Session id; letters are addressed by id only (blueprint 7.1). */
+	/** Session id; letters are addressed by id only, so renaming a session does not redirect them. */
 	to: string;
 	kind: LetterKind;
 	summary: string;
@@ -141,7 +141,10 @@ export interface CardInput {
 	replaces?: number[];
 }
 
-/** Permission level for the hold rule: a chat, then the default, automatic and skip modes (blueprint 7.1). */
+/**
+ * Permission level for holding letters from sessions with fewer permissions: a chat, then the
+ * default, automatic and skip modes.
+ */
 function rank(session: Session): number {
 	if (!session.cwd) return 0;
 	return { default: 1, review: 2, skip: 3 }[permissionModeOf(session.options)];
@@ -183,9 +186,9 @@ function limited(value: unknown, field: string, max: number, required: boolean):
 }
 
 /**
- * Letters between sessions and decision cards for the person (blueprint sections 6.3, 6.4 and 7). Every
- * check a letter passes lives here: the address, the recipient's policy, the quota, rate limits,
- * duplicates and the length of a chain of hand-offs. The agent runner delivers what is queued.
+ * Letters between sessions and decision cards for the person. Every check a letter passes lives
+ * here: the address, the recipient's policy, the quota, rate limits, duplicates and the length
+ * of a chain of hand-offs. The agent runner delivers what is queued.
  */
 export class PostOffice {
 	readonly mail: MailStore;
@@ -295,7 +298,7 @@ export class PostOffice {
 		let threadId: string | null = null;
 		let repliedTo: Letter | null = null;
 		// A report to a session whose request is open with the sender answers it: Yew links them, so the
-		// session need not carry letter ids (blueprint principle 8).
+		// session need not carry letter ids.
 		const answering =
 			!out.replyTo && out.kind === "report" && from !== null
 				? this.mail
@@ -434,7 +437,7 @@ export class PostOffice {
 		return null;
 	}
 
-	/** The anti-runaway rules (blueprint 7.1 and 7.2), in the order a person would want to hear them. */
+	/** The anti-runaway rules, in the order a person would want to hear them. */
 	#limits(
 		from: Session,
 		to: Session,

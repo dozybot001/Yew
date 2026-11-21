@@ -66,7 +66,7 @@ function byDeadline(a: Card, b: Card): number {
 }
 
 /**
- * A decision card (blueprint 6.4), read at a glance: the top line says who asks, through whom and since
+ * A decision card, read at a glance: the top line says who asks, through whom and since
  * when, with the deadline and whether it can be undone on the right; then the question, a few lines of
  * context, the options with the recommended one chosen, and a note. Sending records the decision as the
  * person's and returns it to the sessions that asked.
@@ -512,8 +512,8 @@ function LetterList() {
 const TABS: CenterTab[] = ["pending", "decided", "letters"];
 
 /**
- * The approval center, a page of its own in place of the session (blueprint section 8). In a session
- * you work on one thing; here you clear what every session is waiting for, then go back.
+ * The approval center, a page of its own in place of the session. In a session you work on one
+ * thing; here you clear what every session is waiting for, then go back.
  */
 export function CenterPage() {
 	useLang();
@@ -552,7 +552,7 @@ export function CenterPage() {
 			</header>
 			<div
 				className="center-body"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 				tabIndex={0}
 			>
 				<div className="center-inner">
