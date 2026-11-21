@@ -224,152 +224,15 @@ export class Manager {
 		};
 
 		const main = this.#deps.mainId();
-		for (const change of list(args.sessions, "sessions")) {
-			const ref = text(change, "session", 200);
-			const name = text(change, "name", 200);
-			const teamValue = text(change, "team", 100);
-			const role = text(change, "role", 20_000);
-			const modelValue = text(change, "model", 300);
-			const thinking = oneOf(change, "thinking", THINKING_LEVELS) as ThinkingLevel | undefined;
-			const folderValue = text(change, "folder", 4096);
-
-			if (ref === undefined) {
-				// A new standing session: never more room than the session that creates it.
-				if (!name) throw invalid("A new session needs a name.", "name");
-				const valid = validateSessionName(name);
-				if (store.findSessionByName(valid)) throw invalid(`"${valid}" is taken.`, "name");
-				const settings = readSettings(store);
-				const defaults = settings.defaultModel;
-				const model = modelValue
-					? parseModel(modelValue, "model")
-					: { provider: defaults.provider, model: defaults.model };
-				const cwd =
-					folderValue === undefined || none(folderValue) ? null : folderOf(folderValue, "folder");
-				const team = teamValue === undefined || none(teamValue) ? null : teamRef(teamValue);
-				reach("configure");
-				if (cwd && !(by.cwd && isInside(cwd, by.cwd))) widen("change-folder", null);
-				// The default for new sessions, but never more than the session that creates it has.
-				const mode: PermissionMode =
-					MODE_RANK[permissionModeOf(by.options)] < MODE_RANK[settings.defaultPermissionMode]
-						? permissionModeOf(by.options)
-						: settings.defaultPermissionMode;
-				if (commit) {
-					store.createSession({
-						name: valid,
-						kind: "standing",
-						groupId: team?.id ?? null,
-						responsibility: role ?? "",
-						cwd,
-						provider: model.provider,
-						model: model.model,
-						thinking: thinking ?? defaults.thinking,
-						rules: [],
-						options: { permissionMode: mode },
-					});
-				}
-				add(
-					{
-						action: "create_session",
-						name: valid,
-						folder: cwd,
-						model: `${model.provider}/${model.model}`,
-						team: team?.name ?? null,
-						role: role ?? "",
-					},
-					`Created the standing session "${valid}".`,
-				);
-				continue;
-			}
-
-			const target = sessionRef(ref);
-			const archived = flag(change, "archived");
-			if (target.archivedAt !== null && archived !== false) {
-				throw invalid(
-					`"${target.name}" is archived; set archived to false to restore it.`,
-					"session",
-				);
-			}
-			const patch: SessionPatch = {};
-			const changed: ChangeStep[] = [];
-			const note = (step: ChangeStep, line: string) => {
-				changed.push(step);
-				add(step, line);
-			};
-
-			if (name !== undefined) {
-				const valid = validateSessionName(name);
-				const other = store.findSessionByName(valid);
-				if (other && other.id !== target.id) throw invalid(`"${valid}" is taken.`, "name");
-				if (valid !== target.name) {
-					patch.name = valid;
-					patch.options = { ...patch.options, autoName: false };
-					note(
-						{ action: "rename_session", from: target.name, to: valid },
-						`Renamed "${target.name}" to "${valid}".`,
-					);
-				}
-			}
-			if (teamValue !== undefined) {
-				const team = none(teamValue) ? null : teamRef(teamValue);
-				if ((team?.id ?? null) !== target.groupId) {
-					patch.groupId = team?.id ?? null;
-					note(
-						{ action: "move_to_team", sessions: [target.name], team: team?.name ?? null },
-						team
-							? `Moved "${target.name}" into the team "${team.name}".`
-							: `Took "${target.name}" out of its team.`,
-					);
-				}
-			}
-			const pinned = flag(change, "pinned");
-			if (pinned !== undefined && pinned !== target.pinned) {
-				patch.pinned = pinned;
-				note(
-					{ action: "pin", session: target.name, on: pinned },
-					`${pinned ? "Pinned" : "Unpinned"} "${target.name}".`,
-				);
-			}
-			if (role !== undefined && role.trim() !== target.responsibility.trim()) {
-				reach("configure");
-				patch.responsibility = role;
-				note(
-					{ action: "set_role", session: target.name, role },
-					`Changed the role of "${target.name}".`,
-				);
-			}
-			if (modelValue !== undefined || thinking !== undefined) {
-				const model = modelValue ? parseModel(modelValue, "model") : target;
-				const from = `${target.provider}/${target.model}`;
-				const to = `${model.provider}/${model.model}`;
-				if (to !== from || (thinking && thinking !== target.thinking)) {
-					reach("configure");
-					patch.provider = model.provider;
-					patch.model = model.model;
-					if (thinking) patch.thinking = thinking;
-					note(
-						{
-							action: "set_model",
-							session: target.name,
-							from,
-							to: thinking ? `${to} (${thinking})` : to,
-						},
-						`Set the model of "${target.name}" to ${to}${thinking ? ` with ${thinking} thinking` : ""}.`,
-					);
-				}
-			}
-			if (folderValue !== undefined) {
-				const cwd = none(folderValue) ? null : folderOf(folderValue, "folder");
-				if (cwd !== target.cwd) {
-					// No folder narrows what it can touch; any other folder is a new reach.
-					if (cwd === null) reach("configure");
-					else widen("change-folder", target);
-					patch.cwd = cwd;
-					note(
-						{ action: "set_folder", session: target.name, from: target.cwd, to: cwd },
-						`Set the working folder of "${target.name}" to ${cwd ?? "none (a chat)"}.`,
-					);
-				}
-			}
+		/**
+		 * What a change asks of a session's options, against the ones it has: an existing session's, or
+		 * the defaults a new one starts with. Each difference is noted and ranked the same either way.
+		 */
+		const optionsFor = (
+			change: Fields,
+			target: Session,
+			note: (step: ChangeStep, line: string) => void,
+		): Session["options"] => {
 			const options = { ...target.options };
 			const permission = oneOf(change, "permission", PERMISSION_MODES);
 			const currentMode = permissionModeOf(target.options);
@@ -499,6 +362,166 @@ export class Manager {
 					);
 				}
 			}
+			return options;
+		};
+		for (const change of list(args.sessions, "sessions")) {
+			const ref = text(change, "session", 200);
+			const name = text(change, "name", 200);
+			const teamValue = text(change, "team", 100);
+			const role = text(change, "role", 20_000);
+			const modelValue = text(change, "model", 300);
+			const thinking = oneOf(change, "thinking", THINKING_LEVELS) as ThinkingLevel | undefined;
+			const folderValue = text(change, "folder", 4096);
+
+			if (ref === undefined) {
+				// A new standing session: never more room than the session that creates it.
+				if (!name) throw invalid("A new session needs a name.", "name");
+				const valid = validateSessionName(name);
+				if (store.findSessionByName(valid)) throw invalid(`"${valid}" is taken.`, "name");
+				const settings = readSettings(store);
+				const defaults = settings.defaultModel;
+				const model = modelValue
+					? parseModel(modelValue, "model")
+					: { provider: defaults.provider, model: defaults.model };
+				const cwd =
+					folderValue === undefined || none(folderValue) ? null : folderOf(folderValue, "folder");
+				const team = teamValue === undefined || none(teamValue) ? null : teamRef(teamValue);
+				reach("configure");
+				if (cwd && !(by.cwd && isInside(cwd, by.cwd))) widen("change-folder", null);
+				// The default for new sessions, but never more than the session that creates it has.
+				const mode: PermissionMode =
+					MODE_RANK[permissionModeOf(by.options)] < MODE_RANK[settings.defaultPermissionMode]
+						? permissionModeOf(by.options)
+						: settings.defaultPermissionMode;
+				if (flag(change, "archived") === true) {
+					throw invalid("A new session cannot start archived.", "archived");
+				}
+				// What else the entry sets is checked against those defaults, as for a session that has them.
+				const fresh = { id: "", name: valid, options: { permissionMode: mode } } as Session;
+				const settled: [ChangeStep, string][] = [];
+				const options = optionsFor(change, fresh, (step, line) => settled.push([step, line]));
+				const pinned = flag(change, "pinned") === true;
+				if (commit) {
+					const session = store.createSession({
+						name: valid,
+						kind: "standing",
+						groupId: team?.id ?? null,
+						responsibility: role ?? "",
+						cwd,
+						provider: model.provider,
+						model: model.model,
+						thinking: thinking ?? defaults.thinking,
+						rules: [],
+						options,
+					});
+					if (pinned) store.updateSession(session.id, { pinned: true });
+				}
+				add(
+					{
+						action: "create_session",
+						name: valid,
+						folder: cwd,
+						model: `${model.provider}/${model.model}`,
+						team: team?.name ?? null,
+						role: role ?? "",
+					},
+					`Created the standing session "${valid}".`,
+				);
+				for (const [step, line] of settled) add(step, line);
+				if (pinned) add({ action: "pin", session: valid, on: true }, `Pinned "${valid}".`);
+				continue;
+			}
+
+			const target = sessionRef(ref);
+			const archived = flag(change, "archived");
+			if (target.archivedAt !== null && archived !== false) {
+				throw invalid(
+					`"${target.name}" is archived; set archived to false to restore it.`,
+					"session",
+				);
+			}
+			const patch: SessionPatch = {};
+			const changed: ChangeStep[] = [];
+			const note = (step: ChangeStep, line: string) => {
+				changed.push(step);
+				add(step, line);
+			};
+
+			if (name !== undefined) {
+				const valid = validateSessionName(name);
+				const other = store.findSessionByName(valid);
+				if (other && other.id !== target.id) throw invalid(`"${valid}" is taken.`, "name");
+				if (valid !== target.name) {
+					patch.name = valid;
+					patch.options = { ...patch.options, autoName: false };
+					note(
+						{ action: "rename_session", from: target.name, to: valid },
+						`Renamed "${target.name}" to "${valid}".`,
+					);
+				}
+			}
+			if (teamValue !== undefined) {
+				const team = none(teamValue) ? null : teamRef(teamValue);
+				if ((team?.id ?? null) !== target.groupId) {
+					patch.groupId = team?.id ?? null;
+					note(
+						{ action: "move_to_team", sessions: [target.name], team: team?.name ?? null },
+						team
+							? `Moved "${target.name}" into the team "${team.name}".`
+							: `Took "${target.name}" out of its team.`,
+					);
+				}
+			}
+			const pinned = flag(change, "pinned");
+			if (pinned !== undefined && pinned !== target.pinned) {
+				patch.pinned = pinned;
+				note(
+					{ action: "pin", session: target.name, on: pinned },
+					`${pinned ? "Pinned" : "Unpinned"} "${target.name}".`,
+				);
+			}
+			if (role !== undefined && role.trim() !== target.responsibility.trim()) {
+				reach("configure");
+				patch.responsibility = role;
+				note(
+					{ action: "set_role", session: target.name, role },
+					`Changed the role of "${target.name}".`,
+				);
+			}
+			if (modelValue !== undefined || thinking !== undefined) {
+				const model = modelValue ? parseModel(modelValue, "model") : target;
+				const from = `${target.provider}/${target.model}`;
+				const to = `${model.provider}/${model.model}`;
+				if (to !== from || (thinking && thinking !== target.thinking)) {
+					reach("configure");
+					patch.provider = model.provider;
+					patch.model = model.model;
+					if (thinking) patch.thinking = thinking;
+					note(
+						{
+							action: "set_model",
+							session: target.name,
+							from,
+							to: thinking ? `${to} (${thinking})` : to,
+						},
+						`Set the model of "${target.name}" to ${to}${thinking ? ` with ${thinking} thinking` : ""}.`,
+					);
+				}
+			}
+			if (folderValue !== undefined) {
+				const cwd = none(folderValue) ? null : folderOf(folderValue, "folder");
+				if (cwd !== target.cwd) {
+					// No folder narrows what it can touch; any other folder is a new reach.
+					if (cwd === null) reach("configure");
+					else widen("change-folder", target);
+					patch.cwd = cwd;
+					note(
+						{ action: "set_folder", session: target.name, from: target.cwd, to: cwd },
+						`Set the working folder of "${target.name}" to ${cwd ?? "none (a chat)"}.`,
+					);
+				}
+			}
+			const options = optionsFor(change, target, note);
 			if (archived !== undefined && archived !== (target.archivedAt !== null)) {
 				if (archived && target.id === by.id)
 					throw invalid("You cannot archive yourself.", "archived");
