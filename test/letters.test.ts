@@ -572,6 +572,45 @@ describe("when things go wrong", () => {
 		await until(() => !agents.isRunning(other.id));
 	});
 
+	test("a brief carries the person's words Yew found; a quote it cannot find opens nothing", async () => {
+		const { store, agents, make, script, seen, said } = harness();
+		const parent = make("父");
+		script(parent, [
+			toolUse(
+				fauxToolCall(
+					"open_session",
+					{ name: "编造", brief: "做点事", quotes: ["全部删掉重来"] },
+					{ id: "p1" },
+				),
+			),
+			toolUse(
+				fauxToolCall(
+					"open_session",
+					{ name: "转述", brief: "照我转的原话做", quotes: ["按你的推荐做"] },
+					{ id: "p2" },
+				),
+			),
+			fauxAssistantMessage("父结束"),
+		]);
+		script({ name: "转述" } as Session, [fauxAssistantMessage("子结束")]);
+		agents.send(parent.id, "电路图就按你的推荐做吧");
+		await until(() => said(parent).some((text) => text.includes("父结束")));
+		assert.match(
+			lastTool(seen.get("父")?.[1]),
+			/Quote 1 \(\\"全部删掉重来\\"\) is not something the person wrote/,
+		);
+		assert.ok(!store.findSessionByName("编造"), "no session for a brief that cannot go out");
+		assert.match(lastTool(seen.get("父")?.[2]), /with the person's words Yew found/);
+		const child = store.findSessionByName("转述");
+		assert.ok(child);
+		await until(() => said(child).some((text) => text.includes("子结束")));
+		const brief = seen.get("转述")?.[0]?.messages.find((message) => message.role === "user");
+		assert.match(
+			textOf(brief?.content),
+			/<\/letter id=[^>]+>\\n\[Yew found these words[^\]]+\]\\n- Part of what the person wrote to 父, [^\\]*UTC:\\n {2}> 按你的推荐做"/,
+		);
+	});
+
 	test("a question back keeps the request open; the result comes back when it is ready", async () => {
 		const { agents, make, script, said } = harness();
 		const a = make("甲");

@@ -1,4 +1,4 @@
-import type { AttachmentRef, EntryBody, JsonObject } from "./messages.ts";
+import type { AttachmentRef, EntryBody, JsonObject, PersonQuote } from "./messages.ts";
 
 export type SessionKind = "standing" | "task";
 export type SessionStatus = "idle" | "working" | "waiting" | "error" | "needs_review";
@@ -238,6 +238,8 @@ export interface Letter {
 	scheduleId: string | null;
 	/** Server-stamped ID of the person's message in the main conversation that started this chain. */
 	originEntryId?: string | null;
+	/** The person's words the letter passes on, each found by Yew in its own records. */
+	quotes?: PersonQuote[];
 	createdAt: number;
 	deliveredAt: number | null;
 }

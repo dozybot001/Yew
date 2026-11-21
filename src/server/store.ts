@@ -1267,6 +1267,14 @@ export class Store {
 		return toEntry(row);
 	}
 
+	/** The session's entry with this sequence number, if it was not taken back. */
+	entryAt(sessionId: string, seq: number): Entry | null {
+		const row = this.#q(
+			"SELECT * FROM messages WHERE session_id = ? AND seq = ? AND rewound = 0",
+		).get(sessionId, seq) as EntryRow | undefined;
+		return row ? toEntry(row) : null;
+	}
+
 	/** A page of the transcript, newest last; `before` is a seq to page backwards from. */
 	listEntries(
 		sessionId: string,
@@ -1491,6 +1499,15 @@ export class Store {
 		const rows = this.#q(
 			"SELECT * FROM approvals WHERE session_id = ? AND status = 'pending' ORDER BY id",
 		).all(sessionId) as unknown as ApprovalRow[];
+		return rows.map(toApproval);
+	}
+
+	/** The session's questions the person answered, newest first. */
+	answeredQuestions(sessionId: string, limit = 500): Approval[] {
+		const rows = this.#q(
+			`SELECT * FROM approvals WHERE session_id = ? AND kind = 'question' AND status = 'resolved'
+				ORDER BY id DESC LIMIT ?`,
+		).all(sessionId, limit) as unknown as ApprovalRow[];
 		return rows.map(toApproval);
 	}
 

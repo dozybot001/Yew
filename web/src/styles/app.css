@@ -3509,6 +3509,45 @@ button.about-row {
 .letter-body .markdown {
 	white-space: normal;
 }
+/* The person's words a letter passes on, as Yew found them: set apart from what the sender wrote. */
+.letter-quotes {
+	display: grid;
+	gap: 8px;
+	padding: 8px 12px 10px;
+	border-radius: var(--radius-s);
+	background: var(--hover);
+}
+.letter-quotes-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	font-weight: 500;
+}
+.letter-quotes .letter-quotes-head svg {
+	flex: none;
+	color: var(--text-3);
+}
+.letter-quote {
+	display: grid;
+	gap: 2px;
+	margin: 0;
+}
+.letter-quote blockquote {
+	margin: 0;
+	padding-left: 10px;
+	border-left: 2px solid var(--control);
+	color: var(--text);
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+.letter-quote figcaption {
+	padding-left: 12px;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
 .letter-list {
 	display: grid;
 	margin: 0;

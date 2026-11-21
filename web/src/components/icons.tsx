@@ -46,6 +46,7 @@ import {
 	Plug,
 	Plus,
 	Power,
+	Quote,
 	RefreshCw,
 	RotateCcw,
 	ScrollText,
@@ -112,6 +113,8 @@ export const QuestionIcon = () => <MessageCircleQuestion {...props} />;
 export const SlidersIcon = () => <SlidersHorizontal {...props} />;
 export const PhoneIcon = () => <Smartphone {...props} />;
 export const MailIcon = () => <Mail {...props} />;
+/** The person's own words, passed on in a letter. */
+export const QuoteIcon = () => <Quote {...props} />;
 /** The approval center: everything waiting for the person. */
 export const CenterIcon = () => <Inbox {...props} />;
 /** Scheduled tasks: letters Yew sends at set times. */

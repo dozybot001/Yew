@@ -14,6 +14,7 @@ import {
 	askedQuestion,
 	bodyAfterSummary,
 	type LetterRef,
+	type PersonQuote,
 	plainLine,
 	type ToolCallBlock,
 	type ToolResultMessage,
@@ -45,6 +46,7 @@ import {
 	formatAgo,
 	formatCost,
 	formatWaited,
+	formatWhen,
 	getLang,
 	hasMessage,
 	type MessageKey,
@@ -67,6 +69,7 @@ import {
 	ForkIcon,
 	MailIcon,
 	QuestionIcon,
+	QuoteIcon,
 	RefuseIcon,
 	RewindIcon,
 	SendIcon,
@@ -1254,9 +1257,53 @@ function NoteStep({ entry }: { entry: Entry }) {
 	return null;
 }
 
+/** Where the person's words come from, in their own terms: "你在「总办」里写的". */
+function quoteOrigin(quote: PersonQuote): string {
+	const name = t("quoted", { s: quote.sessionName ?? "" });
+	switch (quote.source) {
+		case "message":
+			return t("quoteMessage", { name });
+		case "answer":
+			return t(quote.chosen ? "quoteAnswerChosen" : "quoteAnswer", { name });
+		case "decision":
+			return t(quote.chosen ? "quoteDecisionChosen" : "quoteNote", { n: quote.card ?? "" });
+	}
+}
+
+/**
+ * The person's words a letter passes on, as Yew found them in its records: theirs, not the sender's,
+ * with where and when they wrote or chose them.
+ */
+export function PersonQuotes({ quotes }: { quotes: PersonQuote[] | undefined }) {
+	useLang();
+	if (!quotes?.length) return null;
+	return (
+		<section className="letter-quotes" aria-label={t("quotesHeading")}>
+			<div className="letter-quotes-head">
+				<QuoteIcon />
+				<span>{t("quotesHeading")}</span>
+				<span>·</span>
+				<span>{t("quotesChecked")}</span>
+			</div>
+			{quotes.map((quote, index) => (
+				// biome-ignore lint/suspicious/noArrayIndexKey: a letter's quotes never change or move.
+				<figure key={index} className="letter-quote">
+					<blockquote>{quote.text}</blockquote>
+					<figcaption>
+						{[quoteOrigin(quote), formatWhen(quote.at), quote.excerpt ? t("quoteExcerpt") : null]
+							.filter(Boolean)
+							.join(" · ")}
+					</figcaption>
+				</figure>
+			))}
+		</section>
+	);
+}
+
 /**
  * A letter from another session, a script or Yew, shown as a letter, not as words of the person. The
- * person's own decisions carry the "by you" mark (blueprint 7.2).
+ * person's own decisions carry the "by you" mark, and the person's words it passes on, as Yew found
+ * them, are set apart from the sender's.
  */
 function LetterEntry({ letter }: { letter: LetterRef }) {
 	useLang();
@@ -1322,6 +1369,7 @@ function LetterEntry({ letter }: { letter: LetterRef }) {
 					<Markdown text={body} breaks />
 				</Capped>
 			)}
+			<PersonQuotes quotes={letter.quotes} />
 			{letter.decision && (
 				<p className="hint">
 					{t("verifiedDecision", { n: letter.decision.number })} ·{" "}

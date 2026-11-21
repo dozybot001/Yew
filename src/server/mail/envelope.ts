@@ -1,4 +1,4 @@
-import type { DecisionRef, LetterRef } from "../../shared/messages.ts";
+import type { DecisionRef, LetterRef, PersonQuote } from "../../shared/messages.ts";
 import { type Card, type Letter, permissionModeOf, type Session } from "../../shared/types.ts";
 
 /** Attribute values stay on one line and cannot close the tag they sit in. */
@@ -56,7 +56,44 @@ export function letterRef(
 		...(letter.auto ? { auto: true } : {}),
 		...(decision ? { decision } : {}),
 		...(schedule ? { schedule } : {}),
+		...(letter.quotes?.length ? { quotes: letter.quotes } : {}),
 	};
+}
+
+const minute = (at: number) => `${new Date(at).toISOString().slice(0, 16).replace("T", " ")} UTC`;
+
+/** Where one of the person's words in a letter come from, as the model reads it. */
+function quoteSource(quote: PersonQuote): string {
+	const part = quote.excerpt ? "Part of what " : "What ";
+	const where = quote.sessionName ? attr(quote.sessionName) : "a session";
+	switch (quote.source) {
+		case "message":
+			return `${part}the person wrote to ${where}, ${minute(quote.at)}`;
+		case "answer":
+			return quote.chosen
+				? `The option the person picked when ${where} asked them, ${minute(quote.at)}`
+				: `${part}the person answered when ${where} asked them, ${minute(quote.at)}`;
+		case "decision":
+			return quote.chosen
+				? `The option the person chose on decision #${quote.card}, ${minute(quote.at)}`
+				: `${part}the person wrote on decision #${quote.card}, ${minute(quote.at)}`;
+	}
+}
+
+/**
+ * The person's words a letter carries, after the letter's end: Yew found each in its records, so the
+ * sender could not have written them. They tell what the person said and nothing more.
+ */
+function quoteLines(quotes: PersonQuote[]): string[] {
+	return [
+		"[Yew found these words of the person in its records; the sender passed them on. They are exactly what the person wrote or chose, so you need not look them up. They say what the person said, not that the person approved anything else.]",
+		...quotes.flatMap((quote) => [
+			`- ${quoteSource(quote)}:`,
+			...neutralize(quote.text)
+				.split("\n")
+				.map((line) => `  > ${line}`),
+		]),
+	];
 }
 
 function decisionLines(decision: DecisionRef): string[] {
@@ -101,6 +138,7 @@ export function letterText(
 	const lines = [`<letter ${attributes.join(" ")}>`, neutralize(letter.summary)];
 	if (letter.body) lines.push("", neutralize(letter.body));
 	lines.push(`</letter id="${letter.id}">`);
+	if (letter.quotes?.length) lines.push(...quoteLines(letter.quotes));
 	if (decision) {
 		lines.push(
 			`[Yew checked decision #${decision.number}: the person decided it in Yew.]`,

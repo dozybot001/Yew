@@ -24,7 +24,7 @@ import {
 } from "./icons.tsx";
 import { Mascot } from "./mascot.tsx";
 import { SidebarToggle } from "./session.tsx";
-import { PermissionCard, QuestionCard } from "./transcript.tsx";
+import { PermissionCard, PersonQuotes, QuestionCard } from "./transcript.tsx";
 import { Button, CardHead, ErrorBox, useAction, useNow } from "./ui.tsx";
 
 /** A session's current name; letters and cards keep ids, so a renamed session shows its new name. */
@@ -214,6 +214,7 @@ function HeldLetter({ letter }: { letter: Letter }) {
 					<Markdown text={letter.body} breaks />
 				</Capped>
 			)}
+			<PersonQuotes quotes={letter.quotes} />
 			<p className="hint">
 				{t(`letterReason_${letter.statusReason ?? "hold-policy"}` as MessageKey)}
 			</p>
@@ -469,6 +470,7 @@ function LetterRow({ letter, now }: { letter: Letter; now: number }) {
 						<p className="letter-summary">{summary}</p>
 						{body && <Markdown text={body} breaks />}
 					</Capped>
+					<PersonQuotes quotes={letter.quotes} />
 					<div className="letter-row-head">
 						<span>
 							<SenderLink letter={letter} /> → <SessionLink id={letter.toSession} />

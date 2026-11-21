@@ -1,4 +1,5 @@
 import type { StatementSync } from "node:sqlite";
+import type { PersonQuote } from "../../shared/messages.ts";
 import type {
 	Card,
 	CardOption,
@@ -33,6 +34,7 @@ interface LetterRow {
 	decision: number | null;
 	schedule_id: string | null;
 	origin_entry_id: string | null;
+	quotes: string;
 	entry_id: string | null;
 	created_at: number;
 	delivered_at: number | null;
@@ -81,9 +83,16 @@ function toLetter(row: LetterRow): Letter {
 		decision: row.decision,
 		scheduleId: row.schedule_id,
 		originEntryId: row.origin_entry_id,
+		...quotesOf(row.quotes),
 		createdAt: row.created_at,
 		deliveredAt: row.delivered_at,
 	};
+}
+
+/** A letter's checked quotes; a letter without any has no `quotes` field. */
+function quotesOf(column: string | undefined): { quotes?: PersonQuote[] } {
+	const quotes = json<PersonQuote[]>(column ?? "[]", []);
+	return quotes.length > 0 ? { quotes } : {};
 }
 
 function toCard(row: CardRow): Card {
@@ -129,6 +138,8 @@ export interface NewLetter {
 	decision?: number | null;
 	scheduleId?: string | null;
 	originEntryId?: string | null;
+	/** Already checked against Yew's records (PostOffice.checkQuotes). */
+	quotes?: PersonQuote[];
 }
 
 /** The six points of a decision card (blueprint 6.4), as a session writes them. */
@@ -177,8 +188,9 @@ export class MailStore {
 			const now = Date.now();
 			this.#q(
 				`INSERT INTO letters (id, thread_id, reply_to, from_kind, from_session, from_name, to_session, kind,
-					summary, body, status, status_reason, path, auto, decision, schedule_id, origin_entry_id, created_at, updated_at)
-				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+					summary, body, status, status_reason, path, auto, decision, schedule_id, origin_entry_id, quotes,
+					created_at, updated_at)
+				VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
 			).run(
 				id,
 				input.threadId ?? id,
@@ -197,6 +209,7 @@ export class MailStore {
 				input.decision ?? null,
 				input.scheduleId ?? null,
 				input.originEntryId ?? null,
+				JSON.stringify(input.quotes ?? []),
 				now,
 				now,
 			);
@@ -301,6 +314,20 @@ export class MailStore {
 				LIMIT ?`,
 		).all(sessionId, limit) as { id: string }[];
 		return rows.map((row) => row.id);
+	}
+
+	/**
+	 * The person's words that letters delivered to `sessionId` carried, newest letter first. Yew found
+	 * them when those letters were sent, so the session may pass them on.
+	 */
+	receivedQuotes(sessionId: string, limit = 200): PersonQuote[] {
+		const rows = this.#q(
+			`SELECT quotes FROM letters
+				WHERE to_session = ? AND status IN ('delivered', 'done') AND quotes != '[]'
+				ORDER BY created_at DESC, id DESC
+				LIMIT ?`,
+		).all(sessionId, limit) as { quotes: string }[];
+		return rows.flatMap((row) => json<PersonQuote[]>(row.quotes, []));
 	}
 
 	/**

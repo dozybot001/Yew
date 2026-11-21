@@ -163,6 +163,31 @@ export interface LetterRef {
 	decision?: DecisionRef;
 	/** The scheduled task whose run the letter starts or reports on. */
 	schedule?: { id: string; name: string };
+	/** The person's words the letter passes on, each found by Yew in its own records. */
+	quotes?: PersonQuote[];
+}
+
+/**
+ * Words of the person that a letter passes on, as Yew found them in its own records: a message the
+ * person wrote, an answer they gave to a session's question, or their note or choice on a decision. A
+ * session cannot write one itself; Yew attaches it only when the words are there.
+ */
+export interface PersonQuote {
+	/** The person's words as Yew has them, or the whole option they chose. */
+	text: string;
+	source: "message" | "answer" | "decision";
+	/** The session the person wrote in or answered; null for a decision. */
+	sessionId: string | null;
+	/** That session's name when the letter was sent. */
+	sessionName: string | null;
+	/** The decision's number, for a decision. */
+	card?: number;
+	/** An option the person picked, written by a session, rather than words the person typed. */
+	chosen?: boolean;
+	/** Part of what the person wrote rather than all of it. */
+	excerpt?: boolean;
+	/** When the person wrote or chose it. */
+	at: number;
 }
 
 export type AttachmentKind = "image" | "pdf" | "text";

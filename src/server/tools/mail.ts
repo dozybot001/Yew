@@ -3,6 +3,7 @@ import { TASK_OUTCOMES, THINKING_LEVELS } from "../../shared/types.ts";
 import { YewError } from "../errors.ts";
 import { decisionReport, directoryLine, neutralize } from "../mail/envelope.ts";
 import { type CardInput, reasonText } from "../mail/post.ts";
+import { QUOTES_MAX } from "../mail/quotes.ts";
 import {
 	bool,
 	CONFIRM_ARGUMENT,
@@ -122,6 +123,24 @@ function sentText(mail: MailContext, letter: Letter): ToolResult | null {
 	return null;
 }
 
+/** The quotes parameter of send_letter and open_session. */
+const QUOTES_ARGUMENT = {
+	type: "array",
+	maxItems: QUOTES_MAX,
+	items: { type: "string" },
+	description:
+		"The person's words you pass on, each copied exactly from a message they wrote to you, their answer to your question, a decision of theirs, or a quote in a letter you received; part of a message is fine. Yew finds each one and shows it with the letter as the person's own words, so the recipient need not check it. A quote Yew cannot find stops the letter.",
+} as const;
+
+/** What the sender hears about the quotes Yew attached. */
+function quotesNote(letter: Letter): string {
+	const count = letter.quotes?.length ?? 0;
+	if (count === 0) return "";
+	return count === 1
+		? ", with the person's words Yew found"
+		: `, with ${count} quotes of the person's words Yew found`;
+}
+
 function letterDetail(mail: MailContext, letter: Letter) {
 	return {
 		letterId: letter.id,
@@ -194,6 +213,7 @@ export const sendLetterTool: ToolDefinition = {
 				description:
 					"The letter this answers. A report to a session whose request you have open is linked to it without this.",
 			},
+			quotes: QUOTES_ARGUMENT,
 			wait: {
 				type: "boolean",
 				description: "Wait for the recipient's answer and get it as this call's result.",
@@ -218,6 +238,7 @@ export const sendLetterTool: ToolDefinition = {
 				summary: str(args, "summary", true),
 				...(body !== undefined ? { body } : {}),
 				...(replyTo !== undefined ? { replyTo } : {}),
+				...(args.quotes !== undefined ? { quotes: args.quotes } : {}),
 			}),
 		);
 		const detail = letterDetail(ctx.mail, letter);
@@ -229,7 +250,10 @@ export const sendLetterTool: ToolDefinition = {
 		}
 		const after =
 			kind === "request" ? ` When ${name} finishes, its reply comes back to you as a letter.` : "";
-		return { content: [text(`Letter ${letter.id} sent to ${name}.${after}`)], detail };
+		return {
+			content: [text(`Letter ${letter.id} sent to ${name}${quotesNote(letter)}.${after}`)],
+			detail,
+		};
 	},
 };
 
@@ -286,6 +310,7 @@ export const openSessionTool: ToolDefinition = {
 				description:
 					"Give it a copy of this conversation so far, so it knows what you know and the brief can be short. Its first request carries all of that.",
 			},
+			quotes: QUOTES_ARGUMENT,
 			confirm: CONFIRM_ARGUMENT,
 		},
 		required: ["name", "brief"],
@@ -320,6 +345,7 @@ export const openSessionTool: ToolDefinition = {
 				...(folder === undefined ? {} : { cwd: folder === "none" ? null : folder }),
 				...(provider && modelId ? { provider, model: modelId } : {}),
 				...(bool(args, "fork") ? { fork: true } : {}),
+				...(args.quotes !== undefined ? { quotes: args.quotes } : {}),
 			}),
 		);
 		const detail = {
@@ -335,7 +361,7 @@ export const openSessionTool: ToolDefinition = {
 		return {
 			content: [
 				text(
-					`Opened the task session "${opened.session.name}" (id ${opened.session.id})${bool(args, "fork") ? " with a copy of this conversation so far" : ""}. It starts on the brief now; its report comes back to you as a letter.`,
+					`Opened the task session "${opened.session.name}" (id ${opened.session.id})${bool(args, "fork") ? " with a copy of this conversation so far" : ""}. It starts on the brief now${quotesNote(opened.letter)}; its report comes back to you as a letter.`,
 				),
 			],
 			detail,

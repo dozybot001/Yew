@@ -1,4 +1,5 @@
 import { appendFileSync, existsSync } from "node:fs";
+import type { PersonQuote } from "../../shared/messages.ts";
 import {
 	type Approval,
 	type Card,
@@ -13,6 +14,7 @@ import {
 import { conflict, invalid, YewError } from "../errors.ts";
 import { readSettings, type Settings } from "../settings.ts";
 import type { Store } from "../store.ts";
+import { matchQuotes, quoteSources } from "./quotes.ts";
 import { type CardFields, MailStore } from "./store.ts";
 
 export const SUMMARY_MAX = 200;
@@ -109,6 +111,11 @@ export interface Outgoing {
 	schedule?: string | null;
 	/** Server-stamped ID of the person's message in the main conversation that started this chain. */
 	originEntryId?: string | null;
+	/**
+	 * The person's words a session passes on, as it copied them. Yew looks each up and attaches what it
+	 * found; a quote it cannot find stops the letter. Only a session's letters carry quotes.
+	 */
+	quotes?: unknown;
 }
 
 export interface PostHooks {
@@ -258,6 +265,14 @@ export class PostOffice {
 
 	// --- letters ---
 
+	/**
+	 * The person's words `session` wants to pass on, as Yew found them in its records; throws for one it
+	 * cannot find. `originEntryId` is the person's message that started the session's chain of letters.
+	 */
+	checkQuotes(session: Session, quotes: unknown, originEntryId: string | null): PersonQuote[] {
+		return matchQuotes(quotes, () => quoteSources(this.#store, this.mail, session, originEntryId));
+	}
+
 	send(sender: Sender, out: Outgoing): Letter {
 		const summary = oneLine(limited(out.summary, "summary", SUMMARY_MAX * 4, true));
 		if ([...summary].length > SUMMARY_MAX) {
@@ -276,6 +291,10 @@ export class PostOffice {
 			);
 		}
 		if (out.kind === "decision") this.#checkRelay(sender, out.decision);
+		const quotes =
+			sender.kind === "session"
+				? this.checkQuotes(sender.session, out.quotes, out.originEntryId ?? null)
+				: [];
 		let threadId: string | null = null;
 		let repliedTo: Letter | null = null;
 		// A report to a session whose request is open with the sender answers it: Yew links them, so the
@@ -325,6 +344,7 @@ export class PostOffice {
 			decision: out.decision ?? null,
 			scheduleId: sender.kind === "schedule" ? sender.schedule.id : (out.schedule ?? null),
 			originEntryId: out.originEntryId ?? null,
+			quotes,
 		};
 
 		// Yew's automatic letters answer one request each, so they skip the limits (and cannot loop).

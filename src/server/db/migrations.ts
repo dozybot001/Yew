@@ -406,4 +406,6 @@ ALTER TABLE schedules ADD COLUMN auto_archive INTEGER NOT NULL DEFAULT 1;
 ALTER TABLE schedules ADD COLUMN last_session_id TEXT REFERENCES sessions (id) ON DELETE SET NULL;
 ALTER TABLE letters ADD COLUMN origin_entry_id TEXT;
 CREATE INDEX letters_origin ON letters (to_session, origin_entry_id) WHERE origin_entry_id IS NOT NULL;`,
+	// The person's words a letter passes on, as Yew found them in its records: a JSON array of PersonQuote.
+	`ALTER TABLE letters ADD COLUMN quotes TEXT NOT NULL DEFAULT '[]';`,
 ];

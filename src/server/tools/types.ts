@@ -74,8 +74,10 @@ export interface OpenInput {
 	cwd?: string | null;
 	provider?: string;
 	model?: string;
-	/** Give the new session a copy of the opener's conversation so far (blueprint 6.11, item 39). */
+	/** Give the new session a copy of the opener's conversation so far. */
 	fork?: boolean;
+	/** The person's words the brief passes on, as the opener copied them; Yew looks each up. */
+	quotes?: unknown;
 }
 
 /** Letters, decision cards and child sessions, as the calling session. */
