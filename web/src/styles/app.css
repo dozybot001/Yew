@@ -2195,6 +2195,13 @@ body.scroll-locked {
 	border-radius: 5px;
 	background: var(--code-bg);
 }
+/* A path written as inline code: the button is the box, the code keeps its font. */
+.markdown .file-link code {
+	padding: 0;
+	background: none;
+	font-size: inherit;
+	overflow-wrap: anywhere;
+}
 .markdown table {
 	border-collapse: collapse;
 	display: block;

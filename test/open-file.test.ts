@@ -11,6 +11,7 @@ import { createApp } from "../src/server/http/app.ts";
 import { errorHandler } from "../src/server/http/problem.ts";
 import { openFileCommand, revealOnly } from "../src/server/reveal.ts";
 import { Store } from "../src/server/store.ts";
+import { codeSpanPath } from "../web/src/file-links.ts";
 import { continueMarkdownList, indentMarkdownList } from "../web/src/markdown-edit.ts";
 
 describe("openFileCommand", () => {
@@ -329,5 +330,55 @@ describe("markdown composer helpers", () => {
 			caret: 6,
 		});
 		assert.equal(indentMarkdownList("plain line", 5, 5, false), null);
+	});
+});
+
+describe("paths written as inline code", () => {
+	test("home, dot, absolute and relative paths with a line or column open as files", () => {
+		assert.deepEqual(codeSpanPath("~/notes/plan.md"), { path: "~/notes/plan.md" });
+		assert.deepEqual(codeSpanPath("~/Pictures/素材/Yew/poses"), {
+			path: "~/Pictures/素材/Yew/poses",
+		});
+		assert.deepEqual(codeSpanPath("./src"), { path: "./src" });
+		assert.deepEqual(codeSpanPath("../shared/types.ts"), { path: "../shared/types.ts" });
+		assert.deepEqual(codeSpanPath("/Users/me/Yew"), { path: "/Users/me/Yew" });
+		assert.deepEqual(codeSpanPath("/etc/hosts"), { path: "/etc/hosts" });
+		assert.deepEqual(codeSpanPath("/workspace/app/main.py"), { path: "/workspace/app/main.py" });
+		assert.deepEqual(codeSpanPath(".github/workflows/ci.yml"), {
+			path: ".github/workflows/ci.yml",
+		});
+		assert.deepEqual(codeSpanPath("src/app.ts:12"), { path: "src/app.ts", line: 12 });
+		assert.deepEqual(codeSpanPath("src/app.ts:12:5"), { path: "src/app.ts", line: 12, column: 5 });
+		assert.deepEqual(codeSpanPath("web/src/main.tsx:30-42"), {
+			path: "web/src/main.tsx",
+			line: 30,
+		});
+	});
+
+	test("commands, routes, web addresses, patterns and bare names stay code", () => {
+		for (const text of [
+			"/api/cards",
+			"/help",
+			"/favicon.ico",
+			"npm run check",
+			"build:web",
+			"127.0.0.1:4317",
+			"https://example.com/a.md",
+			"example.com/docs/a.md",
+			"src/**/*.ts",
+			"web/public/mascot/<pose>.webp",
+			"$HOME/notes.md",
+			"--out=dist/app.js",
+			"~user/notes.md",
+			"~/",
+			"./",
+			"package.json",
+			"src/server/",
+			"origin/main",
+			"@tenonai/yew",
+			"1/2",
+		]) {
+			assert.equal(codeSpanPath(text), null, text);
+		}
 	});
 });

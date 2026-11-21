@@ -1,8 +1,10 @@
 import {
+	createContext,
 	memo,
 	type ReactNode,
 	type RefObject,
 	useCallback,
+	useContext,
 	useEffect,
 	useLayoutEffect,
 	useMemo,
@@ -13,73 +15,18 @@ import ReactMarkdown, { type Components } from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGfm from "remark-gfm";
 import { openLocalFileLink } from "../actions.ts";
+import {
+	codeSpanPath,
+	decodeSafe,
+	type ParsedFileLink,
+	parseLocalFileHref,
+	SAFE_PROTOCOLS,
+} from "../file-links.ts";
 import { t } from "../i18n.ts";
 import { getState, useAppState } from "../state.ts";
 import { NotesIcon } from "./icons.tsx";
 
-const SAFE_PROTOCOLS = /^(https?:|mailto:)/i;
 const YEW_FILE_PREFIX = "yew-file:";
-
-interface ParsedFileLink {
-	path: string;
-	line?: number;
-	column?: number;
-}
-
-function decodeSafe(value: string): string {
-	try {
-		return decodeURIComponent(value);
-	} catch {
-		return value;
-	}
-}
-
-/**
- * Recognizes local file links in Markdown (`file://...`, `/abs/path`, `~/path`, `./rel`, `dir/file.md`),
- * with optional `#L12`, `#L12-L20`, `:12` or `:12:5` line/column anchors. Rejects unknown URI schemes.
- */
-export function parseLocalFileHref(raw: string): ParsedFileLink | null {
-	const trimmed = raw.trim();
-	if (!trimmed || trimmed.startsWith("#") || trimmed.startsWith("//")) return null;
-	if (SAFE_PROTOCOLS.test(trimmed)) return null;
-
-	let body = trimmed;
-	let line: number | undefined;
-	let column: number | undefined;
-
-	const hashIndex = body.indexOf("#");
-	if (hashIndex >= 0) {
-		const fragment = body.slice(hashIndex + 1);
-		body = body.slice(0, hashIndex);
-		const match = /^L?(\d+)(?:-L?\d+)?$/i.exec(fragment);
-		if (match) line = Number.parseInt(match[1] as string, 10);
-	}
-
-	const isFileUrl = /^file:\/\//i.test(body);
-	const lineMatch = /:(\d+)(?::(\d+))?$/.exec(body);
-	if (lineMatch && lineMatch.index > (isFileUrl ? 7 : 0)) {
-		if (line === undefined) line = Number.parseInt(lineMatch[1] as string, 10);
-		if (lineMatch[2]) column = Number.parseInt(lineMatch[2], 10);
-		body = body.slice(0, lineMatch.index);
-	}
-
-	if (!body) return null;
-	if (isFileUrl) {
-		return {
-			path: body,
-			...(line !== undefined ? { line } : {}),
-			...(column !== undefined ? { column } : {}),
-		};
-	}
-
-	// Refuse any non-file URI scheme such as javascript:, data:, vbscript:, tel:, etc.
-	if (/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(body)) return null;
-	return {
-		path: decodeSafe(body),
-		...(line !== undefined ? { line } : {}),
-		...(column !== undefined ? { column } : {}),
-	};
-}
 
 /** Model output is untrusted: no raw HTML; web links open without referrer, local file links route via API. */
 function urlTransform(url: string): string {
@@ -89,19 +36,45 @@ function urlTransform(url: string): string {
 	return "";
 }
 
-function FileLink({
-	raw,
+/** Inside a link or a code block, inline code stays code: a link inside a link cannot be clicked alone. */
+const NoFileLinks = createContext(false);
+
+/**
+ * Inline code that is a local path, such as `~/notes/plan.md` or `src/app.ts:12`, opens like a file link;
+ * other code stays as it is.
+ */
+function Code({
+	className,
 	sessionId,
 	children,
 }: {
-	raw: string;
-	sessionId?: string | null;
+	className?: string | undefined;
+	sessionId?: string | null | undefined;
+	children?: ReactNode;
+}) {
+	const off = useContext(NoFileLinks);
+	const code = <code className={className}>{children}</code>;
+	const link = !off && !className && typeof children === "string" ? codeSpanPath(children) : null;
+	return link ? (
+		<FileLink link={link} sessionId={sessionId}>
+			{code}
+		</FileLink>
+	) : (
+		code
+	);
+}
+
+function FileLink({
+	link: parsed,
+	sessionId,
+	children,
+}: {
+	link: ParsedFileLink;
+	sessionId?: string | null | undefined;
 	children: ReactNode;
 }) {
 	const opener = useAppState((state) => state.settings?.fileOpener ?? "system");
 	const [error, setError] = useState<string | null>(null);
-	const parsed = parseLocalFileHref(raw);
-	if (!parsed) return <span>{children}</span>;
 	const displayPath = parsed.path.replace(/^file:\/\//i, "");
 	const location = parsed.line
 		? `${decodeSafe(displayPath)}:${parsed.line}${parsed.column ? `:${parsed.column}` : ""}`
@@ -341,27 +314,32 @@ export const Markdown = memo(function Markdown({
 		() => ({
 			...baseComponents,
 			a: ({ href, children }) => {
-				if (!href) return <span>{children}</span>;
+				const inner = <NoFileLinks.Provider value={true}>{children}</NoFileLinks.Provider>;
+				if (!href) return <span>{inner}</span>;
 				if (href.startsWith(YEW_FILE_PREFIX)) {
+					const link = parseLocalFileHref(decodeURIComponent(href.slice(YEW_FILE_PREFIX.length)));
+					if (!link) return <span>{inner}</span>;
 					return (
-						<FileLink
-							raw={decodeURIComponent(href.slice(YEW_FILE_PREFIX.length))}
-							sessionId={sessionId}
-						>
-							{children}
+						<FileLink link={link} sessionId={sessionId}>
+							{inner}
 						</FileLink>
 					);
 				}
 				return (
 					<a href={href} target="_blank" rel="noopener noreferrer">
-						{children}
+						{inner}
 					</a>
 				);
 			},
 			pre: ({ children }) => (
 				<Capped as="pre" label={t("codeBlock")} follow={live}>
-					{children}
+					<NoFileLinks.Provider value={true}>{children}</NoFileLinks.Provider>
 				</Capped>
+			),
+			code: ({ className, children }) => (
+				<Code className={className} sessionId={sessionId}>
+					{children}
+				</Code>
 			),
 		}),
 		[live, sessionId],
