@@ -54,6 +54,7 @@ describe("the guard", () => {
 			".config/colima",
 			".lima",
 			".rd",
+			"Library/Application Support/com.apple.container",
 			".local/share/containers",
 		]) {
 			// Closed like Yew's data, so the keys to their machines cannot be read, and no socket in
@@ -61,13 +62,16 @@ describe("the guard", () => {
 			assert.ok(files.includes(`(subpath "${home}/${folder}")`), folder);
 			assert.ok(network.includes(`(remote unix-socket (subpath "${home}/${folder}"))`), folder);
 		}
-		assert.ok(network.includes('(remote unix-socket (path-literal "/var/run/docker.sock"))'));
+		for (const socket of ["/var/run/docker.sock", "/var/run/multipass_socket"]) {
+			assert.ok(network.includes(`(remote unix-socket (path-literal "${socket}"))`), socket);
+		}
 		for (const port of [22, 2375, 2376, 6443]) {
 			assert.ok(network.includes(`(remote ip "localhost:${port}")`), String(port));
 		}
-		assert.match(
-			closed,
-			/\(deny mach-lookup \(global-name-prefix "com\.apple\.Virtualization\."\) \(xpc-service-name-prefix "com\.apple\.Virtualization\."\)\)/,
+		// Apple's Virtualization framework, and the service Apple's container tool takes orders through.
+		assert.equal(
+			line(closed, "(deny mach-lookup"),
+			'(deny mach-lookup (global-name-prefix "com.apple.Virtualization.") (xpc-service-name-prefix "com.apple.Virtualization.") (global-name-prefix "com.apple.container.") (xpc-service-name-prefix "com.apple.container."))',
 		);
 
 		// The person lets the session use containers: only ssh to this computer stays closed.
@@ -89,6 +93,8 @@ describe("the guard", () => {
 			"permission denied while trying to connect to the docker API at unix:///var/run/docker.sock",
 			"The connection to the server 127.0.0.1:6443 was refused - did you specify the right host or port?",
 			"limactl: open /Users/me/.lima/default/lima.yaml: operation not permitted",
+			"list failed: cannot connect to the multipass socket",
+			"Ensure container system service has been started with `container system start`.",
 		]) {
 			assert.match(
 				containersNote(output) ?? "",

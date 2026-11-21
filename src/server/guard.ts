@@ -110,8 +110,9 @@ export function startupPlaces(home: string): { files: string[]; folders: string[
 
 /**
  * Where container engines take orders on this computer: Docker Desktop, OrbStack, Colima, Lima,
- * Rancher Desktop and Podman. Folders whose sockets are all closed, and socket files elsewhere; each
- * both as written and with links resolved, since the system checks a socket by where it really is.
+ * Rancher Desktop, Podman, Multipass and Apple's container tool. Folders whose sockets are all
+ * closed, and socket files elsewhere; each both as written and with links resolved, since the
+ * system checks a socket by where it really is.
  */
 export function containerPlaces(
 	home: string,
@@ -129,11 +130,19 @@ export function containerPlaces(
 				".lima",
 				".rd",
 				"Library/Application Support/rancher-desktop",
+				"Library/Application Support/com.apple.container",
 				".local/share/containers",
 			].map((path) => join(home, path)),
 			join(temporary, "podman"),
 		]),
-		files: both(["/var/run/docker.sock", "/run/docker.sock", "/run/podman/podman.sock"]),
+		files: both([
+			"/var/run/docker.sock",
+			"/run/docker.sock",
+			"/run/podman/podman.sock",
+			"/var/run/multipass_socket",
+			"/run/multipass_socket",
+			"/var/snap/multipass/common/multipass_socket",
+		]),
 	};
 }
 
@@ -145,13 +154,18 @@ export function containerPlaces(
 const CONTAINER_PORTS = [2375, 2376, 6443];
 const SSH_PORT = 22;
 
-/** The services of Apple's Virtualization framework, by name. */
-const VIRTUALIZATION = "com.apple.Virtualization.";
+/**
+ * The services that start virtual machines, by the start of their names: Apple's Virtualization
+ * framework, and the background service Apple's container tool takes its orders through.
+ */
+const MACHINE_SERVICES = ["com.apple.Virtualization.", "com.apple.container."];
 
 /** A line of output about a container engine, and one that says it could not be reached. */
 const CONTAINER_LINE =
-	/\b(?:docker|podman|colima|lima|limactl|orbstack|rancher|kubectl)\b|:(?:2375|2376|6443)\b/i;
+	/\b(?:docker|podman|colima|lima|limactl|orbstack|rancher|multipass|kubectl)\b|:(?:2375|2376|6443)\b/i;
 const REFUSED = /operation not permitted|permission denied|cannot connect|refused/i;
+/** What Apple's container tool prints when it cannot reach its background service. */
+const CONTAINER_SERVICE = /container system service has been started/i;
 
 /**
  * What a command's result says when the guard kept a container engine from it, so the session does
@@ -160,9 +174,11 @@ const REFUSED = /operation not permitted|permission denied|cannot connect|refuse
 export function containersNote(output: string): string | null {
 	const refused = output
 		.split("\n")
-		.some((line) => CONTAINER_LINE.test(line) && REFUSED.test(line));
+		.some(
+			(line) => (CONTAINER_LINE.test(line) && REFUSED.test(line)) || CONTAINER_SERVICE.test(line),
+		);
 	if (!refused) return null;
-	return "The command could not reach a container engine. Outside the sandbox, Yew Harness keeps container engines (Docker, Podman, Colima, Lima, OrbStack, Rancher Desktop) and local Kubernetes closed to this session's commands, because a container can open any folder on this computer. The person can allow containers in this session's settings; ask them if the task needs it.";
+	return "The command could not reach a container engine. Outside the sandbox, Yew Harness keeps container engines (Docker, Podman, Colima, Lima, OrbStack, Rancher Desktop, Multipass, Apple's container tool) and local Kubernetes closed to this session's commands, because a container can open any folder on this computer. The person can allow containers in this session's settings; ask them if the task needs it.";
 }
 
 /** A string in a Seatbelt profile. */
@@ -210,11 +226,13 @@ export function guardProfile(
 		].join(" ")})`,
 	];
 	// A virtual machine started with Apple's Virtualization framework shares folders through the
-	// framework's own services, which run outside the guard: closed with the container engines.
+	// framework's own services, and Apple's container tool starts its machines through a service of
+	// its own; both run outside the guard: closed with the container engines.
 	if (!reach.containers) {
-		lines.push(
-			`(deny mach-lookup (global-name-prefix "${VIRTUALIZATION}") (xpc-service-name-prefix "${VIRTUALIZATION}"))`,
+		const names = MACHINE_SERVICES.map(
+			(name) => `(global-name-prefix "${name}") (xpc-service-name-prefix "${name}")`,
 		);
+		lines.push(`(deny mach-lookup ${names.join(" ")})`);
 	}
 	// git-setup: repositories' own settings files, only under the folders the session may write;
 	// a later rule wins in a Seatbelt profile.
