@@ -267,10 +267,10 @@ export class PostOffice {
 
 	/**
 	 * The person's words `session` wants to pass on, as Yew found them in its records; throws for one it
-	 * cannot find. `originEntryId` is the person's message that started the session's chain of letters.
+	 * cannot find.
 	 */
-	checkQuotes(session: Session, quotes: unknown, originEntryId: string | null): PersonQuote[] {
-		return matchQuotes(quotes, () => quoteSources(this.#store, this.mail, session, originEntryId));
+	checkQuotes(session: Session, quotes: unknown): PersonQuote[] {
+		return matchQuotes(quotes, () => quoteSources(this.#store, this.mail, session));
 	}
 
 	send(sender: Sender, out: Outgoing): Letter {
@@ -291,10 +291,7 @@ export class PostOffice {
 			);
 		}
 		if (out.kind === "decision") this.#checkRelay(sender, out.decision);
-		const quotes =
-			sender.kind === "session"
-				? this.checkQuotes(sender.session, out.quotes, out.originEntryId ?? null)
-				: [];
+		const quotes = sender.kind === "session" ? this.checkQuotes(sender.session, out.quotes) : [];
 		let threadId: string | null = null;
 		let repliedTo: Letter | null = null;
 		// A report to a session whose request is open with the sender answers it: Yew links them, so the

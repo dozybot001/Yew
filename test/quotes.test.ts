@@ -192,30 +192,40 @@ describe("the person's words in letters", () => {
 		assert.ok(refusal(() => send(dev, lead, ["把仓库删掉重建"])));
 	});
 
-	test("the person's message that started the chain counts; a forked session's copies count where written", () => {
-		const { store, post, make, writes } = setup();
+	test("the message that started the chain is not a source, in part or whole; a forked session's copies count where written", () => {
+		const { store, post, make, writes, send, deliver } = setup();
 		const lead = make("总办");
 		const dev = make("开发");
-		const origin = writes(lead, "这周把转述原话做完");
-		const relayed = post.send(
-			{ kind: "session", session: dev },
-			{
-				to: lead.id,
-				kind: "report",
-				summary: "收到",
-				quotes: ["把转述原话做完"],
-				originEntryId: origin.id,
-			},
-		);
-		assert.equal(relayed.quotes?.[0]?.sessionId, lead.id);
-		assert.ok(
+		const origin = writes(lead, "这周把转述原话做完，下周发版");
+		// A session further down the chain never saw this message: a guess at a piece of it, a short
+		// piece or the whole is refused just as words the person never wrote, so it cannot be spelled out.
+		const fails = (quote: string) =>
 			refusal(() =>
 				post.send(
 					{ kind: "session", session: dev },
-					{ to: lead.id, kind: "report", summary: "收到", quotes: ["把转述原话做完"] },
+					{
+						to: lead.id,
+						kind: "report",
+						summary: "收到",
+						quotes: [quote],
+						originEntryId: origin.id,
+					},
 				),
-			),
+			)?.replace(/"[^"]*"/, "…");
+		const nowhere = fails("这周把别的事做完");
+		assert.match(nowhere ?? "", /is not something the person wrote or chose/);
+		for (const guess of ["把转述原话做完", "这周", "这周把转述原话做完，下周发版"]) {
+			assert.equal(fails(guess), nowhere, guess);
+		}
+		// Passed on as a quote by the session the person wrote to, the words go further down the chain.
+		const relay = send(lead, dev, ["把转述原话做完"]);
+		assert.equal(relay.quotes?.[0]?.sessionId, lead.id);
+		deliver(relay);
+		const onward = post.send(
+			{ kind: "session", session: dev },
+			{ to: lead.id, kind: "report", summary: "收到", quotes: ["把转述原话做完"] },
 		);
+		assert.equal(onward.quotes?.[0]?.text, "把转述原话做完");
 
 		writes(dev, "先别动线上的中继");
 		const child = make("中继排查", { kind: "task", parentId: dev.id });

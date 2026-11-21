@@ -137,7 +137,7 @@ export function matchQuotes(wanted: unknown, sources: () => QuoteSource[]): Pers
 		}
 		if (!found) {
 			throw invalid(
-				`Quote ${number} ("${clip(text)}") is not something the person wrote or chose. Yew looks in their messages to you, their answers to your questions, their decisions, the message in the main conversation that started this chain of letters, and the quotes in letters you received. Copy their words exactly, or leave the quote out.`,
+				`Quote ${number} ("${clip(text)}") is not something the person wrote or chose. Yew looks in their messages to you, their answers to your questions, their decisions, and the quotes in letters you received. Copy their words exactly, or leave the quote out.`,
 				"quotes",
 			);
 		}
@@ -203,15 +203,13 @@ function answerSources(approval: Approval, session: Session): QuoteSource[] {
 /**
  * Where a session may find the person's words to pass on, in the order a part of them is looked for:
  * what the person wrote to it (a forked session's copies count for the session they were written in),
- * the person's message in the main conversation that started this chain of letters, their answers to
- * its questions, words of the person in letters it received, and decisions.
+ * their answers to its questions, words of the person in letters it received, and decisions. Only
+ * what the session has seen, or could look up with check_decision: since a quote that is not found
+ * says so and costs nothing, words it never saw could be guessed out of a source piece by piece. The
+ * person's message that started a chain of letters reaches the next sessions only as quotes in the
+ * letters, put there by the session the person wrote to.
  */
-export function quoteSources(
-	store: Store,
-	mail: MailStore,
-	session: Session,
-	originEntryId: string | null,
-): QuoteSource[] {
+export function quoteSources(store: Store, mail: MailStore, session: Session): QuoteSource[] {
 	const sources: QuoteSource[] = [];
 	const answered = store.answeredQuestions(session.id);
 	// An answer to a question at the end of a reply also reaches the session as a message, which may
@@ -236,26 +234,6 @@ export function quoteSources(
 				at: entry.createdAt,
 			},
 		});
-	}
-	if (originEntryId) {
-		try {
-			const entry = store.getEntry(originEntryId);
-			const text = personText(entry);
-			if (text && entry.sessionId !== session.id) {
-				const where = store.getSession(entry.sessionId);
-				sources.push({
-					text,
-					origin: {
-						source: "message",
-						sessionId: where.id,
-						sessionName: where.name,
-						at: entry.createdAt,
-					},
-				});
-			}
-		} catch {
-			// The message or its session is gone: nothing to quote from it.
-		}
 	}
 	for (const approval of answered) sources.push(...answerSources(approval, session));
 	for (const quote of mail.receivedQuotes(session.id)) {

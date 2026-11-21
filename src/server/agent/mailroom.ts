@@ -600,7 +600,7 @@ export class Mailroom {
 		if (blocked) {
 			throw conflict(`Not opened: ${reasonText(blocked)}.`, undefined, "letter-refused");
 		}
-		this.#post.checkQuotes(parent, input.quotes, this.originOf(parent.id));
+		this.#post.checkQuotes(parent, input.quotes);
 		let cwd = parent.cwd;
 		if (input.cwd === null) cwd = null;
 		else if (input.cwd !== undefined) {
