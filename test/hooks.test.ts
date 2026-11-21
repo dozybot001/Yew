@@ -1,4 +1,4 @@
-// The person's hooks (hooks.ts; blueprint, "v1 之后：hooks"), with the faux provider: no real model.
+// The person's hooks (hooks.ts), with the faux provider: no real model.
 // The hooks are small shell commands written by the test.
 import assert from "node:assert/strict";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
@@ -133,7 +133,7 @@ describe("hooks", () => {
 		]);
 		agents.send(session.id, "开始吧");
 		await agents.whenIdle(session.id);
-		// Marked as the hook's, not as Yew's own words and not as the person's (spec 21.1).
+		// Marked as the hook's, not as Yew's own words and not as the person's.
 		assert.match(textOf(seen[0]), /\[From the person's hook \(SessionStart\)[^\]]*\] 今天是发版日/);
 		assert.match(
 			textOf(seen[0]),

@@ -447,7 +447,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 		return c.body(null, 204);
 	});
 
-	// Fast file suggestions for the composer's `@` picker across cwd and extraDirs (blueprint 6.12, item 51).
+	// Fast file suggestions for the composer's `@` picker across cwd and extraDirs.
 	app.get("/sessions/:id/files", async (c) => {
 		const session = store.getSession(c.req.param("id"));
 		const q = (c.req.query("q") ?? "").trim();
@@ -556,7 +556,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 		if (log !== undefined) store.setSetting("decisionLog", log ? resolveLogFile(log) : null);
 		const remote = optObject(fields, "remote");
 		if (remote) {
-			// Remote access is changed on the Mac only (M3 plan, section 4).
+			// Remote access is changed on the Mac only.
 			if (c.env?.device) throw invalid("Phone access can only be changed on the Mac.", "remote");
 			const enabled = optBoolean(remote, "enabled");
 			// null goes back to the relay Yew comes with.

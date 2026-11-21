@@ -1,5 +1,5 @@
 /**
- * Signing in to MCP servers in the browser (blueprint 6.11, item 40). A local server plays both the
+ * Signing in to MCP servers in the browser. A local server plays both the
  * MCP server that wants a token and its authorization server; the browser's part is played by the
  * test, which takes the address Yew would open and hands back a code.
  */

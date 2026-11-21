@@ -28,8 +28,8 @@ export interface Clock {
 }
 
 /**
- * How long this turn has taken while the session works, or how long it has waited for the person
- * (blueprint 6.9, item 27); while a failed model request is about to be tried again, that instead.
+ * How long this turn has taken while the session works, or how long it has waited for the person;
+ * while a failed model request is about to be tried again, that instead.
  * What the turn did is counted in the conversation's folded line, so it is not repeated here.
  */
 export function useSessionClock(session: Session, transcript: TranscriptState | null): Clock {

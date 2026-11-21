@@ -20,7 +20,7 @@ export const YEW_NOTE = "[From Yew, not from the person]";
 /**
  * What one of the person's hooks printed, marked as the hook's: not Yew's words and not the person's.
  * A hook may print what came from outside (a file, git log, a page), so it is information, not
- * instructions (spec 21.1).
+ * instructions.
  */
 const HOOK_NOTE = "[From the person's hook (";
 export const hookNote = (event: string, text: string): string =>

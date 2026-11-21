@@ -307,7 +307,7 @@ export function ArtifactsPage() {
 			</header>
 			<div
 				className="center-body"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 				tabIndex={0}
 			>
 				<div className={`center-inner artifacts${open ? " artifacts-open" : ""}`}>

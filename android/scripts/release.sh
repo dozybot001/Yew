@@ -1,6 +1,6 @@
 #!/bin/bash
 # Builds Yew for Android and signs it with the app signing key. It publishes nothing.
-# Product standard 15.6.4 and 15.6.7.
+# Release packages are signed only here, on the Mac that holds the key.
 #
 # Signing happens here and not in Gradle, so the password never reaches the Gradle daemon or a build
 # file. Without the real key this stops; it never falls back to another key.

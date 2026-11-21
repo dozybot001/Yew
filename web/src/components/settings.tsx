@@ -170,7 +170,7 @@ function KeyRow({
 				{detail}
 				{editing && (
 					<div className="provider-key">
-						{/* An API key is not a sign-in password, so it is not marked as one (spec 18.5). */}
+						{/* An API key is not a sign-in password, so it is not marked as one. */}
 						<input
 							className="input secret-input"
 							type="text"
@@ -317,7 +317,7 @@ function searchName(service: SearchServiceView): string {
 const providerName = (id: string) => (id === "deepseek" ? "DeepSeek" : id);
 
 /**
- * The search services (blueprint 6.10, item 30): which have a key, and saving, replacing and
+ * The search services: which have a key, and saving, replacing and
  * deleting it. Each row says who provides the service, since the query is sent to them.
  */
 function SearchServices() {
@@ -784,9 +784,9 @@ function About() {
 			<h2 id="settings-about" className="visually-hidden">
 				{t("about")}
 			</h2>
-			{/* In the order of spec 2.2: lockup, version, the text, publisher, website; then 2.3. */}
+			{/* In order: lockup, version, text, publisher, website, privacy policy, terms, feedback. */}
 			<div className="about-head">
-				{/* Full lockup on the About page (spec 1.6), named by the product's name (1.7). */}
+				{/* Full lockup on the About page, named by the product's name. */}
 				<div className="about-hero">
 					<Mascot pose="gift" height={112} className="about-mascot" />
 					<div className="lockup about-lockup" role="img" aria-label={t("lockupName")}>
@@ -800,7 +800,7 @@ function About() {
 			<div className="about-list">
 				<div className="about-row">
 					<span className="about-label">{t("publisher")}</span>
-					{/* The small horizontal publisher mark (spec 1.4), the only place with the Tenon mark. */}
+					{/* The small horizontal publisher mark, the only place with the Tenon mark. */}
 					<span className="publisher-mark">
 						<img src="/icons/tenon-mark.svg" alt="" width={18} height={18} />
 						{t("publisherName")}
@@ -861,7 +861,7 @@ function releaseNotes(version: string): string {
 }
 
 /**
- * The version on the About page as one card (blueprint, "版本与更新"): an icon for how it stands, a
+ * The version on the About page as one card: an icon for how it stands, a
  * title and a line of detail, and the one button there is something to do with: check, update, or
  * restart. Where Yew Harness cannot install, the command; where an update failed, why.
  */
@@ -1041,7 +1041,7 @@ function VersionLine() {
 	);
 }
 
-/** The settings window's sections, in order (blueprint 6.10, item 45). */
+/** The settings window's sections, in order. */
 const SECTIONS: { name: SettingsDialogName; label: MessageKey; icon: ReactNode }[] = [
 	{ name: "personal", label: "personalMenu", icon: <ThemeIcon /> },
 	{ name: "providers", label: "providersMenu", icon: <KeyIcon /> },
@@ -1065,7 +1065,7 @@ export function SettingsDialogs() {
 }
 
 /**
- * The settings window (blueprint 6.10, item 45): the sections on the left, the chosen one on the right.
+ * The settings window: the sections on the left, the chosen one on the right.
  * A narrow window shows one level at a time: the list first, then a section with a way back.
  */
 function SettingsWindow({ section }: { section: SettingsDialogName }) {
@@ -1172,7 +1172,7 @@ function SettingsSection({ name, onClose }: { name: SettingsDialogName; onClose:
 }
 
 /**
- * Personalization (blueprint 6.10, item 45): theme, language, Yew in the interface and how the opening
+ * Personalization: theme, language, Yew in the interface and how the opening
  * leaves. Each applies as soon as it is chosen.
  */
 function PersonalDialog({ onClose }: { onClose: () => void }) {
@@ -1248,7 +1248,7 @@ function PersonalDialog({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * The settings entry at the bottom of the sidebar (spec 10.3, 10.5): it opens the settings window, as
+ * The settings entry at the bottom of the sidebar: it opens the settings window, as
  * Cmd/Ctrl+, does.
  */
 export function SettingsButton({ variant }: { variant: "row" | "icon" }) {
@@ -1289,7 +1289,7 @@ export function SettingsButton({ variant }: { variant: "row" | "icon" }) {
 }
 
 /**
- * Data (blueprint 6.10, item 36): what the data folder takes and where it is, exporting everything
+ * Data: what the data folder takes and where it is, exporting everything
  * as `yew export` does, deleting the over-long command output, and deleting archived sessions. The
  * sizes are read when the dialog opens and after each action; nothing here runs by itself.
  */
@@ -1575,7 +1575,7 @@ function DeleteArchivedDialog({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * Phone access (M3 plan, sections 4 and 6): turn it on, see the relay connection, pair a phone by
+ * Phone access: turn it on, see the relay connection, pair a phone by
  * QR code and remove paired phones. Everything between the phone and this Mac is end-to-end encrypted.
  */
 function PhonesDialog({ onClose }: { onClose: () => void }) {
@@ -1737,7 +1737,7 @@ function PhonesDialog({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * The relay address (blueprint 6.10, item 31): your own relay in place of the one Yew comes with.
+ * The relay address: your own relay in place of the one Yew comes with.
  * A phone keeps the address it was paired with, so after a change it has to pair again.
  */
 function RelayDialog({
@@ -1886,7 +1886,7 @@ const pairsToRecord = (pairs: Pair[]): Record<string, string> =>
 
 /** Adding an MCP server: a command Yew starts on this computer, or a URL it connects to. */
 /**
- * An official server from the list (blueprint 6.11, item 40): what it is, where its token comes from,
+ * An official server from the list: what it is, where its token comes from,
  * where the token goes and what will run, then the same entry a person would write in mcp.json.
  */
 function McpPresetDialog({
@@ -2005,7 +2005,7 @@ function McpPresetDialog({
 					label={preset.token.optional ? t("mcpPresetTokenOptional") : t("mcpPresetToken")}
 					htmlFor={tokenId}
 				>
-					{/* A token is not a sign-in password, so it is not marked as one (spec 18.5). */}
+					{/* A token is not a sign-in password, so it is not marked as one. */}
 					<input
 						id={tokenId}
 						className="input secret-input"
@@ -2245,7 +2245,7 @@ function McpServerRow({
 		await signOutMcpServer(server.name);
 		await onChanged();
 	});
-	// Yew's own browser server: the person's Chrome, or a window of its own (blueprint 6.10, item 38).
+	// Yew's own browser server: the person's Chrome, or a window of its own.
 	const browserMode = useAppState((state) => state.settings?.browser ?? "own");
 	const browserId = useId();
 	const chooseBrowser = useAction(async (mode: "own" | "separate") => {
@@ -2403,7 +2403,7 @@ function McpServerRow({
 }
 
 /**
- * MCP servers (blueprint 6.10, item 29): the servers in mcp.json, whether each is connected and the
+ * MCP servers: the servers in mcp.json, whether each is connected and the
  * tools it offers; add one, turn one off, remove one. Changes apply to the running Yew at once.
  */
 function McpDialog({ onClose }: { onClose: () => void }) {
@@ -2576,7 +2576,7 @@ function SkillRow({
 }
 
 /**
- * Skills (blueprint 6.10, item 35): what Yew read from the global folders and the saved workspaces,
+ * Skills: what Yew read from the global folders and the saved workspaces,
  * a switch for each, and its folder in the file manager. Folders that could not be read are listed
  * with the reason. A skill's content is edited in its folder, not here.
  */
@@ -2647,7 +2647,7 @@ function SkillsDialog({ onClose }: { onClose: () => void }) {
 }
 
 /**
- * Starting at login and the launcher icon (blueprint 6.10, item 33): the same as `yew service` and
+ * Starting at login and the launcher icon: the same as `yew service` and
  * `yew app`, as two switches. Where the system does not support one, its row says so.
  */
 function SystemDialog({ onClose }: { onClose: () => void }) {
@@ -2708,7 +2708,7 @@ function SystemDialog({ onClose }: { onClose: () => void }) {
 					/>
 				</SettingRow>
 			</SettingGroup>
-			{/* Where sessions' commands run (blueprint, section 11); without a sandbox it says so. */}
+			{/* Where sessions' commands run; without a sandbox it says so. */}
 			{sandbox === "none" ? (
 				<SettingGroup title={t("sandbox")}>
 					<SettingRow label={t("sandbox_none")} hint={t("sandbox_none_hint")}>

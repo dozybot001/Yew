@@ -123,7 +123,7 @@ function App() {
 				className={`app${!narrow && collapsed ? " app-collapsed" : ""}${narrow && drawerOpen ? " sidebar-open" : ""}${backdrop ? " with-yew" : ""}${backdrop && isHome ? " yew-home" : ""}${backdrop && isFeature ? " yew-feature" : ""}${backdrop && !isFeature && isWorking ? " yew-working" : ""}`}
 			>
 				{!narrow && collapsed ? <SidebarRail /> : <Sidebar />}
-				{/* Yew floats over the window; a narrow one has no room for her (blueprint, section 12). */}
+				{/* Yew floats over the window; a narrow one has no room for her. */}
 				{!narrow && <Companion />}
 				{narrow && drawerOpen && (
 					<div

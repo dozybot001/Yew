@@ -2,7 +2,7 @@ import Foundation
 @preconcurrency import UserNotifications
 
 /// Runs when a notification arrives: decrypts what the Mac sealed for this phone and shows that
-/// instead of the fixed line Apple's service carried (M3 plan, section 8).
+/// instead of the fixed line Apple's service carried.
 final class NotificationService: UNNotificationServiceExtension, @unchecked Sendable {
 	private var deliver: ((UNNotificationContent) -> Void)?
 	private var content: UNMutableNotificationContent?

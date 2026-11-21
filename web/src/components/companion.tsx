@@ -110,7 +110,7 @@ export function moodText(mood: CompanionMood): string {
 }
 
 /**
- * Yew floating over the window (blueprint, section 12). Her bubble says the one thing that matters
+ * Yew floating over the window. Her bubble says the one thing that matters
  * most now; when it names a place, the bubble is a button that goes there. She can be dragged anywhere
  * in the window, and this browser remembers where; a press that does not move is a poke, and she
  * answers it. Until moved she stands at the bottom, just right of the sidebar; a window with no room

@@ -1,5 +1,5 @@
 /**
- * Jig was renamed Yew on 2026-11-18 (blueprint, section 12), and Yew reads nothing by Jig's names.
+ * Jig was renamed Yew on 2026-11-18, and Yew reads nothing by Jig's names.
  * What was stored under the old names is rewritten once by the database migrations, so old
  * conversations, letters and rules keep meaning what they meant.
  */
@@ -112,7 +112,7 @@ describe("the rename", () => {
 	});
 });
 
-describe("the permission modes of 1.7 (blueprint 6.1, item 6)", () => {
+describe("the permission modes of 1.7", () => {
 	test("the earlier modes become the default; scheduled tasks keep their mode and their letters", () => {
 		const modesAt = migrations.findIndex((sql) =>
 			String(sql).includes("CREATE TABLE schedules_new"),

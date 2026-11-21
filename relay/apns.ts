@@ -4,9 +4,9 @@ import { type ClientHttp2Session, connect } from "node:http2";
 import type { PushJob, PushResult } from "../src/remote/push.ts";
 
 /**
- * Hands notifications to Apple's push service (APNs) with a provider token (M3 plan, section 8). The
- * relay holds the signing key; what a notification says arrives already encrypted for the phone, so
- * neither the relay nor Apple can read it. The visible text Apple gets is a fixed fallback line.
+ * Hands notifications to Apple's push service (APNs) with a provider token. The relay holds the
+ * signing key; what a notification says arrives already encrypted for the phone, so neither the
+ * relay nor Apple can read it. The visible text Apple gets is a fixed fallback line.
  */
 
 export interface ApnsConfig {

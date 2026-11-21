@@ -476,7 +476,7 @@ describe("permission modes", () => {
 				// The automatic mode's check is not asked: the person is.
 				assert.equal(decision.effect === "ask" && decision.review, undefined, command);
 			}
-			// Skip mode asks about no permission (the founder, 11-21); the record says what was risky.
+			// Skip mode asks about no permission; the record says what was risky.
 			assert.ok((noteOf(run(command, skip))?.risk ?? []).length > 0, command);
 		}
 		assert.deepEqual(askOf(run("rm -rf /tmp/elsewhere", plain))?.reasons, ["delete-outside"]);

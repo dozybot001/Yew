@@ -180,7 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
 	@objc func showAbout(_ sender: Any?) {
 		main?.show()
-		// The page opens its own About, in the settings (spec 10.5).
+		// The page opens its own About, in the settings.
 		main?.run("window.dispatchEvent(new CustomEvent('yew-app', { detail: 'about' }))")
 	}
 

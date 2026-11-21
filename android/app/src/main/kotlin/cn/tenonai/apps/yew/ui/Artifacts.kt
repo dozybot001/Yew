@@ -207,10 +207,10 @@ private fun Chart(chart: ChartData) {
 private fun number(value: Double): String = if (value == Math.rint(value)) value.toLong().toString() else "%.2f".format(value)
 
 /**
- * An HTML artifact, shut in (blueprint 6.6, item 19): it has no address of its own, the web view
- * loads nothing from the network or from files, every request it makes is answered with nothing,
- * links lead nowhere, and a policy in the page stops what is left. Its own scripts can run, but
- * cannot reach Yew, the computer or the network.
+ * An HTML artifact, shut in: it has no address of its own, the web view loads nothing from the
+ * network or from files, every request it makes is answered with nothing, links lead nowhere, and a
+ * policy in the page stops what is left. Its own scripts can run, but cannot reach Yew, the
+ * computer or the network.
  */
 @SuppressLint("SetJavaScriptEnabled")
 @Composable

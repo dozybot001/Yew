@@ -57,7 +57,7 @@ function values<T extends string | null>(
 }
 
 /**
- * The MCP servers in mcp.json (blueprint 6.10, item 29): list them with their connection and tools,
+ * The MCP servers in mcp.json: list them with their connection and tools,
  * add one, turn one off or on, remove one. Each change is written to the file and the running hub
  * reads it again at once. Computer-only: a server is a program this computer starts.
  */
@@ -131,7 +131,7 @@ export function mcpRoutes(store: Store, options: McpRoutesOptions): Hono<AppEnv>
 		return c.json(shown(entry));
 	});
 
-	// Signing in to a server in the browser (blueprint 6.11, item 40): the page opens the address.
+	// Signing in to a server in the browser: the page opens the address.
 	app.post("/mcp/:name/sign-in", async (c) => {
 		try {
 			return c.json({ url: await hub.signInUrl(c.req.param("name")) });

@@ -16,7 +16,7 @@ import { ApiError } from "../api.ts";
 import { hasMessage, type MessageKey, t } from "../i18n.ts";
 import { CloseIcon, InfoIcon, SubmenuIcon } from "./icons.tsx";
 
-/** Places a top-layer popover next to its trigger, flipping above when there is no room below (spec 5.9). */
+/** Places a top-layer popover next to its trigger, flipping above when there is no room below. */
 export function place(popover: HTMLElement, trigger: HTMLElement, width?: number): void {
 	const rect = trigger.getBoundingClientRect();
 	const margin = 16;
@@ -65,7 +65,7 @@ export function Button({
 
 /**
  * Runs an async action from a button: shows the loading state at once and blocks a second submit
- * until it settles (spec 4.7–4.8). Errors are kept for display.
+ * until it settles. Errors are kept for display.
  */
 export function useAction<A extends unknown[]>(action: (...args: A) => Promise<unknown>) {
 	const [busy, setBusy] = useState(false);
@@ -149,7 +149,7 @@ const CODE_MESSAGES: Record<string, MessageKey> = {
 	"no-export": "err_noExport",
 };
 
-/** What went wrong and what to do, in the interface language (spec 4.1, 12.2); server text is a fallback. */
+/** What went wrong and what to do, in the interface language; server text is a fallback. */
 export function describeError(error: unknown): string {
 	if (!(error instanceof ApiError)) return t("err_unknown");
 	if (error.code === "missing-api-key")
@@ -245,7 +245,7 @@ export function Switch({
 	);
 }
 
-/** The ⓘ button and its click-to-open explanation (spec 5). */
+/** The ⓘ button and its click-to-open explanation. */
 export function Toggletip({ label, text }: { label: string; text: string }) {
 	const [open, setOpen] = useState(false);
 	const button = useRef<HTMLButtonElement>(null);
@@ -317,7 +317,7 @@ export interface Option {
 	group?: string;
 }
 
-/** A select-only combobox with its own listbox (WAI-ARIA APG; spec 7.2). */
+/** A select-only combobox with its own listbox (WAI-ARIA APG). */
 export function Select({
 	value,
 	options,
@@ -971,7 +971,7 @@ export function Menu({
 	);
 }
 
-/** A modal dialog with a fixed size tier; only the body scrolls (spec 9). */
+/** A modal dialog with a fixed size tier; only the body scrolls. */
 interface DialogProps {
 	title: string;
 	size: "s" | "m" | "l";
@@ -983,7 +983,7 @@ interface DialogProps {
 
 /**
  * Inside the settings window a settings dialog is not a dialog of its own: it fills the window's right
- * side, with the same title, body and footer (blueprint 6.10, item 45). Dialogs opened from inside it
+ * side, with the same title, body and footer. Dialogs opened from inside it
  * (adding a server, confirming a deletion) are real dialogs again.
  */
 const InWindow = createContext(false);
@@ -1143,7 +1143,7 @@ export function Field({
 	info?: string;
 	htmlFor?: string;
 	labelId?: string;
-	/** Give the input `aria-describedby={errorId}` so the error is read with it (spec 18.3). */
+	/** Give the input `aria-describedby={errorId}` so the error is read with it. */
 	errorId?: string;
 }) {
 	return (

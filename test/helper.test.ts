@@ -1,5 +1,5 @@
 /**
- * Helpers (blueprint 6.11, item 43): a session hands a task to a short loop of its own model, which
+ * Helpers: a session hands a task to a short loop of its own model, which
  * only looks, and gets back only the answer.
  */
 import assert from "node:assert/strict";

@@ -6,8 +6,8 @@ import type { JsonObject } from "../shared/messages.ts";
 import { commandEnvironment, loginShell } from "./tools/process.ts";
 
 /**
- * Hooks (blueprint, "v1 之后：hooks"): commands the person sets to run at points of a
- * session, written the way Claude Code's `hooks` setting is, so ones made for it work here.
+ * Hooks: commands the person sets to run at points of a session, written the way Claude Code's
+ * `hooks` setting is, so ones made for it work here.
  *
  * They are kept in `hooks.json` in Yew Harness's data folder, which sessions cannot reach, so a
  * session cannot plant one; hooks in a project's own files are not read. A hook runs as the person,

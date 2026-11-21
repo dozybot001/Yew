@@ -208,13 +208,13 @@ export async function boot(): Promise<void> {
 			hasArchived: archived.items.length > 0,
 		});
 		await loadCenter();
-		// The About page and the floating Yew say when there is a new version (blueprint, "版本与更新").
+		// The About page and the floating Yew say when there is a new version.
 		void loadUpdates();
-		// The floating Yew is on duty while a scheduled task is on (blueprint, section 11).
+		// The floating Yew is on duty while a scheduled task is on.
 		void loadSchedules().catch(() => {});
 		setState({ booted: true });
 		// A reload stays where the tab was. Otherwise Yew opens on the main conversation; without one,
-		// where you left off (blueprint section 5).
+		// where you left off.
 		const view = recallView();
 		const tab = view?.startsWith("center:") ? view.slice("center:".length) : null;
 		const viewed = view?.startsWith("session:") ? view.slice("session:".length) : null;
@@ -605,7 +605,7 @@ export async function createSession(input: NewSessionInput): Promise<Session> {
 	return session;
 }
 
-/** A copy of the session with its conversation, opened at once (blueprint section 8). */
+/** A copy of the session with its conversation, opened at once. */
 export async function duplicateSession(sessionId: string): Promise<Session> {
 	const copy = await api<Session>("POST", `/api/sessions/${sessionId}/duplicate`, undefined, {
 		idempotent: true,
@@ -617,7 +617,7 @@ export async function duplicateSession(sessionId: string): Promise<Session> {
 
 /**
  * A new session that goes on from a reply of this one, or from just before a message of yours, opened
- * at once (blueprint 6.11, item 39). Forked from your message, the message waits in its box.
+ * at once. Forked from your message, the message waits in its box.
  */
 export async function forkSession(
 	sessionId: string,
@@ -640,7 +640,7 @@ export async function forkSession(
 
 /**
  * Takes the conversation back to a reply, or to just before a message of yours, which then waits in
- * the message box to be changed and sent again (blueprint 6.11, item 42).
+ * the message box to be changed and sent again.
  */
 export async function rewindSession(
 	sessionId: string,
@@ -803,7 +803,7 @@ export async function loadCenter(): Promise<void> {
 	setState({ center: next });
 }
 
-/** Opens the approval center page in place of the session (blueprint section 8). */
+/** Opens the approval center page in place of the session. */
 export function openCenter(tab: CenterTab = getState().centerTab): void {
 	setState({ page: "center", centerTab: tab, drawerOpen: false });
 	rememberView(`center:${tab}`);
@@ -812,7 +812,7 @@ export function openCenter(tab: CenterTab = getState().centerTab): void {
 	if (tab === "decided") void loadDecisions();
 }
 
-// --- scheduled tasks (M3 plan, section 9) ---
+// --- scheduled tasks ---
 
 /** The scheduled tasks page, in place of the session, like the approval center. */
 export function openSchedules(): void {
@@ -984,7 +984,7 @@ export async function refuseLetter(id: string) {
 	return letter;
 }
 
-/** Makes a session the main conversation, or none (blueprint section 5). */
+/** Makes a session the main conversation, or none. */
 export async function setMainSession(sessionId: string | null): Promise<void> {
 	await saveSettings({ mainSessionId: sessionId });
 }
@@ -1138,7 +1138,7 @@ export async function deleteCustomProvider(id: string): Promise<void> {
 	await reloadProviders();
 }
 
-// --- search services, MCP servers, this computer (blueprint 6.10) ---
+// --- search services, MCP servers, this computer ---
 
 export const loadSearchServices = () => all<SearchServiceView>("/api/search-services");
 
@@ -1218,7 +1218,7 @@ export const loadSystem = () => api<SystemStatus>("GET", "/api/system");
 export const saveSystem = (patch: { startAtLogin?: boolean; launcher?: boolean }) =>
 	api<SystemStatus>("PATCH", "/api/system", patch);
 
-// --- phone access (M3 plan, section 6) ---
+// --- phone access ---
 
 export async function loadPhones(): Promise<void> {
 	setState({ phones: await api<PhonesState>("GET", "/api/devices") });

@@ -14,7 +14,7 @@ import { type NotifyKind, SETTING_DEFAULTS } from "./settings.ts";
 import type { Store } from "./store.ts";
 
 /**
- * Decides what the phone is told and when (M3 plan, section 8; blueprint 6.7, item 20).
+ * Decides what the phone is told and when.
  *
  * - What: new items in the approval center (permissions, questions, decision cards, held letters); a
  *   session that stopped with an error or is marked for review; a task session or a scheduled task
@@ -24,8 +24,8 @@ import type { Store } from "./store.ts";
  *   that need you wait and go out when you have left and they are still open; the rest is not sent.
  * - Afterwards: when an item is handled, its notification is taken off the phone, and the app's badge
  *   is the number of items waiting in the approval center.
- * - Which: the person chooses the kinds in the settings (blueprint 6.10, item 34). A kind that is
- *   turned off is not sent to any phone, whichever way its notifications travel.
+ * - Which: the person chooses the kinds in the settings. A kind that is turned off is not sent to
+ *   any phone, whichever way its notifications travel.
  */
 
 export type NoteKind =

@@ -29,8 +29,8 @@ import type { Session } from "../src/shared/types.ts";
 import { tempDir } from "./helpers/store.ts";
 
 /**
- * The system sandbox (blueprint, section 11): its configuration, and everyday work in it. Whether it
- * holds against a command trying to get out is the security group's to test, with its own probes.
+ * The system sandbox: its configuration, and everyday work in it. Whether it holds against a command
+ * trying to get out is tested separately, with probes of its own.
  */
 
 const base = realpathSync(tempDir("yew-sandbox-"));

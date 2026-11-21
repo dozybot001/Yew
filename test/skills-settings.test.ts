@@ -9,7 +9,7 @@ import type { ToolContext } from "../src/server/tools/types.ts";
 import type { Session } from "../src/shared/types.ts";
 import { newStore, tempDir } from "./helpers/store.ts";
 
-/** Skills in the settings (blueprint 6.10, item 35): the list, the switch and showing the folder. */
+/** Skills in the settings: the list, the switch and showing the folder. */
 
 // biome-ignore lint/suspicious/noExplicitAny: test assertions read arbitrary JSON
 type Json = any;

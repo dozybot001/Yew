@@ -3,7 +3,7 @@ import { conflict } from "../errors.ts";
 import { optBoolean, readJson } from "./input.ts";
 import type { AppEnv } from "./problem.ts";
 
-/** Starting Yew at login and the launcher icon, as the settings show them (blueprint 6.10, item 33). */
+/** Starting Yew at login and the launcher icon, as the settings show them. */
 export interface SystemStatus {
 	startAtLogin: {
 		/** False where `yew service` does not work (it needs macOS or Linux). */

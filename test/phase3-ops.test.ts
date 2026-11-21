@@ -106,7 +106,7 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 					assert.equal(verdict.review, undefined);
 				}
 			}
-			// Skip mode asks about no permission (the founder, 11-21) and marks it in the record.
+			// Skip mode asks about no permission and marks it in the record.
 			assert.deepEqual(
 				engine.decide({ kind: "command", tool: "shell", command: cmd }, skipSession),
 				{ effect: "allow", note: { risk: ["git-setup"] } },
@@ -114,8 +114,8 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 			);
 		}
 
-		// Only a plain local setup opens the guard (the security group, 11-20): nothing that points
-		// git elsewhere, sets things on the way, runs a program or uses a template.
+		// Only a plain local setup opens the guard: nothing that points git elsewhere, sets things on
+		// the way, runs a program or uses a template.
 		for (const cmd of [
 			"git -C /tmp/other init",
 			"git --git-dir=/tmp/x/.git config user.name A",
@@ -182,7 +182,7 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 		assert.equal(classifyGuardMode("git init; echo hi"), "default");
 
 		// Launch app: only `open -a <name>` for an app installed for everyone, not a terminal or a
-		// script runner, nothing else on the line (the security group, 11-20).
+		// script runner, nothing else on the line.
 		const apps = realpathSync(tempDir("yew-apps-"));
 		for (const app of ["Xcode", "Safari", "Visual Studio Code", "Terminal", "Script Editor"]) {
 			mkdirSync(join(apps, `${app}.app`));

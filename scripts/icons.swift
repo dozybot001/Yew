@@ -4,8 +4,8 @@
 //   swift scripts/icons.swift
 // It writes the launcher app's icon for macOS (a white rounded plate with the margins macOS icons
 // keep), the iPhone app's icon, light and dark (full square, no transparency, as Apple asks), and the
-// web page's home-screen icon, which is the light iPhone icon at 180 px (spec 1.6, 1.9: the product's
-// own graphic, no Tenon badge).
+// web page's home-screen icon, which is the light iPhone icon at 180 px (the product's own graphic,
+// no Tenon badge).
 import AppKit
 
 let red = CGColor(srgbRed: 0xC8 / 255, green: 0x32 / 255, blue: 0x3F / 255, alpha: 1)

@@ -1,8 +1,8 @@
-// The release check for npm audit (product standard 15.1.2). Production dependencies get no waivers:
-// any high or critical advisory there stops the release. One in a tool used only to build or test may
-// be waived while no fixed release exists, for a month at most, recorded below with its advisory, the
-// packages, why only the build or the tests reach it, and the day the waiver ends. Upgrade before that
-// day; if there is still no fix, check again and set a new day. An expired waiver stops the release.
+// The release check for npm audit. Production dependencies get no waivers: any high or critical
+// advisory there stops the release. One in a tool used only to build or test may be waived while no
+// fixed release exists, for a month at most, recorded below with its advisory, the packages, why
+// only the build or the tests reach it, and the day the waiver ends. Upgrade before that day; if
+// there is still no fix, check again and set a new day. An expired waiver stops the release.
 //
 //   npm run audit:gate
 import { spawnSync } from "node:child_process";

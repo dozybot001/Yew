@@ -1,7 +1,6 @@
-// The outer guard (guard.ts; the security group, 11-18): commands that do not run in the system
-// sandbox are still kept out of Yew's data folder, the Mac app's web storage and the folders the
-// person keeps from sessions. The normal flow only; whether it can be got around is the security
-// group's to test.
+// The outer guard (guard.ts): commands that do not run in the system sandbox are still kept out of
+// Yew's data folder, the Mac app's web storage and the folders the person keeps from sessions. The
+// normal flow only; whether it can be got around is tested separately.
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";

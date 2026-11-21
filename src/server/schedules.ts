@@ -112,7 +112,7 @@ function nextAfter(cron: string, now: number): number | null {
 }
 
 /**
- * Scheduled tasks in the database (M3 plan, section 9). Every change goes out as a global event after its
+ * Scheduled tasks in the database. Every change goes out as a global event after its
  * transaction commits, so every open page sees it.
  */
 export class ScheduleBook {
@@ -382,7 +382,7 @@ const clip = (text: string, max: number) =>
 const OPEN = new Set(["queued", "held", "delivered"]);
 
 /**
- * Runs scheduled tasks on time (blueprint 6.5): a run is a letter to the task's session in the task's
+ * Runs scheduled tasks on time: a run is a letter to the task's session in the task's
  * name, which the session reads in a turn of its own. Runs missed while Yew was not running or the
  * computer slept run once afterwards or are skipped, as the task says; a run whose last one is not
  * finished is skipped. The service keeps time; `yew schedule run` uses the same `run`.

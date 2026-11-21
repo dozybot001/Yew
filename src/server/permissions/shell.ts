@@ -6,7 +6,7 @@ import type { GuardMode } from "../guard.ts";
 /**
  * A small, conservative shell parser for permission checks. It does not try to understand every
  * shell feature: anything it cannot follow is reported as not understood, and the caller then asks
- * the person instead of deciding (M1 plan, section 8).
+ * the person instead of deciding.
  */
 
 export interface Redirect {
@@ -403,7 +403,7 @@ function ghApiReads(args: string[]): boolean {
 	return method === null ? !sends : method.toUpperCase() === "GET";
 }
 
-/** Why an operation must be confirmed every time (spec 21.2), or null. Checked on unwrapped commands. */
+/** Why an operation must be confirmed every time, or null. Checked on unwrapped commands. */
 export function mustConfirmReason(argv: string[]): ConfirmReason | null {
 	const name = basename(argv[0] ?? "");
 	const args = argv.slice(1);

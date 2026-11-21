@@ -110,12 +110,12 @@ fun Screen(
 }
 
 /**
- * The full lockup (spec 1.2, 1.6) for the first screen and the About page: the mark and the wordmark
- * with a smaller "Harness" after it (the product's name is Yew Harness, blueprint section 12),
- * measured from the wordmark size [size] (S; the wordmark's drawable is one em, so S high). The mark
- * fills an S square .3S before the wordmark, centred on it; "Harness" is .64S type .25S after the
- * wordmark, on its baseline (.16S above the bottom of its box). No Tenon mark: that appears only with
- * "Tenon AI", where the publisher is named (spec 1.3–1.4).
+ * The full lockup for the first screen and the About page: the mark and the wordmark with a smaller
+ * "Harness" after it (the product's name is Yew Harness), measured from the wordmark size [size]
+ * (S; the wordmark's drawable is one em, so S high). The mark fills an S square .3S before the
+ * wordmark, centred on it; "Harness" is .64S type .25S after the wordmark, on its baseline (.16S
+ * above the bottom of its box). No Tenon mark: that appears only with "Tenon AI", where the
+ * publisher is named.
  */
 @Composable
 fun Lockup(size: Dp = 40.dp) {
@@ -172,7 +172,7 @@ enum class ButtonKind { Primary, Secondary, Destructive }
 
 /**
  * Yew's buttons, as on the computer: the main one on a soft grey fill, the others outlined. At least
- * 48dp high (spec 5.8); while [busy] it shows that and takes no second tap (spec 4.7–4.8).
+ * 48dp high; while [busy] it shows that and takes no second tap.
  */
 @Composable
 fun CapsuleButton(
@@ -330,7 +330,7 @@ fun OptionRow(option: Choice, recommended: Boolean, selected: Boolean, multiple:
     }
 }
 
-/** A text field that grows with its text (spec section 8), on Yew's grey fill. */
+/** A text field that grows with its text, on Yew's grey fill. */
 @Composable
 fun GrowingField(
     value: String,

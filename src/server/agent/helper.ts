@@ -1,5 +1,5 @@
 /**
- * Helpers (blueprint 6.11, item 43): a session hands a self-contained task to a short loop of its own
+ * Helpers: a session hands a self-contained task to a short loop of its own
  * model with its own context, and gets back only the answer. A helper looks and does not touch: it may
  * read files, search, fetch pages and run commands that change nothing. A call that would change
  * something, or that would need the person's approval, is refused, since a helper asks nobody. So

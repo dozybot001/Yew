@@ -37,7 +37,7 @@ export interface Settings {
 	workspaces: Workspace[];
 	mainSessionId: string | null;
 	decisionLog: string | null;
-	/** Phones reach this Mac through the relay (M3 plan, section 6). */
+	/** Phones reach this Mac through the relay. */
 	remote: { enabled: boolean; relayUrl: string };
 	/** The most all sessions together may spend in a day, in US dollars. */
 	dailyBudget: number | null;
@@ -49,11 +49,11 @@ export interface Settings {
 	defaultWorkspaceId: string | null;
 	/** Which kinds of events notify the phone. */
 	notify: Record<NotifyKind, boolean>;
-	/** Yew in the interface: floating over the window, the opening and the rest (blueprint, section 12). */
+	/** Yew in the interface: floating over the window, the opening and the rest. */
 	mascot: boolean;
-	/** The opening leaves by itself once started, or waits for a click (blueprint 6.10, item 45). */
+	/** The opening leaves by itself once started, or waits for a click. */
 	opening: "auto" | "click";
-	/** Whether commands in the system sandbox may use SSH and credential files (blueprint, section 11). */
+	/** Whether commands in the system sandbox may use SSH and credential files. */
 	sandboxCredentials: boolean;
 	/** Folders sessions may not read: file tools refuse them, the system sandbox closes them. */
 	hiddenFolders: string[];
@@ -63,7 +63,7 @@ export interface Settings {
 	reviewTraceMain: boolean;
 	/** The built-in browser drives the person's own Chrome, or a separate window of its own. */
 	browser: "own" | "separate";
-	/** Yew Harness asks npm for a new version once a day (blueprint, "版本与更新"). */
+	/** Yew Harness asks npm for a new version once a day. */
 	updateCheck: boolean;
 	/** Default program used when clicking a local file link in replies. */
 	fileOpener: FileOpener;
@@ -98,7 +98,7 @@ export interface McpServerView {
 	state: "connecting" | "ready" | "error" | "disabled" | "sign-in";
 	error: string | null;
 	tools: string[];
-	/** Yew holds a sign-in for it (blueprint 6.11, item 40). */
+	/** Yew holds a sign-in for it. */
 	signedIn: boolean;
 	/** The site the browser goes to to sign in, once Yew has found it. */
 	signInAt?: string;
@@ -163,7 +163,7 @@ export interface PhonesState {
 	} | null;
 }
 
-/** Everything waiting for the person, across sessions (M2 plan, section 5). */
+/** Everything waiting for the person, across sessions. */
 export interface CenterState {
 	approvals: Record<string, Approval>;
 	cards: Record<string, Card>;
@@ -262,7 +262,7 @@ export interface DataCleanup {
 	skippedFiles: number;
 }
 
-/** The settings window's sections (blueprint 6.10, item 45). */
+/** The settings window's sections. */
 export type SettingsDialogName =
 	| "personal"
 	| "providers"
@@ -283,7 +283,7 @@ export interface AppState {
 	health: {
 		version: string;
 		build: string | null;
-		/** The system sandbox sessions' commands run in; "none" while it is off (blueprint, section 11). */
+		/** The system sandbox sessions' commands run in; "none" while it is off. */
 		sandbox?: "macos" | "linux" | "none";
 	} | null;
 	settings: Settings | null;
@@ -327,8 +327,7 @@ export interface AppState {
 	artifacts: Artifact[] | null;
 	artifactId: string | null;
 	/**
-	 * The sessions list shows one team's sessions, or with NO_TEAM those in no team; null shows all
-	 * (blueprint section 8).
+	 * The sessions list shows one team's sessions, or with NO_TEAM those in no team; null shows all.
 	 */
 	teamFilter: string | null;
 	/**

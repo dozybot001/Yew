@@ -193,7 +193,7 @@ struct ChartView: View {
 }
 
 /// An HTML artifact, shut in: no address of its own, and a policy that stops every request, so its
-/// scripts can run but cannot reach Yew, the Mac or the network (blueprint 6.6, item 19).
+/// scripts can run but cannot reach Yew, the Mac or the network.
 struct SealedPage: UIViewRepresentable {
 	let html: String
 

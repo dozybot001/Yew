@@ -159,7 +159,7 @@ export interface CustomProviderConfig {
 	}[];
 }
 
-/** Providers registered in mainland China; the default comes from this list (spec 21.6). */
+/** Providers registered in mainland China; the default comes from this list. */
 const CN_PROVIDERS = new Set([
 	"deepseek",
 	"moonshotai-cn",

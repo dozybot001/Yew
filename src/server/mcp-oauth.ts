@@ -1,5 +1,5 @@
 /**
- * Signing in to MCP servers in the browser (blueprint 6.11, item 40), as the MCP authorization spec
+ * Signing in to MCP servers in the browser, as the MCP authorization spec
  * describes it with OAuth 2.1. Yew finds the server's authorization server (RFC 9728 and RFC 8414),
  * registers itself as a client where the server allows that (RFC 7591), or uses the client the person
  * made for it (Google's servers), and sends the person's browser to sign in with PKCE and a state.

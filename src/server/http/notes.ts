@@ -10,7 +10,7 @@ const MAX_QUEUE = 200;
 
 /**
  * Notifications for phones that keep their own connection instead of a push service (the Android
- * app; blueprint 0.34). What the notifier decides to tell the phone is written to every paired
+ * app). What the notifier decides to tell the phone is written to every paired
  * phone that has this stream open and takes notifications, as plain JSON: the channel it travels
  * in is already end-to-end encrypted. A phone that was away reads the approval center when it is
  * back; nothing is kept for it here.

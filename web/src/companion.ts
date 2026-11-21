@@ -1,10 +1,10 @@
 /**
- * What the floating Yew says (blueprint, section 12): the one thing that matters most right now, in
+ * What the floating Yew says: the one thing that matters most right now, in
  * this order: things waiting for the person, a session that failed, a session that finished and waits
  * for review, sessions at work, a new version; otherwise that nothing waits. In the first minute after
  * the interface opens she greets first. Her pose follows what she says, taken from a list for each
  * thing she can say: holding a card or asking you to look when a permission waits, and keeping watch
- * when nothing does but scheduled tasks are on (blueprint, section 11). She takes another pose from
+ * when nothing does but scheduled tasks are on. She takes another pose from
  * the list every minute, and at once when clicked.
  * She can be dragged anywhere in the window; where she stands, and whether a window has room for her,
  * is worked out at the end of this file.
@@ -17,7 +17,7 @@ export type Greeting = "morning" | "afternoon" | "evening";
 export type CompanionLine =
 	| { kind: "waiting"; count: number }
 	| { kind: "error" | "review" | "working"; count: number; name: string | null }
-	/** A new version to install, or one installed that a restart takes up (blueprint, "版本与更新"). */
+	/** A new version to install, or one installed that a restart takes up. */
 	| { kind: "update" | "restart"; version: string }
 	| { kind: "clear"; night: boolean };
 
@@ -143,7 +143,7 @@ export function companionMood(input: {
 	hour: number;
 	/** When Yew opened in this tab. */
 	openedAt: number;
-	/** A version installed but not running yet, or a newer one on npm (blueprint, "版本与更新"). */
+	/** A version installed but not running yet, or a newer one on npm. */
 	update?: { kind: "update" | "restart"; version: string } | null;
 	/** How many times she has been clicked; each click moves her on to another pose. */
 	turn?: number;

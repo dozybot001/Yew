@@ -255,8 +255,7 @@ export function SidebarToggle({ className = "" }: { className?: string }) {
 
 /**
  * The header names the session; its actions live in the composer and in the sidebar's row menu. While
- * the session works or waits for the person, the time it has taken sits in the middle (blueprint 6.9,
- * item 27).
+ * the session works or waits for the person, the time it has taken sits in the middle.
  */
 function SessionHeader({
 	session,
@@ -456,7 +455,7 @@ function ContextPie({ session, total }: { session: Session; total: number }) {
 	);
 }
 
-/** Grows with its content; `field-sizing: content` where supported, a height update otherwise (spec 8). */
+/** Grows with its content; `field-sizing: content` where supported, a height update otherwise. */
 function useAutoGrow(value: string) {
 	const ref = useRef<HTMLTextAreaElement>(null);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: the height is measured again whenever the text changes
@@ -996,7 +995,7 @@ function nameFrom(text: string): string {
 }
 
 /**
- * No session open: one composer in the middle of the page (spec 12.3). You pick a folder
+ * No session open: one composer in the middle of the page. You pick a folder
  * and a model in its bar and start by sending; the three templates under it add a role.
  */
 function HomeView() {

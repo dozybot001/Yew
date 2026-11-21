@@ -5,7 +5,7 @@ import { optIntQuery } from "./input.ts";
 import type { AppEnv } from "./problem.ts";
 
 /**
- * What an HTML artifact is served with (blueprint 6.6, item 19). `sandbox` without
+ * What an HTML artifact is served with. `sandbox` without
  * allow-same-origin makes the page its own origin: it has no cookie for Yew and cannot read Yew's
  * pages. `default-src 'none'` stops every request, so it cannot reach Yew's interface or anything
  * else; only its own inline scripts and styles run.

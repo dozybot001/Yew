@@ -15,7 +15,10 @@ import { SearchAccess } from "../src/server/tools/web-search.ts";
 import { DEFAULT_RELAY_URL } from "../src/shared/types.ts";
 import { newStore, sessionInput, tempDir } from "./helpers/store.ts";
 
-/** The settings added in blueprint 6.10: their routes, their validation and who may call them. */
+/**
+ * Defaults for new sessions, search services, MCP servers, starting at login and notifications in
+ * the settings: their routes, their validation and who may call them.
+ */
 
 // biome-ignore lint/suspicious/noExplicitAny: test assertions read arbitrary JSON
 type Json = any;

@@ -9,7 +9,7 @@ import type { AppEnv } from "./problem.ts";
 /** How far back the sessions map looks for letters. */
 const MAP_WINDOW_MS = 24 * 3600 * 1000;
 
-/** The approval center, decisions and letters (M2 plan, section 8). */
+/** The approval center, decisions and letters. */
 export function mailRoutes(post: PostOffice): Hono<AppEnv> {
 	const app = new Hono<AppEnv>();
 	const once = idempotent(post.mail.db);

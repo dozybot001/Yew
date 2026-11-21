@@ -63,7 +63,7 @@ describe("api: sessions", () => {
 			await call("PATCH", path, { options: { permissionMode: "review" } })
 		).json();
 		assert.equal(review.options.permissionMode, "review");
-		// The modes before 1.7 are gone (blueprint 6.1, item 6).
+		// The modes before 1.7 are gone.
 		const old = await call("PATCH", path, { options: { permissionMode: "manual" } });
 		assert.equal(old.status, 400);
 		const wrong = await call("PATCH", path, { options: { permissionMode: "never" } });
@@ -230,12 +230,12 @@ describe("api: groups, settings, search", () => {
 		const hidden = await (await call("PATCH", "/api/settings", { mascot: false })).json();
 		assert.equal(hidden.mascot, false);
 		assert.equal((await call("PATCH", "/api/settings", { mascot: "no" })).status, 400);
-		// How the opening leaves (blueprint 6.10, item 45): by itself by default, or on a click.
+		// How the opening leaves: by itself by default, or on a click.
 		assert.equal(saved.opening, "auto");
 		const click = await (await call("PATCH", "/api/settings", { opening: "click" })).json();
 		assert.equal(click.opening, "click");
 		assert.equal((await call("PATCH", "/api/settings", { opening: "tap" })).status, 400);
-		// Which browser the built-in browser drives (blueprint 6.10, item 38): the person's own Chrome.
+		// Which browser the built-in browser drives: the person's own Chrome.
 		assert.equal(saved.browser, "own");
 		const separate = await (await call("PATCH", "/api/settings", { browser: "separate" })).json();
 		assert.equal(separate.browser, "separate");

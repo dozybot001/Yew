@@ -21,7 +21,7 @@ const value = (key: string, language: string) =>
 	catalog.strings[key]?.localizations?.[language]?.stringUnit?.value;
 
 describe("the iPhone app", () => {
-	test("its version is the one in package.json (spec 17.5)", () => {
+	test("its version is the one in package.json", () => {
 		const { version } = JSON.parse(read("package.json")) as { version: string };
 		const versions = [
 			...read("ios/Yew.xcodeproj/project.pbxproj").matchAll(/MARKETING_VERSION = ([^;]+);/g),

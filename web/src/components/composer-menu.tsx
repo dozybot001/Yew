@@ -105,7 +105,7 @@ export interface ComposerMenuController {
 
 /**
  * Unified `@` (sessions + workspace/extraDir files) and `/` (commands + enabled skills) autocomplete
- * for the composer (blueprint 6.12, item 50).
+ * for the composer.
  */
 export function useComposerMenu(options: UseComposerMenuOptions): ComposerMenuController {
 	const {

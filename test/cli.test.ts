@@ -32,7 +32,7 @@ describe("yew cli", () => {
 		for (const argv of [[], ["--help"], ["-h"]]) {
 			const { io, stdout } = fakeIo();
 			assert.equal(await run(argv, io), 0);
-			// The one-line definition, as everywhere else (spec 1.8).
+			// The one-line definition, as everywhere else.
 			assert.match(stdout.text(), /^Yew Harness \S+\nAn AI-native multi-agent workbench\.\n/);
 			assert.match(stdout.text(), /Usage: yew <command>/);
 		}

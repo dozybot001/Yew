@@ -6,8 +6,8 @@ import { conflict, invalid } from "./errors.ts";
 import type { Store } from "./store.ts";
 
 /**
- * Versions and updates (blueprint, "v1 之后：版本与更新"): what runs, what is installed on this
- * computer, and the newest version on npm.
+ * Versions and updates: what runs, what is installed on this computer, and the newest version on
+ * npm.
  *
  * Once a day, unless turned off, Yew Harness asks the npm registry the person's npm uses for the
  * newest version of the package: nothing but that request, with `yew/<version>` as the user agent.

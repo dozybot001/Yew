@@ -40,9 +40,9 @@ function Step({ done, text }: { done: boolean; text: string }) {
 }
 
 /**
- * The opening (blueprint, section 12): Yew's mark draws itself, Yew waves, and the real steps of the
+ * The opening: Yew's mark draws itself, Yew waves, and the real steps of the
  * start are ticked off as they finish. It leaves by itself once they are done, or, with "click to
- * enter" chosen in Personalization (blueprint 6.10, item 45), waits there for a click or a key. A
+ * enter" chosen in Personalization, waits there for a click or a key. A
  * click or any key skips it at any time; it never plays when the system asks for less motion or Yew is
  * hidden. Decoration only: screen readers skip it, and it takes no focus.
  */

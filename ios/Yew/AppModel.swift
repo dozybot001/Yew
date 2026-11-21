@@ -231,7 +231,7 @@ final class AppModel {
 		if paired, let center { await PushCenter.show(waiting: center.count) }
 	}
 
-	// MARK: Notifications (M3 plan, section 8)
+	// MARK: Notifications
 
 	/// Paired with a Mac through the relay: not the demo, and not Debug's direct connection.
 	private var paired: Bool { !isDemo && channel != nil }

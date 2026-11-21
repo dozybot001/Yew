@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Publishes Yew's relay (M3 plan, section 5). The exact clean main commit is pushed to Gitee
-# first; the server then fetches that commit and builds the release itself. Nothing is uploaded
-# from this Mac. Run it as: npm run relay:publish
+# Publishes Yew's relay. The exact clean main commit is pushed to Gitee first; the server then
+# fetches that commit and builds the release itself. Nothing is uploaded from this Mac. Run it as:
+# npm run relay:publish
 set -Eeuo pipefail
 cd "$(dirname "$0")/../.."
 [[ "$(git symbolic-ref --short HEAD)" == main ]] || { echo 'Publish from main.' >&2; exit 1; }

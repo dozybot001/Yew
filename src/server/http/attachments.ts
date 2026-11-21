@@ -19,7 +19,7 @@ function contentDisposition(inline: boolean, filename: string): string {
 }
 
 /**
- * Uploading and reading message attachments (blueprint 6.12, item 46).
+ * Uploading and reading message attachments.
  * - `POST /api/sessions/:id/attachments` accepts `multipart/form-data` (browser/Mac app) or
  *   `application/json` `{ name, mimeType?, data (base64) }` (paired phones over the Noise channel).
  * - `GET /api/attachments/:id` serves raw bytes (`?thumb=1` for image previews, `?download=1` to

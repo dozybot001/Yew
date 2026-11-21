@@ -54,7 +54,7 @@ export function titleFor(status: number): string {
 	return TITLES[status] ?? "Error";
 }
 
-/** Gives every request an ID, returned in `X-Request-Id` and in problem bodies (spec 12.2, 20.1). */
+/** Gives every request an ID, returned in `X-Request-Id` and in problem bodies. */
 export const requestId = (): MiddlewareHandler<AppEnv> => async (c, next) => {
 	const id = randomUUID();
 	c.set("requestId", id);

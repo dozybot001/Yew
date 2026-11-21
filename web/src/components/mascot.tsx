@@ -2,7 +2,7 @@ import type { MascotPose } from "../poses.ts";
 import { useAppState } from "../state.ts";
 
 /**
- * Yew herself (blueprint, section 12): the red-haired girl with a yew-berry hair ornament, in the
+ * Yew herself: the red-haired girl with a yew-berry hair ornament, in the
  * poses listed in `poses.ts`. She only decorates: screen readers skip her and she never covers a
  * control. With 「界面里的 Yew」 off in the settings she is left out everywhere this draws her.
  */

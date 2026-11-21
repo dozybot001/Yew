@@ -20,7 +20,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Keeps the app's connection to the relay while the app is not on screen, so the computer can tell
- * this phone when something needs the person (blueprint section 13: no push service is used).
+ * this phone when something needs the person (no push service is used).
  * Android requires a standing notification for it, which says whether the computer is reached.
  *
  * By default the connection lives only while Yew is open: closing Yew (swiping it away) ends it and

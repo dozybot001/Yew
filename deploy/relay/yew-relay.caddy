@@ -1,7 +1,7 @@
 relay.tenonai.cn {
-	# Access log snippet from the root Caddyfile (product standard 15.5.3): time, client IP, method,
-	# host, path and status. The relay's paths carry no token: /phone/<id> names a Mac by the hash
-	# of its public key, and everything after the WebSocket upgrade is end-to-end encrypted.
+	# Access log snippet from the root Caddyfile: time, client IP, method, host, path and status. The
+	# relay's paths carry no token: /phone/<id> names a Mac by the hash of its public key, and
+	# everything after the WebSocket upgrade is end-to-end encrypted.
 	import access_log
 	header {
 		Strict-Transport-Security "max-age=31536000; includeSubDomains"

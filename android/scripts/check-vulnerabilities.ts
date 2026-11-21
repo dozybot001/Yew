@@ -1,7 +1,6 @@
 // Checks the libraries that go into the released app against the OSV vulnerability database
 // (osv.dev): the release runtime classpath in app/gradle.lockfile, by name and version. Only library
-// names and versions are sent. Run before every release (product standard 15.1.2); exits with 1 if
-// anything is reported.
+// names and versions are sent. Run before every release; exits with 1 if anything is reported.
 //   node android/scripts/check-vulnerabilities.ts
 import { readFileSync } from "node:fs";
 

@@ -25,7 +25,7 @@ export const EXIT_USAGE = 2;
 /** Thrown for bad arguments; the runner prints it with a pointer to --help and exits with 2. */
 export class UsageError extends Error {}
 
-/** clig.dev and spec 20.5: no ANSI colors when NO_COLOR is non-empty or the stream is not a terminal. */
+/** clig.dev: no ANSI colors when NO_COLOR is non-empty or the stream is not a terminal. */
 export function wantsColor(stream: OutStream, env: CliIo["env"]): boolean {
 	if (env.NO_COLOR) return false;
 	if (env.TERM === "dumb") return false;

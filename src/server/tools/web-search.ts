@@ -2,10 +2,10 @@ import type { KeyStore } from "../keys.ts";
 import { errorResult, int, str, type ToolDefinition, type ToolResult, text } from "./types.ts";
 
 /**
- * Web search (M4 plan, section 3; blueprint 6.10, item 30). It is built in: with the DeepSeek key
+ * Web search. It is built in: with the DeepSeek key
  * the person saved for the model, DeepSeek's own search answers (its Search API), with nothing more
  * to set up. A search service the person holds a key for comes first: Bocha, run by a Chinese
- * company, then Tavily and Brave, run abroad and the person's own choice (spec 21.6). Keys are in
+ * company, then Tavily and Brave, run abroad and the person's own choice. Keys are in
  * the system keychain; the request carries the query and nothing of the conversation.
  */
 

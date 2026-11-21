@@ -20,7 +20,7 @@ sha, image, bundle_path = sys.argv[1], sys.argv[2], sys.argv[3]
 assert re.fullmatch("[0-9a-f]{40}", sha)
 
 PORT = 7290
-UID = 70980  # registered in the product standard, appendix A.3
+UID = 70980  # no account on the host has it, and no other container on the server uses it
 HOST = "relay.tenonai.cn"
 base = pathlib.Path("/opt/yew-relay")
 config = base / "config"
@@ -201,8 +201,8 @@ finally:
     (base / "candidate-Caddyfile").unlink(missing_ok=True)
     lock.rmdir()
 
-# Housekeeping after an accepted release never fails it (product standard 15.2.3): keep the
-# current release, the previous one and the three newest; remove the containers of the rest.
+# Housekeeping after an accepted release never fails it: keep the current release, the previous
+# one and the three newest; remove the containers of the rest.
 try:
     keep = {sha, previous.get("commit")}
     releases = sorted((base / "releases").iterdir(), key=lambda p: p.stat().st_mtime, reverse=True)

@@ -4,7 +4,7 @@ import { basename, dirname, join } from "node:path";
 import { findRepositories } from "./sandbox.ts";
 
 /**
- * The outer guard (blueprint, section 11). A session's command that does not run in the system
+ * The outer guard. A session's command that does not run in the system
  * sandbox (one the person let run outside it, or every command where the sandbox is off) still runs
  * in a layer that keeps it from answering a decision in the person's place, even in skip mode, in
  * ways Yew cannot see in the command's text:
@@ -29,8 +29,8 @@ import { findRepositories } from "./sandbox.ts";
 export type GuardKind = "macos" | "linux" | "none";
 
 /**
- * Guard relaxation mode for the two operations that need one (blueprint, section 11); the default
- * and automatic modes ask the person before each, skip mode does not:
+ * Guard relaxation mode for the two operations that need one; the default and automatic modes ask
+ * the person before each, skip mode does not:
  * - "default": full outer guard (blocks Yew data, WebKit storage, startup items, git hooks/config, lsopen, appleevent-send).
  * - "git-setup": unlocks `.git/config` ONLY in the repositories of the folders the session may write (Core Guard stays locked: Yew data, WebKit, startup items,
  *   `~/.gitconfig`, `~/.ssh/config`, `.git/hooks`, `lsopen`, `appleevent-send`). Paired with post-run `.git/config` audit.

@@ -56,8 +56,8 @@ const serveFile = (home: string) => join(home, "serve.json");
 const PROVIDER_SITES_MS = 60_000;
 
 /**
- * The sites of the model providers that have a key, which commands in the sandbox may reach
- * (blueprint, section 11). Providers on this computer are left out: local ports stay closed.
+ * The sites of the model providers that have a key, which commands in the sandbox may reach.
+ * Providers on this computer are left out: local ports stay closed.
  */
 async function modelSites(gateway: {
 	providers(): { id: string; baseUrl: string }[];
@@ -173,7 +173,7 @@ export function serveCommand(): Command {
 			const runtime = openRuntime({ env: io.env });
 			const { store, bus, gateway, home } = runtime;
 			// Sessions' commands and the MCP servers people add go into the system sandbox, set up before
-			// anything can start one (blueprint, section 11): on macOS by default, on Linux once tested.
+			// anything can start one: on macOS by default, on Linux once tested.
 			const sandbox = await import("../server/sandbox.ts");
 			let providerSites: string[] = [];
 			const refreshProviderSites = async () => {
@@ -238,7 +238,7 @@ export function serveCommand(): Command {
 			// Answers handed to a waiting call whose result was never stored come back as letters.
 			new MailStore(store).requeueHandedOff();
 			const log = (line: string) => io.stderr.write(`${line}\n`);
-			// Tools beyond the built-in ones: web search when a search service has a key (M4 plan).
+			// Tools beyond the built-in ones: web search when a search service has a key.
 			const { ALL_TOOLS } = await import("../server/tools/registry.ts");
 			const { SearchAccess, webSearchTool } = await import("../server/tools/web-search.ts");
 			const search = new SearchAccess(runtime.keys);
@@ -315,7 +315,7 @@ export function serveCommand(): Command {
 				send: (note, mode, id) => remote.push(note, mode, id) + notes.send(note),
 			});
 			const { systemControl } = await import("./system.ts");
-			// Versions and updates (blueprint, "版本与更新"): a restart replaces this process.
+			// Versions and updates: a restart replaces this process.
 			const { Updates } = await import("../server/updates.ts");
 			const { startedByService } = await import("./service.ts");
 			const { appInstalled, realAppHost } = await import("./app.ts");
@@ -349,7 +349,7 @@ export function serveCommand(): Command {
 					});
 				},
 			});
-			// Scheduled tasks run from the service, whether or not a page is open (blueprint 6.5).
+			// Scheduled tasks run from the service, whether or not a page is open.
 			const scheduler = new Scheduler(store, agents.post, agents.schedules, log);
 			const app = createApp({
 				store,

@@ -27,7 +27,7 @@ function questionAnswer(value: unknown): QuestionAnswer {
 /** Sending messages, stopping, continuing, and answering approvals and questions. */
 /**
  * A decision made on a paired phone. "Always allow" for a tool that acts with the person's sign-ins
- * is only given where its scope is said (spec 21.2): older phone builds that do not send
+ * is only given where its scope is said: older phone builds that do not send
  * `confirmedWarning: true` are safely downgraded to `allow_once`; updated builds that display the
  * warning and require explicit confirmation pass `confirmedWarning: true`.
  */

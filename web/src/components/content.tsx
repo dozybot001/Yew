@@ -123,7 +123,7 @@ const baseComponents: Components = {
 };
 
 /**
- * Keeps a scroll area at its bottom while content arrives, until the person scrolls up (spec 9.8).
+ * Keeps a scroll area at its bottom while content arrives, until the person scrolls up.
  * Scrolling up with the wheel, a finger or the keyboard stops following at once, before the next update
  * could pull the view back; so does moving the scroll bar up. Reaching the bottom again follows again.
  * A wheel or finger over an inner box that scrolls on its own does not count: it scrolls that box.
@@ -196,10 +196,10 @@ export function useStickToBottom(
 }
 
 /**
- * A block with a fixed maximum height that scrolls inside instead of growing the page (spec 9.5–9.7):
+ * A block with a fixed maximum height that scrolls inside instead of growing the page:
  * thinking, long messages, letters, code and tool output. The limit is invisible until it is reached;
  * then the block fades out at the bottom while more lies below, and it can take focus so keyboard and
- * screen-reader users can scroll it (spec 18.6). With `follow`, it stays at its bottom while the text
+ * screen-reader users can scroll it. With `follow`, it stays at its bottom while the text
  * streams in, until the person scrolls up inside it.
  */
 export function Capped({
@@ -264,7 +264,7 @@ export function Capped({
 			// A named group, not a region: many blocks would otherwise flood the landmark list.
 			role={scrollable ? "group" : undefined}
 			aria-label={scrollable ? label : undefined}
-			// A scroll area without focusable content must be focusable (spec 18.6).
+			// A scroll area without focusable content must be focusable.
 			tabIndex={scrollable ? 0 : undefined}
 		>
 			{children}
@@ -295,7 +295,7 @@ export function ScrollBlock({
  * Markdown from the model or another session. Code blocks keep a fixed height and scroll inside; in a
  * reply that is still streaming they follow the newest line.
  */
-/** Letters are plain text first (blueprint 7.1): their single line breaks stay line breaks. */
+/** Letters are plain text first: their single line breaks stay line breaks. */
 const PLAIN_PLUGINS = [remarkGfm];
 const LETTER_PLUGINS = [remarkGfm, remarkBreaks];
 

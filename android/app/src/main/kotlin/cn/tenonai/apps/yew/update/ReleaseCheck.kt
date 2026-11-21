@@ -13,10 +13,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
- * New versions of the app (blueprint, "版本与更新"): once a day, unless turned off,
- * Gitee, where the app is published, is asked for its newest release; only that request, with the
- * app's version as the user agent. The About page then links to the release page; nothing is
- * downloaded or installed from here.
+ * New versions of the app: once a day, unless turned off, Gitee, where the app is published, is
+ * asked for its newest release; only that request, with the app's version as the user agent. The
+ * About page then links to the release page; nothing is downloaded or installed from here.
  */
 class ReleaseCheck(context: Context) {
     private val prefs = context.getSharedPreferences("updates", Context.MODE_PRIVATE)

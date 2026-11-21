@@ -34,7 +34,7 @@ export function isInside(path: string, folder: string): boolean {
 	return rel !== "" && !rel.startsWith("..") && !isAbsolute(rel);
 }
 
-/** Places that hold credentials. Sessions never read or write them through file tools (M1 plan, section 7). */
+/** Places that hold credentials. Sessions never read or write them through file tools. */
 export function secretLocations(yewHome: string): string[] {
 	const home = homedir();
 	return [

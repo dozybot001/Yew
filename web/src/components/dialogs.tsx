@@ -98,7 +98,7 @@ export function AllowedList({
 
 /**
  * Name and role first, since they define the session; then the folder, the model, and kind and group
- * side by side. Nothing is folded away, and the dialog fits without scrolling (spec 9.2).
+ * side by side. Nothing is folded away, and the dialog fits without scrolling.
  */
 export function NewSessionDialog({
 	onClose,

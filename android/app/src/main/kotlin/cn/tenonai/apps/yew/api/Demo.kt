@@ -19,8 +19,8 @@ import kotlinx.serialization.json.putJsonArray
 import kotlinx.serialization.json.putJsonObject
 
 /**
- * Sample data for a first look without a computer (M3 plan, section 7): the requests the app sends
- * to Yew, answered here in the same shapes. What you do in the demo changes only the demo.
+ * Sample data for a first look without a computer: the requests the app sends to Yew, answered here
+ * in the same shapes. What you do in the demo changes only the demo.
  */
 class DemoTransport(text: (Int) -> String) : Transport {
     private val server = DemoServer(text)

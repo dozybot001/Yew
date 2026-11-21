@@ -31,7 +31,7 @@
 - 许可证带附加条款的项目不读代码，只看公开的说明文档。
 - Yew Harness 接 Anthropic 只用 API Key，不做账号登录，不发送其他客户端的标识。
 
-## 四、M1：Agent 循环与工具
+## 四、Agent 循环与工具
 
 ### 4.1 Agent 循环
 
@@ -68,7 +68,7 @@
 
 - **OpenCode `packages/core/src/permission.ts`、`shell/parse.ts`，回复类型在 `packages/schema/src/permission.ts`**（MIT）：
   - 规则由动作、资源、效果组成，用通配匹配；回复分一次、始终、拒绝，拒绝可附理由。
-  - 有一套无人值守规则，把询问一律判成拒绝，M3 的定时任务用得上。
+  - 有一套无人值守规则，把询问一律判成拒绝，定时任务用得上。
   - Shell 命令按一张参数层级表（ARITY）决定「始终允许」记到哪一级前缀，例如 `git status *`、`npm run build *`。
 - **Gemini CLI `packages/core/src/sandbox/utils/commandSafety.ts`、`policy/policy-engine.ts`**（Apache-2.0）：
   - 用 TypeScript 写的只读命令判定。只读名单排除了 `find -exec`、`find -delete`、`rg --pre`、只带 `-n` 以外参数的 sed、`base64 -o`、带 `-c` 的 git。
@@ -83,7 +83,7 @@
 - **pi `packages/coding-agent/src/core/compaction/compaction.ts`、`docs/compaction.md`**（MIT）：保留最近约 2 万 token，不在工具调用和它的结果之间切；喂给摘要的工具结果截到 2000 字符；服务商报上下文超长时，压缩后重试一次；压缩记录标出保留部分从哪一条开始。 Yew Harness 的切点是任意一条消息或模型的一步的开头（2026-11-16 起；原先只能切在用户消息处，一条消息后连做几百步时切不了），代码在 `src/server/agent/compaction.ts`。切在一轮中间时，被移走部分里用户最近的那条消息原文存进压缩记录，随摘要一起发给模型（摘要会丢掉原话里的约束；用 `scripts/soak.ts` 对真实模型跑长任务时发现的）。
 - **OpenCode `session/compaction.ts`**（只看思路）：离阈值还差一段时，在后台预先生成摘要，到点直接换上，不让用户等。
 - **Goose `crates/goose/src/context_mgmt/mod.rs`**（只看思路）：比例阈值（默认 80%）之外再设 token 上限，先到哪个算哪个。
-- 各家的阈值：Codex 90%，Kimi Code 85% 且另外留出 5 万，Gemini CLI 50%，Goose 80%。DeepSeek V4 Pro 的窗口是 100 万，只按 80% 要到 80 万 token 才压缩，单次请求很贵，所以 Yew Harness 同时设 token 上限（M1 计划第六节）。
+- 各家的阈值：Codex 90%，Kimi Code 85% 且另外留出 5 万，Gemini CLI 50%，Goose 80%。DeepSeek V4 Pro 的窗口是 100 万，只按 80% 要到 80 万 token 才压缩，单次请求很贵，所以 Yew Harness 同时设 token 上限。
 
 ### 4.5 说明文件
 
@@ -98,7 +98,7 @@
 - **pi-ai `packages/ai/src/providers/faux.ts`**：用 `setResponses` 排好回应。回应可以写成函数，拿到发给模型的上下文，用来断言循环发了什么；`tokensPerSecond` 模拟流式输出。
 - **Gemini CLI `core/fakeContentGenerator.ts`**：把真实响应录成文件再回放，适合给真实服务商做回归冒烟（录制时去掉密钥）。
 
-## 五、M1：本地服务与界面
+## 五、本地服务与界面
 
 ### 5.1 事件流
 
@@ -121,7 +121,7 @@
 - **OpenCode `packages/server/src/auth.ts`、`middleware/authorization.ts`、`request-site.ts`、`pairing.ts`**（MIT）：
   - 会话令牌用 HMAC 签名，换签名密钥即全部失效。
   - Cookie 名带端口，且只接受同源请求：同一主机的不同端口算同站，SameSite 分不开。
-  - 已登录的一端签发 5 分钟有效的一次性码，另一台设备用它兑换 Cookie，M2 配对用得上。
+  - 已登录的一端签发 5 分钟有效的一次性码，另一台设备用它兑换 Cookie，手机配对用得上。
 - **反面教材**：OpenCode 的安全公告 CVE-2026-22812、CVE-2026-22813、GHSA-632h-h47v-g4x4。问题依次是：无认证且 `CORS *`；Markdown 插入原始 HTML、没有 CSP，`?url=` 能换掉服务器地址；`text/plain` 简单请求绕过预检，浏览器缓存的 Basic 凭据随跨站表单发出。
 - Hono 内置的 `csrf` 中间件只查表单类请求，Origin 和 `Sec-Fetch-Site` 任一通过就放行，挡不住 DNS 重绑定。Host 白名单要自己写。
 
@@ -139,7 +139,7 @@
 
 assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照旧自绘。
 
-## 六、M2：手机
+## 六、手机
 
 - **OpenClaw `src/gateway/approval-web-push.ts`、`ui/public/sw.js`、`ui/src/app/web-push.ts`**（MIT）：
   - 审批推送的正文只写「有审批待看」，可以选择不带命令内容。
@@ -149,10 +149,10 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照�
 - **OpenClaw `docs/gateway/tailscale.md`**：`tailscale serve` 提供 ts.net 的 HTTPS，转发到一个专用的回环端口，以此区分本机请求和远程请求；服务本身仍只监听回环。
 - Web Push 和 Service Worker 只能在 HTTPS 下工作，`http://100.x` 这样的地址不行，要用 `tailscale serve` 给的证书。证书由 Let's Encrypt 签发，机器名会进公开的证书透明日志。iOS 16.4 起支持 Web Push，但必须先加到主屏幕，并由用户点击触发授权。
 - 发送 Web Push 用 `web-push`（MPL-2.0，只作依赖，不复制文件）；PWA 用 vite-plugin-pwa（MIT）。
-- 端到端加密中继（Happy、Paseo 都有）M2 不需要：Tailscale 的 WireGuard 本身就是端到端加密。
+- 端到端加密中继（Happy、Paseo 都有）在经 Tailscale 访问时不需要：Tailscale 的 WireGuard 本身就是端到端加密。
 - 没有核实的两点：iOS 上经 ts.net 安装的 PWA 能否收到推送；Android 从主屏幕启动时第一个请求是否不带 Cookie。如果后者属实，页面外壳不能依赖 Cookie。
 
-## 七、M3：会话信箱与定时任务
+## 七、会话信箱与定时任务
 
 ### 7.1 信箱
 
@@ -177,7 +177,7 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照�
 - **OpenClaw `docs/automation/cron-jobs/`**：启动时把过期任务错开重排，不一起执行；连续失败按 30 秒、1、5、15、60 分钟退避；重启时没有终态的运行记为「中断、投递未知」；没有变化就不发消息。`docs/tools/exec-approvals.md`：没有界面可以询问，或询问超时，就直接拒绝。
 - 无人值守的会话把「询问」一律当作拒绝并上报；上报卡带「允许这一条并重跑」，批准只对这一条有效。向你提问改为发一张决定卡并结束本轮。定时会话不能新建或修改定时任务，也不能改自己的权限。
 
-## 八、M4：技能、MCP、产物、记忆
+## 八、技能、MCP、产物、记忆
 
 - **技能**：agentskills `docs/client-implementation/adding-skills-support.mdx`（CC-BY-4.0）、pi `packages/coding-agent/src/core/skills.ts`（MIT）。
   - 扫描 `<项目>/.agents/skills`、`~/.agents/skills`、`~/.yew/skills`，兼容 `.claude/skills`；同名时项目级优先，并告警。
@@ -211,10 +211,10 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照�
 | [NousResearch/hermes-agent](https://github.com/NousResearch/hermes-agent) | MIT | Python | 2026-11-08 | 261,587 | 定时补跑、无人值守的审批、记忆上限 |
 | [pingdotgg/t3code](https://github.com/pingdotgg/t3code) | MIT | TypeScript | 2026-11-08 | 51,628 | React 界面组件 |
 | [getpaseo/paseo](https://github.com/getpaseo/paseo) | Apache-2.0 | TypeScript | 2026-11-08 | 23,434 | 记录同步、守护进程 |
-| [slopus/happy](https://github.com/slopus/happy) | MIT | Swift | 2026-11-08 | 24,536 | 手机端；加密中继（M2 不用） |
+| [slopus/happy](https://github.com/slopus/happy) | MIT | Swift | 2026-11-08 | 24,536 | 手机端；加密中继（经 Tailscale 访问时不用） |
 | [agentclientprotocol/agent-client-protocol](https://github.com/agentclientprotocol/agent-client-protocol) | Apache-2.0 | Rust | 2026-11-07 | 4,597 | 工具调用和权限选项的词汇 |
 | [a2aproject/A2A](https://github.com/a2aproject/A2A) | Apache-2.0 | — | 2026-11-05 | 26,446 | 任务状态名 |
-| [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | 新贡献 Apache-2.0，旧贡献 MIT | TypeScript | 2026-11-05 | 13,730 | M4 的 MCP 客户端 |
+| [modelcontextprotocol/typescript-sdk](https://github.com/modelcontextprotocol/typescript-sdk) | 新贡献 Apache-2.0，旧贡献 MIT | TypeScript | 2026-11-05 | 13,730 | MCP 客户端 |
 | [agentskills/agentskills](https://github.com/agentskills/agentskills) | Apache-2.0（docs 为 CC-BY-4.0） | Python | 2026-11-04 | 27,054 | 技能规范 |
 | [Hexagon/croner](https://github.com/Hexagon/croner) | MIT | TypeScript | 2026-11-08 | 2,615 | cron 计算 |
 | [vercel/ai-elements](https://github.com/vercel/ai-elements) | Apache-2.0 | TypeScript | 2026-10-14 | 2,510 | 思考折叠等组件 |
@@ -233,7 +233,7 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照�
 - **不合用**：beads（Go 加 Dolt，面向多机同步）；node-cron、cron、bree、cron-parser（自带定时器或依赖 luxon，croner 够用）；Aider（用文本编辑格式，不走工具调用）；`@modelcontextprotocol/sdk` v1（依赖 express 等服务端包）；`@virtuoso.dev/message-list`（商业许可）。
 - **只核了仓库信息，没读代码**：Cline、Continue、OpenHands、Mistral Vibe、mini-swe-agent。
 
-## 十、v1 之后补齐（2026-11-19：多模态附件、PDF、多目录、换新与触发器）
+## 十、多模态附件、PDF、多目录、换新与触发器（2026-11-19 调研）
 
 为避免重复造轮子，对这一批工作流补全项单独核对了开源生态（均符合第二节的许可与净室规则）：
 
@@ -245,4 +245,4 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照�
 | 多目录工作区 | Gemini CLI `--include-directories`（Apache-2.0，参考设计） | Apache-2.0 | 保留主工作区 `cwd`，新增显式区分只读/可写的 `extraDirs`，黑名单（凭据与不可读目录）永远优先于白名单。 |
 | 常设会话换新上下文 | pi `packages/durable/src/harness/inbox.ts` `reset()`（MIT，参考设计） | MIT | 保留同一会话 id 与全部历史记录，在记录里写一条新的上下文边界（可选交接摘要）并重拍环境快照。 |
 | 定时任务隔离 | Hermes `cron/`、OpenClaw `cron-jobs`（MIT，参考设计） | MIT | 支持按所属常设会话派生干净的 `task` 会话运行，完成后自动归档；定时运行期间禁止改定时任务或放宽权限。 |
-| 输入框 `@` / `/` 补全 | T3 Code、OpenCode（MIT，参考交互） | MIT | `@` 行内任意位置提及会话或工作区文件，`/` 行首触发技能与 `/compact`、`/renew`，控件按产品规范第 7、18 节自绘。 |
+| 输入框 `@` / `/` 补全 | T3 Code、OpenCode（MIT，参考交互） | MIT | `@` 行内任意位置提及会话或工作区文件，`/` 行首触发技能与 `/compact`、`/renew`，控件自绘，不露出浏览器默认外观，键盘能完成所有操作。 |

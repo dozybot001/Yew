@@ -1,5 +1,5 @@
 /**
- * Official MCP servers people often add (blueprint 6.11, item 40). Some take a token; the others are
+ * Official MCP servers people often add. Some take a token; the others are
  * signed in to in the browser. Each was tried with Yew's own client before it went in: the token ones
  * connected and listed their tools; for the sign-in ones Yew found where to sign in, registered or
  * used the person's client, and the sign-in page opened. Adding one writes an mcp.json entry. A server

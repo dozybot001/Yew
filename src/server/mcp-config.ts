@@ -4,7 +4,7 @@ import { presetPackage } from "../shared/mcp-presets.ts";
 import { conflict, invalid, notFound } from "./errors.ts";
 
 /**
- * Changes to `mcp.json` made from the settings (blueprint 6.10, item 29). The file keeps the shape
+ * Changes to `mcp.json` made from the settings. The file keeps the shape
  * people write by hand and `yew mcp list` reads: entries Yew does not understand, other top-level
  * keys and `${NAME}` references stay as they are. Values of environment variables and headers may
  * be secrets, so what is shown of a server carries their names only.
@@ -41,14 +41,14 @@ export interface McpEntryView {
 
 export interface NewMcpServer {
 	name: string;
-	/** One of the presets Yew installs and runs (blueprint 6.11, item 40), by its id. */
+	/** One of the presets Yew installs and runs, by its id. */
 	preset?: string;
 	command?: string;
 	args?: string[];
 	env?: Record<string, string>;
 	url?: string;
 	headers?: Record<string, string>;
-	/** For signing in to an HTTP server with a client the person made (blueprint 6.11, item 40). */
+	/** For signing in to an HTTP server with a client the person made. */
 	oauth?: { clientId?: string; clientSecret?: string; scopes?: string[] };
 }
 

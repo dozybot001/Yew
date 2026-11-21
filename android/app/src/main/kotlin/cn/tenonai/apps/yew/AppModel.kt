@@ -97,7 +97,7 @@ class AppModel(private val context: Context) {
     private val scope = MainScope()
     private val vault = Vault(context)
     val notifier = Notifier(context)
-    /** New versions on Gitee, checked once a day unless turned off (blueprint, "版本与更新"). */
+    /** New versions on Gitee, checked once a day unless turned off. */
     val releases = ReleaseCheck(context)
     /** A newer version than this app, when one was found; the About page links to it. */
     var newVersion by mutableStateOf(releases.newer)
@@ -556,7 +556,7 @@ class AppModel(private val context: Context) {
         delay(300)
     }
 
-    // Notifications (blueprint section 13: the app keeps its own connection to the relay)
+    // Notifications: the app keeps its own connection to the relay
 
     /** Whether this phone should be listening for notifications now. */
     val wantsNotes: Boolean get() = paired && notifier.wanted && notifier.allowed

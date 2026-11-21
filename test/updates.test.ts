@@ -1,4 +1,4 @@
-// Versions and updates (blueprint, "版本与更新"): no real npm, registry or restart.
+// Versions and updates: no real npm, registry or restart.
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
 import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";

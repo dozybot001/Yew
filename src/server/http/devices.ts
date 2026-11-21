@@ -7,7 +7,7 @@ import type { Store } from "../store.ts";
 import { optBoolean, optNullableString, optString, readJson } from "./input.ts";
 import type { AppEnv } from "./problem.ts";
 
-/** Paired phones and pairing (M3 plan, section 4). Pairing and revoking stay on the Mac. */
+/** Paired phones and pairing. Pairing and revoking stay on the Mac. */
 export function deviceRoutes(store: Store, remote: RemoteAccess | undefined): Hono<AppEnv> {
 	const app = new Hono<AppEnv>();
 

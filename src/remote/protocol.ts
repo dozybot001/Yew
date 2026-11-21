@@ -1,8 +1,8 @@
 import { createHash } from "node:crypto";
 
 /**
- * What the Mac, the relay and the phone agree on (M3 plan, sections 4–6). The relay reads only the
- * outer frames; everything in `ChannelMessage` travels inside the Noise channel.
+ * What the Mac, the relay and the phone agree on. The relay reads only the outer frames; everything
+ * in `ChannelMessage` travels inside the Noise channel.
  */
 
 /** Signed by the Mac when it connects, after the relay's nonce. */

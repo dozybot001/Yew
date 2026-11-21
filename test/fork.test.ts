@@ -1,5 +1,5 @@
 /**
- * Forking (blueprint 6.11, item 39): a session opens a task session with a copy of its conversation,
+ * Forking: a session opens a task session with a copy of its conversation,
  * and the person forks a session from one of its replies.
  */
 import assert from "node:assert/strict";

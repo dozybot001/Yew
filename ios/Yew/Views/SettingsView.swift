@@ -1,7 +1,7 @@
 import SwiftUI
 
 /// Settings, from the button at the top right of each tab: the Mac this phone is paired with, unpairing,
-/// and About. Everything else is set on the Mac (M3 plan, section 7).
+/// and About. Everything else is set on the Mac.
 struct SettingsView: View {
 	@Environment(AppModel.self) private var model
 	@Environment(\.dismiss) private var dismiss
@@ -107,7 +107,7 @@ enum LinkText {
 	}
 }
 
-/// "About Yew Harness" (spec 2.2–2.3): the lockup, version and build, what Yew is, the publisher and website,
+/// "About Yew Harness": the lockup, version and build, what Yew is, the publisher and website,
 /// then the privacy policy, terms and feedback.
 struct AboutView: View {
 	private var version: String {
@@ -135,7 +135,7 @@ struct AboutView: View {
 				Text("Yew Harness on iPhone connects to your Mac through a relay, encrypted end to end. Away from your desk, you handle what needs you here: allow operations, answer the sessions' questions and decide on cards, and you can follow and reply to sessions.")
 			}
 			Section {
-				// The small horizontal publisher mark (spec 1.4): the T at least 16 pt, the name about
+				// The small horizontal publisher mark: the T at least 16 pt, the name about
 				// 0.75 of it, semibold, 0.3 of it apart.
 				LabeledContent("Publisher") {
 					HStack(spacing: 18 * 0.3) {
@@ -189,10 +189,10 @@ struct PolicyView: View {
 	}
 }
 
-/// The full lockup for the first screen and the About page (spec 1.2, 1.6, 2.2): the mark and the
-/// wordmark ("Yew" outlined from Young Serif, in the ink colour) with a smaller "Harness" after it,
-/// which make the product's name Yew Harness (blueprint, section 12), sized from the wordmark's size
-/// S. No Tenon mark: that appears only with "Tenon AI", where the publisher is named (spec 1.3–1.4).
+/// The full lockup for the first screen and the About page: the mark and the wordmark ("Yew"
+/// outlined from Young Serif, in the ink colour) with a smaller "Harness" after it, which make the
+/// product's name Yew Harness, sized from the wordmark's size S. No Tenon mark: that appears only
+/// with "Tenon AI", where the publisher is named.
 struct Lockup: View {
 	var size: CGFloat = 36
 

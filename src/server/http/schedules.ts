@@ -30,7 +30,7 @@ function scheduleFields(fields: Fields): ScheduleFields {
 	return out;
 }
 
-/** Scheduled tasks (M3 plan, section 11): list, add, change, remove, and run one now. */
+/** Scheduled tasks: list, add, change, remove, and run one now. */
 export function scheduleRoutes(store: Store, scheduler: Scheduler): Hono<AppEnv> {
 	const app = new Hono<AppEnv>();
 	const once = idempotent(store.db);

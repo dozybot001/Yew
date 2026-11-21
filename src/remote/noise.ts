@@ -12,7 +12,7 @@ import {
 
 /**
  * Noise_IK_25519_ChaChaPoly_SHA256 (Noise Protocol Framework, revision 34), Yew's end-to-end encryption
- * between the Mac and a phone through the relay (M3 plan, section 4). The phone (initiator) knows the
+ * between the Mac and a phone through the relay. The phone (initiator) knows the
  * Mac's static key from the pairing QR code; the Mac (responder) learns the phone's static key in the
  * first message and accepts it only if it is paired, or if the first payload carries a valid pairing
  * secret. The relay sees only ciphertext and cannot pose as either end.

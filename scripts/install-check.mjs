@@ -1,4 +1,4 @@
-// The release check for what a person installs (product standard 15.1.2).
+// The release check for what a person installs.
 // npm applies `overrides` in this repository only, so the audit of its lock file says nothing about a
 // global install. This packs Yew as `npm publish` does and checks:
 // - the sandbox-runtime bundled in the package is the one the registry publishes, file for file, so

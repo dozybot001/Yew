@@ -199,7 +199,7 @@ function DayTable({ detail }: { detail: UsageDetail }) {
 	return (
 		<div
 			className="usage-table-wrap"
-			// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+			// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 			tabIndex={0}
 		>
 			<table className="usage-table">
@@ -247,7 +247,7 @@ function DayTable({ detail }: { detail: UsageDetail }) {
 }
 
 /**
- * What the sessions cost (blueprint 6.9, item 25): today against the daily limit, each of the last 30
+ * What the sessions cost: today against the daily limit, each of the last 30
  * days as a bar, and the sessions of the day you pick. A page of its own, like scheduled tasks.
  */
 export function UsagePage() {
@@ -309,7 +309,7 @@ export function UsagePage() {
 			</header>
 			<div
 				className="center-body"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 				tabIndex={0}
 			>
 				<div className="center-inner usage">

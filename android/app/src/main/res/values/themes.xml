@@ -7,6 +7,6 @@
         <item name="android:navigationBarColor">@android:color/transparent</item>
     </style>
     <color name="paper">#FFFFFF</color>
-    <!-- The leaf of Yew's mark and its wordmark: dark green, light grey-green in the dark (spec 1.5). -->
+    <!-- The leaf of Yew's mark and its wordmark: dark green, light grey-green in the dark. -->
     <color name="mark_ink">#1F3A2E</color>
 </resources>

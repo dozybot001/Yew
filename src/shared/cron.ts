@@ -1,5 +1,5 @@
 /**
- * Cron expressions for scheduled tasks (M3 plan, section 9): five fields in the computer's time zone
+ * Cron expressions for scheduled tasks: five fields in the computer's time zone
  * (minute, hour, day of the month, month, day of the week) with `*`, lists, ranges and steps. Shared by
  * Yew's service and the web interface, which shows the next runs while the person types.
  */

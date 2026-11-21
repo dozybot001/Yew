@@ -7,8 +7,8 @@ import type { McpServerConfig } from "./mcp.ts";
 import type { BrowserMode } from "./settings.ts";
 
 /**
- * The MCP servers Yew sets up by itself (blueprint 6.10, item 38): a browser and control of this
- * computer. Yew does not build these in; it runs two open-source servers.
+ * The MCP servers Yew sets up by itself: a browser and control of this computer. Yew does not build
+ * these in; it runs two open-source servers.
  *
  * - browser: Playwright MCP by Microsoft (Apache-2.0). By default it drives the person's own Chrome
  *   through Playwright's extension, with their sign-ins, in the tabs they hand it;
@@ -32,8 +32,8 @@ const FILES = ["package.json", "package-lock.json"] as const;
 const installDir = (yewHome: string) => join(yewHome, "mcp-builtin");
 
 /**
- * The common servers Yew adds that run on this computer (Gitee, Notion, Sentry; blueprint 6.11, item
- * 40) are installed the same way, each from its own lock file in `mcp-builtin/presets/<id>`, into
+ * The common servers Yew adds that run on this computer (Gitee, Notion, Sentry) are installed the
+ * same way, each from its own lock file in `mcp-builtin/presets/<id>`, into
  * `<data folder>/mcp-presets/<id>`, the first time it is used. This is where each one's program is in
  * its package.
  */

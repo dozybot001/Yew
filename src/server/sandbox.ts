@@ -18,9 +18,9 @@ import type { SandboxAskCallback, SandboxRuntimeConfig } from "@anthropic-ai/san
 import { secretLocations } from "./permissions/paths.ts";
 
 /**
- * The system sandbox for sessions' commands and the stdio MCP servers people add (blueprint, section
- * 11). It is Anthropic's open-source sandbox-runtime (`@anthropic-ai/sandbox-runtime`: Seatbelt on
- * macOS, bubblewrap on Linux), used through its public interface only. This module is Yew Harness's
+ * The system sandbox for sessions' commands and the stdio MCP servers people add. It is Anthropic's
+ * open-source sandbox-runtime (`@anthropic-ai/sandbox-runtime`: Seatbelt on macOS, bubblewrap on
+ * Linux), used through its public interface only. This module is Yew Harness's
  * own layer over it, so its configuration format, which still changes, stays in this one file.
  *
  * What a command in it may do, as the configuration below says:

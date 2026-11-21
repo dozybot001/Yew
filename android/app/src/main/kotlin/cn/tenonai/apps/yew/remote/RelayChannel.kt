@@ -95,10 +95,9 @@ val relayHttp: OkHttpClient by lazy {
 }
 
 /**
- * The phone's end of the encrypted channel to the computer, through the relay (M3 plan, sections 4–7):
- * a Noise IK handshake with the computer's key from the pairing, then the same requests the web
- * interface sends to the computer's local API, encrypted end to end. It reconnects on the next
- * request after a drop.
+ * The phone's end of the encrypted channel to the computer, through the relay: a Noise IK handshake
+ * with the computer's key from the pairing, then the same requests the web interface sends to the
+ * computer's local API, encrypted end to end. It reconnects on the next request after a drop.
  */
 class RelayChannel(
     private val pairing: Pairing,

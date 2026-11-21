@@ -2,7 +2,7 @@ import { Apns, apnsConfigFromEnv } from "./apns.ts";
 import { Relay } from "./relay.ts";
 
 // Yew's relay as a service: `node relay/main.ts`. PORT (default 8790) and HOST (default 0.0.0.0) come
-// from the environment; TLS ends at the reverse proxy in front of it (server deployment standard).
+// from the environment; TLS ends at the reverse proxy in front of it.
 // Notifications need Apple's signing key: APNS_KEY_FILE (the .p8, readable by this service only),
 // APNS_KEY_ID and APNS_TEAM_ID; APNS_TOPIC is the app's bundle id. Without them push is off.
 const port = Number(process.env.PORT ?? 8790);
@@ -28,7 +28,7 @@ const relay = new Relay({
 const bound = await relay.listen();
 process.stderr.write(`Yew relay listening on ${bound}; notifications ${apns ? "on" : "off"}\n`);
 
-// A line of counts every ten minutes: connections only, never content (M3 plan, section 5).
+// A line of counts every ten minutes: connections only, never content.
 const counts = setInterval(() => {
 	const { desktops, phones } = relay.counts;
 	process.stderr.write(

@@ -3,7 +3,7 @@ import { join } from "node:path";
 import { conflict } from "./errors.ts";
 
 /**
- * What the data folder takes on disk, by kind (blueprint 6.10, item 36; docs/data-inventory.md), and
+ * What the data folder takes on disk, by kind (docs/data-inventory.md), and
  * the one cleanup Yew offers: the over-long command output under `tmp`. Sizes are the files' lengths.
  * Links are never followed, so a link in the folder counts as a link and nothing outside is touched.
  */

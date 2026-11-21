@@ -13,7 +13,7 @@ import { errorResult, type ToolDefinition, type ToolResult, text } from "./tools
 export { namesHarness };
 
 /**
- * A small MCP client (M4 plan, section 5): JSON-RPC 2.0 over a child process's standard streams or
+ * A small MCP client: JSON-RPC 2.0 over a child process's standard streams or
  * over HTTP, enough to list a server's tools and call them. Written for Yew; no SDK.
  *
  * Servers come from `mcp.json` in Yew's data folder, in the `mcpServers` shape other tools use, so
@@ -187,7 +187,7 @@ export function outward(tool: string): boolean {
  * - The browser in the person's own Chrome (the default) acts with their sign-ins in the tabs it
  *   is given: each action is asked about and cannot be remembered, like computer control; looking
  *   can be. In a window of its own, its actions can be remembered, with the scope said.
- * - Any other server's tool that sends, publishes or deletes something in its service (spec 21.2) is
+ * - Any other server's tool that sends, publishes or deletes something in its service is
  *   asked about every time: one its name says does, one its server marks as destructive, and the
  *   ones a common server's preset names (a calendar event invites its attendees). A server's word
  *   that a tool only reads is not taken.
@@ -581,7 +581,7 @@ class HttpTransport implements Transport {
 			response.status === 401 ||
 			(response.status === 403 && challenge?.includes("insufficient_scope"))
 		) {
-			// Wants a signed-in request: the person signs in from the settings (blueprint 6.11, item 40).
+			// Wants a signed-in request: the person signs in from the settings.
 			throw new SignInRequired(challenge);
 		}
 		if (!response.ok) throw new Error(`the server answered HTTP ${response.status}`);
@@ -878,7 +878,7 @@ export class McpHub {
 		return this.#definitions;
 	}
 
-	/** The address the person's browser opens to sign in to a server (blueprint 6.11, item 40). */
+	/** The address the person's browser opens to sign in to a server. */
 	async signInUrl(name: string): Promise<string> {
 		const server = this.#servers.get(name);
 		const auth = this.#options.auth;

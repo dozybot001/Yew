@@ -1,5 +1,5 @@
 /**
- * What a session has done in the turn it is working on (blueprint 6.9, item 27), counted from the
+ * What a session has done in the turn it is working on, counted from the
  * transcript the page already has. The kinds are the ones a folded run of steps is summed up by, so
  * the line at the top and the lines in the conversation agree.
  */

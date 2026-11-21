@@ -34,7 +34,7 @@ const BLOCK = new Set([
 ]);
 
 /**
- * Converts HTML to readable Markdown with htmlparser2, without a browser engine (M1 plan, section 2).
+ * Converts HTML to readable Markdown with htmlparser2, without a browser engine.
  * Scripts, styles and embedded frames are dropped; links and images keep absolute URLs.
  */
 export function htmlToMarkdown(html: string, baseUrl: string): { title: string; markdown: string } {

@@ -92,7 +92,7 @@ export function optArray(fields: Fields, key: string): unknown[] | undefined {
 export const DEFAULT_PAGE = 50;
 export const MAX_PAGE = 200;
 
-/** `limit` and `cursor` query parameters (spec 20.3: every list is paginated and capped). */
+/** `limit` and `cursor` query parameters (every list is paginated and capped). */
 export function pageParams(c: Context, max = MAX_PAGE): { limit: number; cursor: string | null } {
 	const raw = c.req.query("limit");
 	let limit = DEFAULT_PAGE;

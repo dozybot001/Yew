@@ -1,4 +1,4 @@
-// The automatic mode's check (blueprint 6.1, item 6), with the faux provider: no real model.
+// The automatic mode's check, with the faux provider: no real model.
 import assert from "node:assert/strict";
 import { existsSync, mkdirSync, realpathSync } from "node:fs";
 import { join } from "node:path";

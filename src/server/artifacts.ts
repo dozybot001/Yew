@@ -9,7 +9,7 @@ import type { Store } from "./store.ts";
 import { errorResult, str, type ToolDefinition, type ToolResult, text } from "./tools/types.ts";
 
 /**
- * Artifacts (blueprint 6.6; M4 plan, section 6): what a session makes for the person to keep and
+ * Artifacts: what a session makes for the person to keep and
  * look at: a Markdown document, an HTML page, JSON data or a chart. Each belongs to the session
  * that made it and has versions; saving under the same name again adds one. The files are in Yew's
  * data folder, the list in the database.

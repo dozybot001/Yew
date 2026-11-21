@@ -32,7 +32,7 @@ import {
 import { type SessionPatch, type Store, validateSessionName } from "./store.ts";
 
 /**
- * How far a manage_yew call reaches (blueprint 6.2, item 10). Yew decides, not the model: organizing
+ * How far a manage_yew call reaches. Yew decides, not the model: organizing
  * follows the session's permission mode, configuring asks every time unless always allowed, and
  * widening what a session may do must be confirmed every time.
  */

@@ -82,7 +82,7 @@ private fun resumes(): Int {
 
 /**
  * Settings, from the button at the top right of each tab: the computer this phone is paired with,
- * notifications, unpairing, and About. Everything else is set on the computer (M3 plan, section 7).
+ * notifications, unpairing, and About. Everything else is set on the computer.
  */
 @SuppressLint("BatteryLife")
 @Composable
@@ -233,7 +233,7 @@ fun SettingsScreen(model: AppModel, close: () -> Unit) {
 }
 
 /**
- * "About Yew" (spec 2.2–2.3): the lockup, version and build, what Yew is, the publisher and website,
+ * "About Yew": the lockup, version and build, what Yew is, the publisher and website,
  * then the privacy policy, terms and feedback.
  */
 @Composable
@@ -251,7 +251,7 @@ fun AboutScreen(model: AppModel, close: () -> Unit) {
                     color = colors.soft, style = MaterialTheme.typography.bodySmall,
                 )
             }
-            // New versions (blueprint, "版本与更新"): the release page on Gitee, and the daily check.
+            // New versions: the release page on Gitee, and the daily check.
             var checks by remember { mutableStateOf(model.releases.enabled) }
             Group {
                 model.newVersion?.let { version ->
@@ -280,7 +280,7 @@ fun AboutScreen(model: AppModel, close: () -> Unit) {
             }
             Spacer(Modifier.height(12.dp))
             Group {
-                // The small horizontal publisher mark (spec 1.4): the T at least 16dp, the name about 0.75 of
+                // The small horizontal publisher mark: the T at least 16dp, the name about 0.75 of
                 // it, semibold, 0.3 of it apart.
                 GroupRow(stringResource(R.string.publisher), leading = {
                     Image(painterResource(R.drawable.tenon_mark), null, Modifier.size(18.dp))

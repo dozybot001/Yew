@@ -11,7 +11,7 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.jsonObject
 
-/** Where the app's requests go: the relay channel (M3 plan, sections 4 and 7), or the demo's sample data. */
+/** Where the app's requests go: the relay channel, or the demo's sample data. */
 interface Transport {
     suspend fun send(method: String, path: String, body: String?): Pair<String, Int>
 

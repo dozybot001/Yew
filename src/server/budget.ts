@@ -2,7 +2,7 @@ import type { Session } from "../shared/types.ts";
 import type { Store } from "./store.ts";
 
 /**
- * Daily spending limits (M3 plan, section 10): one per session and one for all sessions together, in
+ * Daily spending limits: one per session and one for all sessions together, in
  * US dollars as estimated from the providers' prices. A day is a calendar day in this computer's time
  * zone. Models without a price cost nothing here, so a limit never stops them.
  */

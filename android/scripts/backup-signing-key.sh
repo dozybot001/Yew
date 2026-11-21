@@ -1,6 +1,6 @@
 #!/bin/bash
 # Backs up the signing key of Yew for Android and proves the backup can be restored. Run before
-# anything signed with the key is released or given to anyone else to install (product standard 15.6.3).
+# anything signed with the key is released or given to anyone else to install.
 #
 # Usage: backup-signing-key.sh <folder> [<another folder> ...]
 #

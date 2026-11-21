@@ -86,8 +86,8 @@ class NoteText(note: Note, text: (Int) -> String, count: (Int, Int) -> String) {
 
 /**
  * Shows what the computer tells this phone as Android notifications, and takes them away when the
- * computer says they were handled (M3 plan, section 8). The computer decides what is worth a
- * notification and when; the phone only puts it into words.
+ * computer says they were handled. The computer decides what is worth a notification and when; the
+ * phone only puts it into words.
  */
 class Notifier(private val context: Context) {
     private val manager = context.getSystemService(NotificationManager::class.java)

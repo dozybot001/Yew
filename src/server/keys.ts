@@ -1,6 +1,6 @@
 import { AsyncEntry } from "@napi-rs/keyring";
 
-/** Where API keys live. They never go into SQLite, logs, URLs or command arguments (spec 15.1.3). */
+/** Where API keys live. They never go into SQLite, logs, URLs or command arguments. */
 export interface KeyStore {
 	get(provider: string): Promise<string | null>;
 	set(provider: string, key: string): Promise<void>;

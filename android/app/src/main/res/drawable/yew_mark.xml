@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Yew's mark (web/public/icons/yew-mark.svg, viewBox 64): a yew berry with its seed, and one leaf. The leaf takes the
-     mark ink, dark green or light in the dark theme; the red berry and the seed keep their colours (spec 1.5). -->
+     mark ink, dark green or light in the dark theme; the red berry and the seed keep their colours. -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="64dp" android:height="64dp" android:viewportWidth="64" android:viewportHeight="64">
     <path android:pathData="M35.4,50.2C36.6,37.6 42.6,22.6 60,12.6C58.6,24.4 55.2,32.4 49.4,38.6C45,43.3 39.4,46.4 35.4,50.2Z" android:fillColor="@color/mark_ink" />

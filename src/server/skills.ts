@@ -9,7 +9,7 @@ import { errorResult, str, type ToolDefinition, type ToolResult, text } from "./
 export const BUILTIN_SKILLS_DIR = fileURLToPath(new URL("../../skills-builtin", import.meta.url));
 
 /**
- * Skills, memory folders and the instruction files Yew reads besides its own (M4 plan, section 4):
+ * Skills, memory folders and the instruction files Yew reads besides its own:
  * what a person already has for other tools works here as it is, alongside official skills bundled
  * in `skills-builtin/` (which user global and workspace skills of the same name override).
  *
@@ -182,7 +182,7 @@ export type SkillSource =
 	| { kind: "global" }
 	| { kind: "workspace"; name: string; path: string };
 
-/** One row of the skills list in the settings (blueprint 6.10, item 35). */
+/** One row of the skills list in the settings. */
 export interface SkillEntry {
 	/** Stable ID: `builtin:<name>` for bundled skills, real folder path for user/workspace skills. */
 	id: string;

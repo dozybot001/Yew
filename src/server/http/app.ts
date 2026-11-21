@@ -50,31 +50,31 @@ export interface AppOptions {
 	security?: { port: number };
 	/** The built web interface (`web/dist`). */
 	webRoot?: string;
-	/** Short commit of the running code, shown as the build number (spec 2.2). */
+	/** Short commit of the running code, shown as the build number. */
 	build?: string | null;
 	/** Replaces the system folder picker; tests use it so they never open a window. */
 	pickFolder?: () => Promise<string | null>;
-	/** Phone access through the relay (M3 plan, section 6). */
+	/** Phone access through the relay. */
 	remote?: RemoteAccess;
-	/** Scheduled tasks (M3 plan, section 9). */
+	/** Scheduled tasks. */
 	scheduler?: Scheduler;
-	/** Told when Yew's page on the Mac is in front and in use, so notifications wait (section 8). */
+	/** Told when Yew's page on the Mac is in front and in use, so notifications wait. */
 	onPresence?: () => void;
 	/** Notifications for phones that keep their own connection (the Android app). */
 	notes?: NoteStreams;
-	/** What sessions saved for the person to look at (M4 plan, section 6). */
+	/** What sessions saved for the person to look at. */
 	artifacts?: ArtifactStore;
-	/** File attachments sent with messages (blueprint 6.12, item 46). */
+	/** File attachments sent with messages. */
 	attachments?: AttachmentStore;
-	/** The MCP servers in mcp.json, managed from the settings (blueprint 6.10, item 29). */
+	/** The MCP servers in mcp.json, managed from the settings. */
 	mcp?: McpRoutesOptions;
-	/** The skills in the global and workspace folders, listed in the settings (item 35). */
+	/** The skills in the global and workspace folders, listed in the settings. */
 	skills?: SkillRoutesOptions;
-	/** The data folder's size, export and cleanup, in the settings (item 36). */
+	/** The data folder's size, export and cleanup, in the settings. */
 	data?: DataRoutesOptions;
-	/** The search services' keys (item 30). */
+	/** The search services' keys. */
 	search?: SearchAccess;
-	/** Starting at login and the launcher icon (item 33). */
+	/** Starting at login and the launcher icon. */
 	system?: SystemControl;
 	/** Versions and updates (updates.ts). */
 	updates?: Updates;
@@ -107,7 +107,7 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
 			version: VERSION,
 			build: options.build ?? null,
 			protocol: PROTOCOL_VERSION,
-			// Which system sandbox sessions' commands run in, for the settings (blueprint, section 11).
+			// Which system sandbox sessions' commands run in, for the settings.
 			sandbox: activeSandbox(),
 		}),
 	);

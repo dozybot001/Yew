@@ -13,8 +13,8 @@
  *   FIT);
  * - the WebP is written at the highest quality that stays within about 50 KB.
  *
- * The portrait (mascot.md, section 6) is cut the same way, cropped to her and kept large, its long
- * side at least 2400 pixels.
+ * The portrait (her full-length picture beside sessions and the home page) is cut the same way,
+ * cropped to her and kept large, its long side at least 2400 pixels.
  *
  * The pixels are worked on in Google Chrome, which also encodes the WebP: headless, driven by
  * playwright-core, the copy in ~/.yew/mcp-builtin/node_modules as for scripts/screenshots.ts

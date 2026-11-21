@@ -30,7 +30,7 @@ export interface Workspace {
 	path: string;
 }
 
-/** Which kinds of events notify the phone (blueprint 6.10, item 34). All on unless turned off. */
+/** Which kinds of events notify the phone. All on unless turned off. */
 export const NOTIFY_KINDS = ["waiting", "error", "task", "budget"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
 export type NotifySettings = Record<NotifyKind, boolean>;
@@ -44,30 +44,30 @@ export const SETTING_DEFAULTS = {
 	theme: "system" as "system" | "light" | "dark",
 	language: "system" as "system" | "zh" | "en",
 	workspaces: [] as Workspace[],
-	/** The main conversation (blueprint section 5). */
+	/** The main conversation. */
 	mainSessionId: null as string | null,
-	/** A Markdown file each decision is added to (blueprint 6.4, item 14). */
+	/** A Markdown file each decision is added to. */
 	decisionLog: null as string | null,
-	/** Phones reach this Mac through the relay (blueprint 6.7, M3 plan section 6). */
+	/** Phones reach this Mac through the relay. */
 	remote: { enabled: false, relayUrl: DEFAULT_RELAY_URL } as RemoteSettings,
-	/** The most all sessions together may spend in a day, in US dollars (M3 plan, section 10). */
+	/** The most all sessions together may spend in a day, in US dollars. */
 	dailyBudget: null as number | null,
-	/** Folders of notes sessions may read, such as ~/memory (M4 plan, section 4). */
+	/** Folders of notes sessions may read, such as ~/memory. */
 	memoryDirs: [] as string[],
-	/** The permission mode new sessions start with (blueprint 6.10, item 32). */
+	/** The permission mode new sessions start with. */
 	defaultPermissionMode: "default" as PermissionMode,
 	/** The saved workspace the interface preselects for a new session; null for none. */
 	defaultWorkspaceId: null as string | null,
 	notify: { waiting: true, error: true, task: true, budget: true } as NotifySettings,
-	/** Skills switched off in the settings, each by its folder's real path (blueprint 6.10, item 35). */
+	/** Skills switched off in the settings, each by its folder's real path. */
 	disabledSkills: [] as string[],
-	/** Yew in the interface: floating over the window, the opening and the rest (blueprint, section 12). */
+	/** Yew in the interface: floating over the window, the opening and the rest. */
 	mascot: true as boolean,
-	/** Whether the opening leaves by itself once started, or waits for a click (blueprint 6.10, item 45). */
+	/** Whether the opening leaves by itself once started, or waits for a click. */
 	opening: "auto" as OpeningMode,
 	/**
 	 * Whether commands in the system sandbox may use the SSH agent and the usual credential files;
-	 * off by default for security (blueprint, section 11).
+	 * off by default for security.
 	 */
 	sandboxCredentials: false as boolean,
 	/**
@@ -75,11 +75,11 @@ export const SETTING_DEFAULTS = {
 	 * them, searches leave them out, and the system sandbox closes them.
 	 */
 	hiddenFolders: [] as string[],
-	/** Additional domains all sandboxed commands may reach without asking (blueprint 6.12, item 49). */
+	/** Additional domains all sandboxed commands may reach without asking. */
 	sandboxAllowedDomains: [] as string[],
 	/**
 	 * Whether automatic permission review (`review` mode) may read the person's original message in the
-	 * main conversation when checking a step triggered by a delegated letter (blueprint 6.1, item 6).
+	 * main conversation when checking a step triggered by a delegated letter.
 	 */
 	reviewTraceMain: true as boolean,
 	/**
@@ -87,7 +87,7 @@ export const SETTING_DEFAULTS = {
 	 * extension, with their sign-ins, or a separate window of its own.
 	 */
 	browser: "own" as BrowserMode,
-	/** Whether Yew Harness asks npm for a new version once a day (blueprint, "版本与更新"). */
+	/** Whether Yew Harness asks npm for a new version once a day. */
 	updateCheck: true as boolean,
 	/** Program used to open local file links clicked in replies (system default, VS Code, Cursor, Zed or Finder). */
 	fileOpener: "system" as FileOpener,

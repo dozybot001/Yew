@@ -9,7 +9,7 @@ const KEEP_MS = 24 * 60 * 60 * 1000;
 const KEY_PATTERN = /^[\x21-\x7e]{1,255}$/;
 
 /**
- * `Idempotency-Key` for create requests (spec 20.2, IETF draft): a repeat with the same key and body
+ * `Idempotency-Key` for create requests (IETF draft): a repeat with the same key and body
  * returns the first response without running the handler again; the same key with a different body is
  * rejected, and so is a repeat that arrives while the first is still running.
  */

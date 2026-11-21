@@ -9,8 +9,8 @@ import { loadIdentity, signChallenge } from "../src/remote/identity.ts";
 import { MemoryKeyStore } from "../src/server/keys.ts";
 import { newStore } from "./helpers/store.ts";
 
-// What the security review found (2026-11-15): requests that took the process down, forwarding
-// without back-pressure, and places that could be held without proving anything.
+// Problems found in the relay and fixed: requests that took the process down, forwarding without
+// back-pressure, and places that could be held without proving anything.
 
 async function until(check: () => boolean, ms = 5000): Promise<void> {
 	const start = Date.now();

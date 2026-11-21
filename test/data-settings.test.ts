@@ -21,7 +21,7 @@ import { fauxAssistantMessage, fauxProvider, fauxToolCall } from "../src/server/
 import { PermissionEngine } from "../src/server/permissions/engine.ts";
 import { newStore, sessionInput, tempDir } from "./helpers/store.ts";
 
-/** Data in the settings (blueprint 6.10, item 36): the overview, export, cleanup and showing folders. */
+/** Data in the settings: the overview, export, cleanup and showing folders. */
 
 // biome-ignore lint/suspicious/noExplicitAny: test assertions read arbitrary JSON
 type Json = any;

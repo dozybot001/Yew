@@ -20,8 +20,8 @@ export interface SkillRoutesOptions {
 }
 
 /**
- * Skills in the settings (blueprint 6.10, item 35): list what was read and what could not be, switch
- * one off or on, show one's folder in the file manager. Computer-only: these are this computer's
+ * Skills in the settings: list what was read and what could not be, switch one off or on, show
+ * one's folder in the file manager. Computer-only: these are this computer's
  * folders. Nothing here changes a skill's files.
  */
 export function skillRoutes(store: Store, options: SkillRoutesOptions): Hono<AppEnv> {

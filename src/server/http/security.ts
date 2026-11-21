@@ -15,7 +15,7 @@ export function hashToken(token: string): string {
 	return createHash("sha256").update(token).digest("hex");
 }
 
-/** A one-time login token, shown by `yew serve` and `yew open` in the URL fragment (spec 15.1.3). */
+/** A one-time login token, shown by `yew serve` and `yew open` in the URL fragment. */
 export function issueLoginToken(store: Store): string {
 	const token = randomBytes(32).toString("base64url");
 	store.pruneAuthTokens();
@@ -101,7 +101,7 @@ export function localOnly(port: number): MiddlewareHandler<AppEnv> {
 	};
 }
 
-/** Security headers on every response (M1 plan, section 10). */
+/** Security headers on every response. */
 export const securityHeaders = (): MiddlewareHandler<AppEnv> => async (c, next) => {
 	await next();
 	const headers = c.res.headers;
@@ -189,7 +189,7 @@ export function authRoutes(store: Store, port: number): Hono<AppEnv> {
 }
 
 /**
- * What a paired phone may not do through the relay (M3 plan, section 4): manage API keys, add or revoke
+ * What a paired phone may not do through the relay: manage API keys, add or revoke
  * devices, or change remote access. Those stay on the Mac. So do the settings that decide what this
  * computer starts or holds as a secret: MCP servers, search keys, starting at login and the launcher,
  * the skills in this computer's folders, and the data folder: its size, export and cleanup.

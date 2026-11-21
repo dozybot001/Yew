@@ -184,7 +184,7 @@ function ScheduleItem({ schedule, onEdit }: { schedule: Schedule; onEdit: () => 
 }
 
 /**
- * Scheduled tasks, a page of its own like the approval center (M3 plan, section 9): each task, when it
+ * Scheduled tasks, a page of its own like the approval center: each task, when it
  * runs next and how its last run went; new tasks and changes in a dialog.
  */
 export function SchedulesPage() {
@@ -220,7 +220,7 @@ export function SchedulesPage() {
 			</header>
 			<div
 				className="center-body"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 				tabIndex={0}
 			>
 				<div className="center-inner">

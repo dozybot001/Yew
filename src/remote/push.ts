@@ -2,7 +2,7 @@ import { createCipheriv, createDecipheriv, hkdfSync, randomBytes } from "node:cr
 import { dh, type KeyPair } from "./noise.ts";
 
 /**
- * Notifications to a paired phone (M3 plan, section 8). The Mac encrypts what a notification says with
+ * Notifications to a paired phone. The Mac encrypts what a notification says with
  * a key only it and that phone can derive, from the Noise static keys they exchanged when pairing; the
  * relay and Apple's push service carry the ciphertext and the phone's token, never the text. The
  * phone's notification service extension decrypts it before it is shown.

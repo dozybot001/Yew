@@ -278,7 +278,7 @@ describe("servers Yew sets up by itself", () => {
 			"/data/yew/tmp/browser",
 		]);
 		assert.equal(servers.browser?.cwd, "/data/yew/browser-files");
-		// Neither way is it started with tools for cookies or a site's storage (the security group).
+		// Neither way is it started with tools for cookies or a site's storage.
 		for (const mode of ["own", "separate"] as const) {
 			const args = builtinMcp("/data/yew", {}, 4777, mode).browser?.args ?? [];
 			assert.ok(!args.some((arg) => arg.startsWith("--caps")), mode);
@@ -406,7 +406,7 @@ describe("the browser and computer control", () => {
 				assert.deepEqual(decision.request.reasons, ["computer-control"]);
 				assert.equal(decision.request.rememberRules, undefined);
 			}
-			// Skip mode lets it run and marks it (blueprint 6.1, item 6).
+			// Skip mode lets it run and marks it.
 			const skipping = session([], "skip");
 			assert.deepEqual(
 				engine.decide(echo.subject({ action: "left_click" }, skipping, lookup), skipping),
@@ -555,7 +555,7 @@ describe("the browser and computer control", () => {
 	});
 });
 
-describe("the browser in the person's own Chrome (the security group, 11-18)", () => {
+describe("the browser in the person's own Chrome", () => {
 	const engine = new PermissionEngine(tempDir("yew-home-"));
 	const session = (rules: Session["rules"], mode = "default") =>
 		({ id: "s1", cwd: null, rules, options: { permissionMode: mode } }) as unknown as Session;
@@ -676,7 +676,7 @@ describe("the browser in the person's own Chrome (the security group, 11-18)", (
 			assert.deepEqual(asked("browser_tabs", { action: "new", url: "https://example.com/" }), [
 				"browser-action",
 			]);
-			// So is changing the tabs and windows the person works in (the security group, 11-18).
+			// So is changing the tabs and windows the person works in.
 			for (const name of [
 				"browser_navigate_back",
 				"browser_close",

@@ -45,7 +45,7 @@ export const ALL_TOOLS: ToolDefinition[] = [
 ];
 
 /**
- * Sessions without a working folder are chats: no file or shell tools (blueprint, principle 1). Some
+ * Sessions without a working folder are chats: no file or shell tools. Some
  * tools depend on the session's place: card tools for the main conversation, finish_task for tasks.
  */
 export function toolsFor(

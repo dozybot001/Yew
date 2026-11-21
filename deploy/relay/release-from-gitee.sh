@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Server controller, run as root by deploy/relay/publish.sh. It fetches the public repository from
-# Gitee over HTTPS without credentials (product standard 15.2.2), checks that main is exactly the
-# commit asked for, and builds the release only from that checkout.
+# Gitee over HTTPS without credentials, checks that main is exactly the commit asked for, and builds
+# the release only from that checkout.
 set -Eeuo pipefail
 # The body is a function so bash reads it completely from the SSH stdin before running, and no
 # child process can consume the rest of the script.

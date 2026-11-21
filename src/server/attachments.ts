@@ -33,7 +33,7 @@ import {
 } from "./tools/types.ts";
 
 /**
- * Per-session file attachments (blueprint 6.12, item 46). Files live under
+ * Per-session file attachments. Files live under
  * `<yewHome>/attachments/<sessionId>/` and SQLite stores only lightweight metadata. Model input is
  * hydrated on demand so transcripts, SSE streams and phone sync stay small and fast, and switching
  * a session to a text-only model degrades image attachments cleanly instead of failing.

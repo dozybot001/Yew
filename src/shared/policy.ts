@@ -1,5 +1,5 @@
 /**
- * Yew Harness's privacy policy and terms of service (spec 11.1): one text for the Mac, iPhone and Android.
+ * Yew Harness's privacy policy and terms of service: one text for the Mac, iPhone and Android.
  * The iPhone app carries the same paragraphs in its string catalog; test/ios.test.ts keeps them equal.
  * A change raises the version and the date; earlier versions stay in Git.
  */

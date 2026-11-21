@@ -91,7 +91,7 @@ export function useNarrow(): boolean {
 
 /**
  * Renaming in place: the row's name becomes a field. Enter or clicking away saves, Escape cancels.
- * A renamed session keeps its id, so messages to it still arrive (blueprint 7.1).
+ * A renamed session keeps its id, so messages to it still arrive.
  */
 function InlineRename({
 	icon,
@@ -257,7 +257,7 @@ function WorkspaceRow({ workspace, all }: { workspace: Workspace; all: Workspace
 
 /**
  * A team: click to list only its sessions (click again for all), double-click or the menu to
- * rename. Teams, workspaces and sessions are three lists built alike (blueprint section 8).
+ * rename. Teams, workspaces and sessions are three lists built alike.
  */
 function TeamRow({
 	group,
@@ -545,7 +545,7 @@ function SessionRow({
 	now: number;
 	/** Something of this session's waits in the approval center, whatever the session does meanwhile. */
 	blocked?: boolean;
-	/** Sessions opened by another are listed under it, indented (blueprint section 8). */
+	/** Sessions opened by another are listed under it, indented. */
 	depth?: number;
 }) {
 	useLang();
@@ -759,8 +759,7 @@ function nest(list: Session[]): { session: Session; depth: number }[] {
 }
 
 /**
- * The fixed entries at the top: the main conversation, the approval center (M2 plan, 10) and the
- * scheduled tasks (M3 plan, 9).
+ * The fixed entries at the top: the main conversation, the approval center and the scheduled tasks.
  */
 /**
  * The pages opened less often (artifacts, the session map, usage) are in a menu that shows beside its
@@ -990,8 +989,8 @@ function Search() {
 
 /**
  * The folded sidebar on wide screens, as in ChatGPT: Yew's graphic on top (it turns into the
- * open button under the pointer), then the main actions as icons, settings at the bottom (spec 1.6:
- * a collapsed navigation shows the product graphic only).
+ * open button under the pointer), then the main actions as icons, settings at the bottom (a
+ * collapsed navigation shows the product graphic only).
  */
 export function SidebarRail() {
 	useLang();
@@ -1165,7 +1164,7 @@ export function Sidebar() {
 	return (
 		<nav className="sidebar" aria-label={t("sessions")}>
 			<div className="sidebar-top">
-				{/* The expanded sidebar carries the full lockup (spec 1.6), named by the product's name (1.7). */}
+				{/* The expanded sidebar carries the full lockup, named by the product's name. */}
 				<button
 					type="button"
 					className="lockup lockup-button"
@@ -1265,7 +1264,7 @@ export function Sidebar() {
 					</>
 				)}
 			</div>
-			{/* Only the settings: Yew floats over the window (blueprint, sections 8 and 12). */}
+			{/* Only the settings: Yew floats over the window. */}
 			<div className="sidebar-bottom">
 				<SettingsButton variant="row" />
 			</div>

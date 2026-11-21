@@ -1,7 +1,7 @@
 import Foundation
 
-/// Sample data for a first look without a Mac, and for App Review (M3 plan, section 7): the requests
-/// the app sends to Yew, answered here in the same shapes. What you do in the demo changes only the demo.
+/// Sample data for a first look without a Mac, and for App Review: the requests the app sends to Yew,
+/// answered here in the same shapes. What you do in the demo changes only the demo.
 struct DemoTransport: Transport {
 	private let server = DemoServer()
 

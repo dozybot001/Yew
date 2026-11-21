@@ -393,7 +393,7 @@ export class ContextKeeper {
 	}
 
 	/**
-	 * Starts a fresh context window in place (blueprint 6.12, item 50): everything before this point
+	 * Starts a fresh context window in place: everything before this point
 	 * stays in the database for scrolling and search, while the model starts from a clean slate (or a
 	 * concise carry-over brief when `summarize` is true). Any open incoming requests are restated in a
 	 * system entry after the boundary so the session does not forget who is waiting on it.

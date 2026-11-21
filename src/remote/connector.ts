@@ -13,9 +13,9 @@ import {
 import type { PushJob, PushResult } from "./push.ts";
 
 /**
- * The Mac's side of remote access (M3 plan, section 6): keeps a connection to the relay, answers each
- * phone's Noise handshake, and runs its requests against the local API as that device. Only paired
- * phones get through; a phone that is not paired yet must bring the one-time pairing secret.
+ * The Mac's side of remote access: keeps a connection to the relay, answers each phone's Noise
+ * handshake, and runs its requests against the local API as that device. Only paired phones get
+ * through; a phone that is not paired yet must bring the one-time pairing secret.
  */
 
 export interface ConnectorOptions {

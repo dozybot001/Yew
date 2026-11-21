@@ -272,7 +272,7 @@ export const askUserTool: ToolDefinition = {
 	},
 };
 
-/** Hands a task to a helper and returns its answer (blueprint 6.11, item 43). */
+/** Hands a task to a helper and returns its answer. */
 export const delegateTool: ToolDefinition = {
 	name: "delegate",
 	description:

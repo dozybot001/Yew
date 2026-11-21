@@ -71,7 +71,7 @@ const SAFE_REDIRECT_TARGETS = new Set(["/dev/null", "/dev/stdout", "/dev/stderr"
 /**
  * Places the sandbox and the outer guard keep closed: Yew's own data and the folders the person
  * keeps from sessions. A command that names one runs and cannot reach it, so naming one is no
- * reason to ask (blueprint, section 11).
+ * reason to ask.
  */
 const HELD_PLACES: ReadonlySet<ConfirmReason> = new Set<ConfirmReason>([
 	"yew-data",
@@ -91,7 +91,7 @@ const UNGUARDED: ReadonlySet<ConfirmReason> = new Set<ConfirmReason>([
 /**
  * The rules a new session takes over from the one it was opened by or copied from. "Always allow"
  * for the tools of Yew's own browser and computer control was given for one session, with its scope
- * said at the time (spec 21.2): it does not travel.
+ * said at the time: it does not travel.
  */
 export function inheritableRules(rules: PermissionRule[]): PermissionRule[] {
 	return rules.filter(
@@ -107,8 +107,8 @@ function strongest(effects: RuleEffect[]): RuleEffect | null {
 }
 
 /**
- * Decides whether a tool call may run, must be asked about, or is refused (M1 plan, section 8;
- * blueprint 6.1, item 6). Order: credential locations are refused; operations asked about every time
+ * Decides whether a tool call may run, must be asked about, or is refused. Order: credential
+ * locations are refused; operations asked about every time
  * cannot be remembered; then the session's rules, where deny beats ask beats allow; then the
  * built-in defaults. What is asked is a permission (授权), settled by the session's mode: asked in
  * the default mode, put to the check first in review mode (except what only the person gives:

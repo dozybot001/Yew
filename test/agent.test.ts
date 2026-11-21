@@ -257,7 +257,7 @@ describe("agent loop", () => {
 			encoding: "utf8",
 		}).trim();
 		assert.equal(pushed, git("rev-parse", "HEAD"));
-		// The row says it ran without asking and why it is risky (blueprint 6.1, item 6).
+		// The row says it ran without asking and why it is risky.
 		const push = store.toolCallsByStatus(session.id, ["done"]).find((call) => call.callId === "c2");
 		assert.deepEqual(push?.detail?.permission, { risk: ["push"] });
 	});
@@ -860,7 +860,7 @@ describe("system prompt", () => {
 		assert.doesNotMatch(alone, /Take extra care/);
 		assert.match(alone, /how you checked it, and what is left\./);
 		assert.doesNotMatch(alone, /what the person needs to do/);
-		// Yew catches questions left in replies, so the prompt carries no rule about them (principle 8).
+		// Yew catches questions left in replies, so the prompt carries no rule about them.
 		assert.doesNotMatch(alone, /Never end a turn/);
 		const main = { id: "m1", name: "总办" };
 		const withMain = systemPrompt(session, { ...snapshot("/tmp/demo"), main });

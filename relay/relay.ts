@@ -6,9 +6,9 @@ import { CHALLENGE_PREFIX, desktopIdOf, OFFLINE } from "../src/remote/protocol.t
 import { MAX_PUSH_DATA, PUSH_TOKEN, type PushJob, type PushResult } from "../src/remote/push.ts";
 
 /**
- * Yew's relay (M3 plan, section 5): joins a phone's connection to the Mac it names and forwards their
- * frames. Both ends dial out to it, so the Mac opens no port. Everything between them is end-to-end
- * encrypted (Noise), so the relay sees only ciphertext: it stores nothing and logs no content.
+ * Yew's relay: joins a phone's connection to the Mac it names and forwards their frames. Both ends
+ * dial out to it, so the Mac opens no port. Everything between them is end-to-end encrypted
+ * (Noise), so the relay sees only ciphertext: it stores nothing and logs no content.
  *
  * Mac:   GET /desktop  → {type:"challenge", nonce} → {type:"hello", key, sig} → {type:"ready", desktop}
  *        then {type:"open"|"close", channel} as phones come and go, and binary frames

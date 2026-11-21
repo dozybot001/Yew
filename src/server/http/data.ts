@@ -20,7 +20,7 @@ export interface DataRoutesOptions {
 }
 
 /**
- * Data in the settings (blueprint 6.10, item 36): what the data folder takes, exporting everything
+ * Data in the settings: what the data folder takes, exporting everything
  * as `yew export` does, and deleting the over-long command output. Computer-only: these are this
  * computer's folders. The only folders shown in the file manager are the data folder and the one
  * this process last exported to; a request never supplies a path to show.

@@ -1,5 +1,5 @@
 #!/bin/bash
-# Creates the signing key of Yew for Android. Run once, on the development Mac (product standard 15.6).
+# Creates the signing key of Yew for Android. Run once, on the development Mac.
 #
 # The key cannot be replaced: an update signed with another key does not install over the app.
 # The password is made here, goes straight into the login keychain and is never shown; it is not
@@ -85,4 +85,4 @@ echo "  MD5      $MD5"
 echo "public key: RSA 4096, exponent 65537, modulus:"
 echo "$MODULUS"
 echo "wrote $FINGERPRINT_FILE"
-echo "next: back the key up outside this Mac before anything signed with it is given out (standard 15.6.3)."
+echo "next: back the key up outside this Mac before anything signed with it is given out: a lost key means no updates to the installed app."

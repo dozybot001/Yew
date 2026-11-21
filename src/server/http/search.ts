@@ -5,8 +5,8 @@ import { readJson, reqString } from "./input.ts";
 import type { AppEnv } from "./problem.ts";
 
 /**
- * The search services and their keys (blueprint 6.10, item 30). As with the model providers, a key
- * is written to the keychain and never read back; the list says only whether one is saved.
+ * The search services and their keys. As with the model providers, a key is written to the
+ * keychain and never read back; the list says only whether one is saved.
  */
 export function searchRoutes(search: SearchAccess): Hono<AppEnv> {
 	const app = new Hono<AppEnv>();

@@ -1,7 +1,7 @@
 import Foundation
 
-/// Where the app's requests go. The relay channel (M3 plan, sections 4 and 7) and, in Debug builds, a
-/// direct connection to `yew serve` on this Mac (the simulator shares the Mac's network).
+/// Where the app's requests go. The relay channel and, in Debug builds, a direct connection to
+/// `yew serve` on this Mac (the simulator shares the Mac's network).
 protocol Transport: Sendable {
 	func send(method: String, path: String, body: Data?) async throws -> (Data, Int)
 	/// A streamed response, such as the event stream, as text in the pieces it arrives in.
