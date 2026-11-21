@@ -94,11 +94,3 @@ export function indentMarkdownList(
 		caret: start + 2,
 	};
 }
-
-const MARKDOWN_HINT =
-	/(?:^\s*(?:[-*+]\s+\S|\d+[.)]\s+\S|#{1,6}\s+\S|>\s+\S|```)|\*\*[^*\n]+\*\*|`[^`\n]+`|\[[^\]\n]+\]\([^)\n]+\))/m;
-
-/** True when the draft contains simple Markdown structures worth previewing. */
-export function hasMarkdownSyntax(text: string): boolean {
-	return MARKDOWN_HINT.test(text);
-}

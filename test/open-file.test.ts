@@ -11,11 +11,7 @@ import { createApp } from "../src/server/http/app.ts";
 import { errorHandler } from "../src/server/http/problem.ts";
 import { openFileCommand, revealOnly } from "../src/server/reveal.ts";
 import { Store } from "../src/server/store.ts";
-import {
-	continueMarkdownList,
-	hasMarkdownSyntax,
-	indentMarkdownList,
-} from "../web/src/markdown-edit.ts";
+import { continueMarkdownList, indentMarkdownList } from "../web/src/markdown-edit.ts";
 
 describe("openFileCommand", () => {
 	test("builds macOS commands for system, Finder, VS Code, Cursor and Zed with line anchors", () => {
@@ -333,12 +329,5 @@ describe("markdown composer helpers", () => {
 			caret: 6,
 		});
 		assert.equal(indentMarkdownList("plain line", 5, 5, false), null);
-	});
-
-	test("detects simple Markdown syntax for preview toggle", () => {
-		assert.equal(hasMarkdownSyntax("你好，帮我看一下"), false);
-		assert.equal(hasMarkdownSyntax("1. 第一条\n2. 第二条"), true);
-		assert.equal(hasMarkdownSyntax("- 待办事项"), true);
-		assert.equal(hasMarkdownSyntax("把 `foo` 改成 **bar**"), true);
 	});
 });

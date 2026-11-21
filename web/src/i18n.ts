@@ -133,9 +133,6 @@ const zh = {
 	contextDetailCacheRead: "缓存命中",
 	contextDetailNote:
 		"这里显示上一轮发给模型的上下文占用，满格就是自动压缩阈值。达到阈值时，系统会先折叠较早的大工具输出，仍超出再摘要早期对话。",
-	previewMarkdown: "预览 Markdown",
-	editMarkdown: "返回编辑",
-	previewEmpty: "还没有输入内容",
 	openFileTooltip: "用 {app} 打开 {path}",
 	openFileFailed: "无法打开该文件",
 	mode_chat: "聊天",
@@ -1330,9 +1327,6 @@ const en: Record<MessageKey, string> = {
 	contextDetailCacheRead: "Cache read",
 	contextDetailNote:
 		"Shows the context sent on the last model turn; the pie is full at the auto-compaction threshold. At the threshold, older large tool results are folded first; earlier history is summarized only if still needed.",
-	previewMarkdown: "Preview Markdown",
-	editMarkdown: "Back to editing",
-	previewEmpty: "Nothing to preview yet",
 	openFileTooltip: "Open {path} in {app}",
 	openFileFailed: "Could not open file",
 	mode_chat: "Chat",

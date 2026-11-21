@@ -2650,14 +2650,6 @@ body.scroll-locked {
 	border-top: 1px solid var(--divider);
 	line-height: 1.5;
 }
-.composer-preview {
-	min-height: 44px;
-	max-height: min(34dvh, 260px);
-	overflow-y: auto;
-	overscroll-behavior: contain;
-	padding: 10px 12px 6px;
-	font-size: var(--fs-m);
-}
 .send-button {
 	flex: none;
 	width: 34px;

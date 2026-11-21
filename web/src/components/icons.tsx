@@ -19,8 +19,6 @@ import {
 	Database,
 	Download,
 	Ellipsis,
-	Eye,
-	EyeOff,
 	FileText,
 	Folder,
 	FolderPlus,
@@ -90,8 +88,6 @@ export const GearIcon = () => <Settings {...props} />;
 export const MenuIcon = () => <Menu {...props} />;
 export const CodeIcon = () => <Code {...props} />;
 export const NotesIcon = () => <FileText {...props} />;
-export const EyeIcon = () => <Eye {...props} />;
-export const EyeOffIcon = () => <EyeOff {...props} />;
 export const ChatIcon = () => <MessageCircle {...props} />;
 export const ArrowUpIcon = () => <ArrowUp {...props} strokeWidth={2} />;
 export const StopIcon = () => <Square {...props} fill="currentColor" />;

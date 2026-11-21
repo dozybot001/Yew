@@ -35,12 +35,7 @@ import {
 } from "../actions.ts";
 import { formatCost, formatNumber, permissionHint, t, useLang } from "../i18n.ts";
 import { useImeGuard } from "../ime.ts";
-import {
-	continueMarkdownList,
-	hasMarkdownSyntax,
-	indentMarkdownList,
-	type TextEdit,
-} from "../markdown-edit.ts";
+import { continueMarkdownList, indentMarkdownList, type TextEdit } from "../markdown-edit.ts";
 import {
 	type ModelInfo,
 	setState,
@@ -58,7 +53,7 @@ import {
 	StagedAttachmentStrip,
 } from "./attachments.tsx";
 import { ComposerMenu, useComposerMenu } from "./composer-menu.tsx";
-import { Capped, Markdown } from "./content.tsx";
+import { Capped } from "./content.tsx";
 import { NewSessionDialog } from "./dialogs.tsx";
 import {
 	ArrowUpIcon,
@@ -70,8 +65,6 @@ import {
 	CompactIcon,
 	CompactViewIcon,
 	DetailedViewIcon,
-	EyeIcon,
-	EyeOffIcon,
 	MenuIcon,
 	NotesIcon,
 	PlayIcon,
@@ -535,7 +528,6 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 	useLang();
 	const sandboxed = useAppState((state) => (state.health?.sandbox ?? "none") !== "none");
 	const [text, setText] = useState("");
-	const [preview, setPreview] = useState(false);
 	const ime = useImeGuard();
 	const [staged, setStaged] = useState<StagedAttachment[]>([]);
 	const [dragging, setDragging] = useState(false);
@@ -546,7 +538,6 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 	// Clear staged attachments and object URLs when switching sessions or unmounting.
 	// biome-ignore lint/correctness/useExhaustiveDependencies: reset staged attachments per session id
 	useEffect(() => {
-		setPreview(false);
 		setStaged((current) => {
 			for (const item of current) if (item.previewUrl) URL.revokeObjectURL(item.previewUrl);
 			return [];
@@ -641,7 +632,6 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 		}
 		setStaged([]);
 		setText("");
-		setPreview(false);
 	});
 	const stop = useAction(() => stopSession(session.id));
 	const cont = useAction(() => continueSession(session.id));
@@ -677,7 +667,6 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 	const switchFolder = useAction(async (cwd: string | null) => {
 		await updateSession(session.id, { cwd });
 	});
-	const showPreviewToggle = preview || hasMarkdownSyntax(text);
 	const applyEdit = (edit: TextEdit) => {
 		setText(edit.value);
 		setCaret(edit.caret);
@@ -745,80 +734,70 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 							{t("attachNoVision")}
 						</p>
 					)}
-					{preview ? (
-						<Capped className="composer-preview" label={t("previewMarkdown")}>
-							{text.trim() ? (
-								<Markdown text={text} breaks sessionId={session.id} />
-							) : (
-								<p className="hint">{t("previewEmpty")}</p>
-							)}
-						</Capped>
-					) : (
-						<textarea
-							ref={ref}
-							rows={1}
-							value={text}
-							placeholder={
-								dragging
-									? t("attachHintDrop")
-									: working
-										? t("composerQueued")
-										: t("composerPlaceholder", { name: session.name })
-							}
-							aria-label={t("composerPlaceholder", { name: session.name })}
-							aria-controls={menu.open ? menu.listId : undefined}
-							onCompositionStart={ime.onCompositionStart}
-							onCompositionEnd={ime.onCompositionEnd}
-							onChange={(event) => {
-								setText(event.target.value);
-								setCaret(event.target.selectionStart ?? event.target.value.length);
-							}}
-							onSelect={(event) =>
-								setCaret(event.currentTarget.selectionStart ?? event.currentTarget.value.length)
-							}
-							onPaste={(event) => {
-								const files = filesFromClipboard(event);
-								if (files.length === 0) return;
-								if (!event.clipboardData.getData("text/plain")) event.preventDefault();
-								addFiles(files);
-							}}
-							onKeyDown={(event) => {
-								if (ime.isComposing(event)) return;
-								if (menu.onKeyDown(event)) return;
-								if (event.key === "Enter" && event.shiftKey) {
-									const el = event.currentTarget;
-									const edit = continueMarkdownList(
-										text,
-										el.selectionStart ?? text.length,
-										el.selectionEnd ?? text.length,
-									);
-									if (edit) {
-										event.preventDefault();
-										applyEdit(edit);
-									}
-									return;
-								}
-								if (event.key === "Tab") {
-									const el = event.currentTarget;
-									const edit = indentMarkdownList(
-										text,
-										el.selectionStart ?? text.length,
-										el.selectionEnd ?? text.length,
-										event.shiftKey,
-									);
-									if (edit) {
-										event.preventDefault();
-										applyEdit(edit);
-									}
-									return;
-								}
-								if (event.key === "Enter" && !event.shiftKey) {
+					<textarea
+						ref={ref}
+						rows={1}
+						value={text}
+						placeholder={
+							dragging
+								? t("attachHintDrop")
+								: working
+									? t("composerQueued")
+									: t("composerPlaceholder", { name: session.name })
+						}
+						aria-label={t("composerPlaceholder", { name: session.name })}
+						aria-controls={menu.open ? menu.listId : undefined}
+						onCompositionStart={ime.onCompositionStart}
+						onCompositionEnd={ime.onCompositionEnd}
+						onChange={(event) => {
+							setText(event.target.value);
+							setCaret(event.target.selectionStart ?? event.target.value.length);
+						}}
+						onSelect={(event) =>
+							setCaret(event.currentTarget.selectionStart ?? event.currentTarget.value.length)
+						}
+						onPaste={(event) => {
+							const files = filesFromClipboard(event);
+							if (files.length === 0) return;
+							if (!event.clipboardData.getData("text/plain")) event.preventDefault();
+							addFiles(files);
+						}}
+						onKeyDown={(event) => {
+							if (ime.isComposing(event)) return;
+							if (menu.onKeyDown(event)) return;
+							if (event.key === "Enter" && event.shiftKey) {
+								const el = event.currentTarget;
+								const edit = continueMarkdownList(
+									text,
+									el.selectionStart ?? text.length,
+									el.selectionEnd ?? text.length,
+								);
+								if (edit) {
 									event.preventDefault();
-									void send.run();
+									applyEdit(edit);
 								}
-							}}
-						/>
-					)}
+								return;
+							}
+							if (event.key === "Tab") {
+								const el = event.currentTarget;
+								const edit = indentMarkdownList(
+									text,
+									el.selectionStart ?? text.length,
+									el.selectionEnd ?? text.length,
+									event.shiftKey,
+								);
+								if (edit) {
+									event.preventDefault();
+									applyEdit(edit);
+								}
+								return;
+							}
+							if (event.key === "Enter" && !event.shiftKey) {
+								event.preventDefault();
+								void send.run();
+							}
+						}}
+					/>
 					<div className="composer-bar">
 						<div className="composer-chips">
 							<Button
@@ -857,17 +836,6 @@ function Composer({ session, transcript }: { session: Session; transcript: Trans
 							/>
 						</div>
 						<div className="composer-actions">
-							{showPreviewToggle && (
-								<Button
-									variant="icon"
-									aria-pressed={preview}
-									aria-label={t(preview ? "editMarkdown" : "previewMarkdown")}
-									title={t(preview ? "editMarkdown" : "previewMarkdown")}
-									onClick={() => setPreview((value) => !value)}
-								>
-									{preview ? <EyeOffIcon /> : <EyeIcon />}
-								</Button>
-							)}
 							{!working && session.contextTokens > 0 && (
 								<>
 									<Button
@@ -1036,7 +1004,6 @@ function HomeView() {
 	const settings = useAppState((state) => state.settings);
 	const homeFolder = useAppState((state) => state.homeFolder);
 	const [text, setText] = useState("");
-	const [preview, setPreview] = useState(false);
 	const ime = useImeGuard();
 	// The default workspace from the settings is chosen to start with; the bar changes it.
 	const [folder, setFolder] = useState<string | null>(
@@ -1144,7 +1111,6 @@ function HomeView() {
 		if (next === "chat") setFolder(null);
 		ref.current?.focus();
 	};
-	const showPreviewToggle = preview || hasMarkdownSyntax(text);
 	const applyEdit = (edit: TextEdit) => {
 		setText(edit.value);
 		setCaret(edit.caret);
@@ -1202,74 +1168,64 @@ function HomeView() {
 							{t("attachNoVision")}
 						</p>
 					)}
-					{preview ? (
-						<Capped className="composer-preview" label={t("previewMarkdown")}>
-							{text.trim() ? (
-								<Markdown text={text} breaks />
-							) : (
-								<p className="hint">{t("previewEmpty")}</p>
-							)}
-						</Capped>
-					) : (
-						<textarea
-							ref={ref}
-							rows={2}
-							value={text}
-							placeholder={dragging ? t("attachHintDrop") : t("homePlaceholder")}
-							aria-label={t("homeTitle")}
-							aria-controls={menu.open ? menu.listId : undefined}
-							onCompositionStart={ime.onCompositionStart}
-							onCompositionEnd={ime.onCompositionEnd}
-							onChange={(event) => {
-								setText(event.target.value);
-								setCaret(event.target.selectionStart ?? event.target.value.length);
-							}}
-							onSelect={(event) =>
-								setCaret(event.currentTarget.selectionStart ?? event.currentTarget.value.length)
-							}
-							onPaste={(event) => {
-								const files = filesFromClipboard(event);
-								if (files.length === 0) return;
-								if (!event.clipboardData.getData("text/plain")) event.preventDefault();
-								addFiles(files);
-							}}
-							onKeyDown={(event) => {
-								if (ime.isComposing(event)) return;
-								if (menu.onKeyDown(event)) return;
-								if (event.key === "Enter" && event.shiftKey) {
-									const el = event.currentTarget;
-									const edit = continueMarkdownList(
-										text,
-										el.selectionStart ?? text.length,
-										el.selectionEnd ?? text.length,
-									);
-									if (edit) {
-										event.preventDefault();
-										applyEdit(edit);
-									}
-									return;
-								}
-								if (event.key === "Tab") {
-									const el = event.currentTarget;
-									const edit = indentMarkdownList(
-										text,
-										el.selectionStart ?? text.length,
-										el.selectionEnd ?? text.length,
-										event.shiftKey,
-									);
-									if (edit) {
-										event.preventDefault();
-										applyEdit(edit);
-									}
-									return;
-								}
-								if (event.key === "Enter" && !event.shiftKey) {
+					<textarea
+						ref={ref}
+						rows={2}
+						value={text}
+						placeholder={dragging ? t("attachHintDrop") : t("homePlaceholder")}
+						aria-label={t("homeTitle")}
+						aria-controls={menu.open ? menu.listId : undefined}
+						onCompositionStart={ime.onCompositionStart}
+						onCompositionEnd={ime.onCompositionEnd}
+						onChange={(event) => {
+							setText(event.target.value);
+							setCaret(event.target.selectionStart ?? event.target.value.length);
+						}}
+						onSelect={(event) =>
+							setCaret(event.currentTarget.selectionStart ?? event.currentTarget.value.length)
+						}
+						onPaste={(event) => {
+							const files = filesFromClipboard(event);
+							if (files.length === 0) return;
+							if (!event.clipboardData.getData("text/plain")) event.preventDefault();
+							addFiles(files);
+						}}
+						onKeyDown={(event) => {
+							if (ime.isComposing(event)) return;
+							if (menu.onKeyDown(event)) return;
+							if (event.key === "Enter" && event.shiftKey) {
+								const el = event.currentTarget;
+								const edit = continueMarkdownList(
+									text,
+									el.selectionStart ?? text.length,
+									el.selectionEnd ?? text.length,
+								);
+								if (edit) {
 									event.preventDefault();
-									void start.run();
+									applyEdit(edit);
 								}
-							}}
-						/>
-					)}
+								return;
+							}
+							if (event.key === "Tab") {
+								const el = event.currentTarget;
+								const edit = indentMarkdownList(
+									text,
+									el.selectionStart ?? text.length,
+									el.selectionEnd ?? text.length,
+									event.shiftKey,
+								);
+								if (edit) {
+									event.preventDefault();
+									applyEdit(edit);
+								}
+								return;
+							}
+							if (event.key === "Enter" && !event.shiftKey) {
+								event.preventDefault();
+								void start.run();
+							}
+						}}
+					/>
 					<div className="composer-bar">
 						<div className="composer-chips">
 							<Button
@@ -1285,17 +1241,6 @@ function HomeView() {
 							<ModelPicker {...model} onChange={(patch) => setModel((m) => ({ ...m, ...patch }))} />
 						</div>
 						<div className="composer-actions">
-							{showPreviewToggle && (
-								<Button
-									variant="icon"
-									aria-pressed={preview}
-									aria-label={t(preview ? "editMarkdown" : "previewMarkdown")}
-									title={t(preview ? "editMarkdown" : "previewMarkdown")}
-									onClick={() => setPreview((value) => !value)}
-								>
-									{preview ? <EyeOffIcon /> : <EyeIcon />}
-								</Button>
-							)}
 							<Button
 								className="send-button"
 								aria-label={t("send")}
