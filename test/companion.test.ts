@@ -12,8 +12,10 @@ import {
 	GREETING_MS,
 	greetingFor,
 	isNight,
+	POSE_MS,
 	POSES,
 	parseSpot,
+	pick,
 	poseForTool,
 	roomBesideComposer,
 	spotOf,
@@ -96,11 +98,16 @@ describe("what the floating Yew says", () => {
 
 	test("she holds a card while a permission waits, and keeps watch while scheduled tasks are on", () => {
 		const asking = companionMood({ ...base, sessions: [], waiting: 1, permission: true });
-		assert.equal(asking.pose, "permission");
+		assert.ok(POSES.permission.includes(asking.pose));
 		assert.deepEqual(asking.line, { kind: "waiting", count: 1 });
-		assert.notEqual(companionMood({ ...base, sessions: [], waiting: 1 }).pose, "permission");
+		for (let turn = 0; turn < 10; turn++) {
+			assert.notEqual(
+				companionMood({ ...base, sessions: [], waiting: 1, turn }).pose,
+				"permission",
+			);
+		}
 		const watching = companionMood({ ...base, sessions: [], waiting: 0, onDuty: true });
-		assert.equal(watching.pose, "on-duty");
+		assert.ok(POSES.duty.includes(watching.pose));
 		assert.deepEqual(watching.line, { kind: "clear", night: false });
 		// A session at work comes first.
 		const busy = companionMood({
@@ -112,12 +119,31 @@ describe("what the floating Yew says", () => {
 		assert.ok(POSES.working.includes(busy.pose));
 	});
 
-	test("her pose changes at most every ten minutes", () => {
-		const at = (now: number) =>
-			companionMood({ ...base, now, sessions: [session("w", "working")], waiting: 0 }).pose;
-		const slot = 10 * 60_000;
-		assert.equal(at(3 * slot), at(3 * slot + slot - 1));
-		assert.notEqual(at(3 * slot), at(4 * slot));
+	test("she keeps a pose for a minute, then takes another; a click moves her on at once", () => {
+		const at = (now: number, turn = 0) =>
+			companionMood({ ...base, now, turn, sessions: [session("w", "working")], waiting: 0 }).pose;
+		const minute = Date.UTC(2026, 10, 21, 9, 30);
+		assert.equal(POSE_MS, 60_000);
+		assert.equal(at(minute), at(minute + POSE_MS - 1));
+		assert.notEqual(at(minute), at(minute + POSE_MS));
+		assert.notEqual(at(minute, 1), at(minute));
+		assert.ok(POSES.working.includes(at(minute, 1)));
+	});
+
+	test("from each list she never takes the same pose twice in a row, and in time takes them all", () => {
+		const start = Date.UTC(2026, 10, 21);
+		for (const [name, list] of Object.entries(POSES)) {
+			assert.ok(list.length >= 3, `${name} has fewer than three poses`);
+			const seen = new Set<string>();
+			let last = "";
+			for (let step = 0; step < 500; step++) {
+				const pose = pick(list, start + step * POSE_MS);
+				assert.notEqual(pose, last, `${name} takes ${pose} twice in a row`);
+				seen.add(pose);
+				last = pose;
+			}
+			assert.equal(seen.size, new Set(list).size, `${name} leaves a pose out`);
+		}
 	});
 
 	test("every pose has its picture", () => {

@@ -2,8 +2,10 @@
  * What the floating Yew says (blueprint, section 12): the one thing that matters most right now, in
  * this order: things waiting for the person, a session that failed, a session that finished and waits
  * for review, sessions at work, a new version; otherwise that nothing waits. In the first minute after
- * the interface opens she greets first. Her pose follows what she says: holding a card when a
- * permission waits, and on duty when nothing does but scheduled tasks are on (blueprint, section 11).
+ * the interface opens she greets first. Her pose follows what she says, taken from a list for each
+ * thing she can say: holding a card or asking you to look when a permission waits, and keeping watch
+ * when nothing does but scheduled tasks are on (blueprint, section 11). She takes another pose from
+ * the list every minute, and at once when clicked.
  * She can be dragged anywhere in the window; where she stands, and whether a window has room for her,
  * is worked out at the end of this file.
  */
@@ -37,25 +39,37 @@ export interface CompanionMood {
 export const GREETING_MS = 60_000;
 
 /**
- * The poses each line may take; one is picked per ten minutes, so she changes now and then but never
- * flickers. New poses join these lists.
+ * The poses each line may take, at least three each, so that she never takes the same pose twice in
+ * a row (see pick). New poses join these lists.
  */
 export const POSES: Record<
-	"waiting" | "error" | "review" | "working" | "clear" | "night",
+	"waiting" | "permission" | "error" | "review" | "working" | "duty" | "clear" | "night",
 	MascotPose[]
 > = {
 	waiting: ["greeting", "stamp", "pointing", "halt", "pout"],
-	error: ["sorry", "bow", "teary"],
-	review: ["gift", "giftbox", "proud"],
+	permission: ["permission", "halt", "pointing"],
+	error: ["sorry", "bow", "teary", "lost"],
+	review: ["gift", "giftbox", "proud", "jump"],
 	working: ["thinking", "writing", "typing", "clipboard", "magnifier", "books", "fired-up"],
-	clear: ["happy", "tea", "stretch", "peek", "branch"],
+	duty: ["on-duty", "alarm", "tea", "clipboard", "reading"],
+	clear: ["happy", "tea", "stretch", "peek", "branch", "shush", "reading"],
 	night: ["sleepy", "nap", "pajamas", "dozing"],
 };
 
-const SLOT_MS = 10 * 60_000;
+/** How long she keeps a pose before she takes another from the same list. */
+export const POSE_MS = 60_000;
 
-function pick(list: MascotPose[], now: number): MascotPose {
-	return list[Math.floor(now / SLOT_MS) % list.length] as MascotPose;
+const GOLDEN = (Math.sqrt(5) - 1) / 2;
+
+/**
+ * Her pose from a list for this minute, moved on by `turn`, the times she has been clicked. Each step
+ * goes on by the golden ratio around the list, so the order looks random and covers the whole list;
+ * from a list of three or more, two steps in a row never give the same pose. The same minute and turn
+ * give the same pose on every render, so she never flickers.
+ */
+export function pick(list: readonly MascotPose[], now: number, turn = 0): MascotPose {
+	const step = Math.floor(now / POSE_MS) + turn;
+	return list[Math.floor(((step * GOLDEN) % 1) * list.length)] as MascotPose;
 }
 
 export function greetingFor(hour: number): Greeting | null {
@@ -131,12 +145,17 @@ export function companionMood(input: {
 	openedAt: number;
 	/** A version installed but not running yet, or a newer one on npm (blueprint, "版本与更新"). */
 	update?: { kind: "update" | "restart"; version: string } | null;
+	/** How many times she has been clicked; each click moves her on to another pose. */
+	turn?: number;
 }): CompanionMood {
 	const { now, hour } = input;
+	const turn = input.turn ?? 0;
 	const greeting = now - input.openedAt < GREETING_MS ? greetingFor(hour) : null;
 	if (input.waiting > 0) {
 		return {
-			pose: greeting ? "greeting" : input.permission ? "permission" : pick(POSES.waiting, now),
+			pose: greeting
+				? "greeting"
+				: pick(input.permission ? POSES.permission : POSES.waiting, now, turn),
 			greeting,
 			line: { kind: "waiting", count: input.waiting },
 			target: { kind: "center" },
@@ -151,7 +170,7 @@ export function companionMood(input: {
 		const only = matching.length === 1 ? (matching[0] as Session) : null;
 		if (matching.length > 0) {
 			return {
-				pose: pick(POSES[kind], now),
+				pose: pick(POSES[kind], now, turn),
 				greeting,
 				line: { kind, count: matching.length, name: only?.name ?? null },
 				target: only ? { kind: "session", id: only.id } : null,
@@ -170,11 +189,7 @@ export function companionMood(input: {
 	return {
 		pose: greeting
 			? "greeting"
-			: input.onDuty
-				? "on-duty"
-				: night
-					? pick(POSES.night, now)
-					: pick(POSES.clear, now),
+			: pick(input.onDuty ? POSES.duty : night ? POSES.night : POSES.clear, now, turn),
 		greeting,
 		line: { kind: "clear", night },
 		target: null,

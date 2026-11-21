@@ -12,7 +12,9 @@ import {
 	companionMood,
 	defaultSpot,
 	EDGE,
+	POSES,
 	parseSpot,
+	pick,
 	roomBesideComposer,
 	type Size,
 	type Spot,
@@ -134,14 +136,16 @@ export function Companion() {
 	const [drag, setDrag] = useState<Box | null>(null);
 	const press = useRef<Press | null>(null);
 	const dragged = useRef(false);
-	// Often enough to end the greeting about on time; the pose itself changes every ten minutes.
-	const now = useNow(15_000);
+	// Each click moves her on to another pose (pick in companion.ts).
+	const [turn, setTurn] = useState(0);
+	// Often enough to end the greeting about on time and to change her pose about once a minute.
+	const now = useNow(10_000);
 	const sidebarWidth = folded ? SIDEBAR_WIDTH.folded : SIDEBAR_WIDTH.open;
 	const fit = roomBesideComposer(view.width - sidebarWidth, SIZE);
 	if (!enabled || fit === "none") return null;
 	const waiting = centerCount(center);
 	const liveSessions = Object.values(sessions);
-	const mood = companionMood({
+	const moodInput = {
 		sessions: liveSessions,
 		waiting,
 		permission: Object.values(center.approvals).some((approval) => approval.kind === "permission"),
@@ -151,11 +155,12 @@ export function Companion() {
 		openedAt: OPENED_AT,
 		update:
 			updates?.restart || updates?.job?.state === "installed"
-				? { kind: "restart", version: updates.installed.version }
+				? { kind: "restart" as const, version: updates.installed.version }
 				: updates?.available && updates.latest
-					? { kind: "update", version: updates.latest.version }
+					? { kind: "update" as const, version: updates.latest.version }
 					: null,
-	});
+	};
+	const mood = companionMood({ ...moodInput, turn });
 	const activeReaction =
 		reaction && reaction.until > now && (waiting === 0 || reaction.priority) ? reaction : null;
 	const text = activeReaction ? t(activeReaction.key, activeReaction.params) : moodText(mood);
@@ -199,16 +204,22 @@ export function Companion() {
 		else if (target?.kind === "session") void selectSession(target.id);
 		else if (target?.kind === "about") openSettings("about");
 	};
+	// A poke moves her on to the next pose of what she says now; where that is a single pose (her
+	// greeting, a new version), to one of the poses for when nothing waits.
 	const poke = () => {
+		const next = turn + 1;
+		const after = companionMood({ ...moodInput, turn: next }).pose;
+		const shown = after !== pose ? after : pick(POSES.clear, now, next);
+		setTurn(next);
 		const active = liveSessions.filter((session) => session.archivedAt === null);
 		const busyCount = active.filter((session) => session.status === "working").length;
 		const dutyCount = schedules?.filter((schedule) => schedule.enabled).length ?? 0;
 		if (busyCount > 0) {
-			triggerReaction("fired-up", "companion_poke_busy", { params: { n: busyCount }, ms: 2800 });
+			triggerReaction(shown, "companion_poke_busy", { params: { n: busyCount }, ms: 2800 });
 		} else if (dutyCount > 0) {
-			triggerReaction("on-duty", "companion_poke_duty", { params: { n: dutyCount }, ms: 2800 });
+			triggerReaction(shown, "companion_poke_duty", { params: { n: dutyCount }, ms: 2800 });
 		} else {
-			triggerReaction("tea", "companion_poke_ready", { params: { n: active.length }, ms: 2800 });
+			triggerReaction(shown, "companion_poke_ready", { params: { n: active.length }, ms: 2800 });
 		}
 	};
 	const onPointerDown = (event: PointerEvent<HTMLButtonElement>) => {

@@ -325,8 +325,10 @@ function SessionHeader({
 }
 
 /**
- * How full the context is: a small clickable pie next to the send button. Clicking opens a popover
- * with exact token counts, remaining capacity, auto-compaction threshold and cumulative usage.
+ * How close the context is to auto-compaction: a small clickable pie next to the send button, full at
+ * the compaction threshold rather than at the model's context window, since that is where the
+ * session's history gets compacted. Clicking opens a popover with exact token counts, what is left
+ * before compaction, the model's context window and cumulative usage.
  */
 function ContextPie({ session, total }: { session: Session; total: number }) {
 	useLang();
@@ -336,16 +338,16 @@ function ContextPie({ session, total }: { session: Session; total: number }) {
 	const id = useId();
 
 	const used = session.contextTokens;
-	const percent = total > 0 ? Math.min(100, Math.round((used / total) * 100)) : 0;
 	const threshold = session.options.compactAt ?? defaultCompactAt(total);
-	const thresholdPercent = total > 0 ? Math.min(100, Math.round((threshold / total) * 100)) : 80;
-	const remaining = Math.max(0, total - used);
+	const percent = threshold > 0 ? Math.min(100, Math.round((used / threshold) * 100)) : 0;
+	const high = threshold > 0 && used >= threshold;
+	const remaining = Math.max(0, threshold - used);
 	const cumulative =
 		session.usage.input + session.usage.output + session.usage.cacheRead + session.usage.cacheWrite;
 	const label = t("contextPercent", {
 		p: percent,
 		used: formatNumber(used),
-		total: formatNumber(total),
+		limit: formatNumber(threshold),
 	});
 	const angle = ((percent / 100) * 360 - 90) * (Math.PI / 180);
 	const x = 12 + 6 * Math.cos(angle);
@@ -383,9 +385,7 @@ function ContextPie({ session, total }: { session: Session; total: number }) {
 				ref={button}
 				type="button"
 				className={
-					percent >= thresholdPercent
-						? "btn btn-ghost context-pie context-pie-high"
-						: "btn btn-ghost context-pie"
+					high ? "btn btn-ghost context-pie context-pie-high" : "btn btn-ghost context-pie"
 				}
 				aria-label={label}
 				aria-expanded={open}
@@ -415,41 +415,32 @@ function ContextPie({ session, total }: { session: Session; total: number }) {
 			>
 				<div className="context-popover-head">
 					<strong>{t("contextDetailTitle")}</strong>
-					<span
-						className={
-							percent >= thresholdPercent ? "context-popover-pct high" : "context-popover-pct"
-						}
-					>
+					<span className={high ? "context-popover-pct high" : "context-popover-pct"}>
 						{percent}%
 					</span>
 				</div>
 				<div className="context-meter" aria-hidden="true">
 					<div
-						className={
-							percent >= thresholdPercent ? "context-meter-fill high" : "context-meter-fill"
-						}
+						className={high ? "context-meter-fill high" : "context-meter-fill"}
 						style={{ width: `${percent}%` }}
 					/>
-					{thresholdPercent > 0 && thresholdPercent < 100 && (
-						<span className="context-meter-mark" style={{ left: `${thresholdPercent}%` }} />
-					)}
 				</div>
 				<dl className="context-stats">
 					<div>
 						<dt>{t("contextDetailUsed")}</dt>
-						<dd>
-							{formatNumber(used)} / {formatNumber(total)}
-						</dd>
+						<dd>{formatNumber(used)}</dd>
+					</div>
+					<div>
+						<dt>{t("contextDetailThreshold")}</dt>
+						<dd>{formatNumber(threshold)}</dd>
 					</div>
 					<div>
 						<dt>{t("contextDetailRemaining")}</dt>
 						<dd>{formatNumber(remaining)}</dd>
 					</div>
 					<div>
-						<dt>{t("contextDetailThreshold")}</dt>
-						<dd>
-							{formatNumber(threshold)} ({thresholdPercent}%)
-						</dd>
+						<dt>{t("contextDetailWindow")}</dt>
+						<dd>{formatNumber(total)}</dd>
 					</div>
 					{cumulative > 0 && (
 						<div>
