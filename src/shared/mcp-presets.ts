@@ -6,7 +6,7 @@
  * that runs on this computer is written as `"preset": "<id>"`: Yew installs its package from npm as a
  * lock file that ships with Yew says (`mcp-builtin/presets/<id>`), without install scripts, the way it
  * installs its own two servers, rather than letting npx resolve the package's dependencies when it
- * starts (security review, 2026-11-18). These servers hold the person's token.
+ * starts, since these servers hold the person's token.
  */
 export interface McpPreset {
 	/** Its name in mcp.json, and the middle part of its tools' names. */
@@ -31,8 +31,8 @@ export interface McpPreset {
 	};
 	/**
 	 * Tools of this server that send something out although their names do not say so, asked about
-	 * every time like the ones whose names do (security review, 2026-11-18): creating or changing a
-	 * calendar event invites its attendees.
+	 * every time like the ones whose names do: creating or changing a calendar event invites its
+	 * attendees.
 	 */
 	asksEveryTime?: string[];
 	/** Signed in to in the browser instead of a token. */

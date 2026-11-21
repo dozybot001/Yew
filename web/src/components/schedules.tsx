@@ -91,7 +91,7 @@ function ScheduleItem({ schedule, onEdit }: { schedule: Schedule; onEdit: () => 
 	const heading = useId();
 	const name = t("quoted", { s: schedule.name });
 	const [first = ""] = schedule.message.split("\n");
-	// Runs in skip mode ask nothing; only decisions stop them (the security group, 11-18).
+	// Runs in skip mode ask nothing; only decisions stop them.
 	const skips =
 		(schedule.permissionMode ?? (session ? permissionModeOf(session.options) : null)) === "skip";
 	return (

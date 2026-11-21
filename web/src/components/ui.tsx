@@ -365,7 +365,7 @@ export function Select({
 	}, [open]);
 
 	// Keys move the active option and the list scrolls to keep it in view. The pointer only marks the
-	// option under it: scrolling then would move the list under the pointer (founder, 2026-11-09).
+	// option under it: scrolling then would move the list under the pointer.
 	const byKey = useRef(false);
 	// biome-ignore lint/correctness/useExhaustiveDependencies: runs when the active option changes
 	useEffect(() => {

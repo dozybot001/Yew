@@ -1385,7 +1385,7 @@ export class Agents {
 		return true;
 	}
 
-	/** Each step the check let run stays in the session to look back on (the security group, 11-18). */
+	/** Each step the check let run stays in the session to look back on. */
 	#recordReview(sessionId: string, request: PermissionRequest, reason: string): void {
 		notice(this.#store, sessionId, "reviewed", reason, {
 			tool: request.tool,
@@ -1691,10 +1691,10 @@ export class Agents {
 	}
 
 	/**
-	 * Gives a question taken from a reply its choices, so the person answers with one click (founder,
-	 * 11-21: what waits for the person is a choice wherever it can be). The session's own model writes
-	 * them from the end of the reply. The card is there meanwhile, and stays as it is when this fails,
-	 * when the question has no fixed answers, or when the person has answered by then.
+	 * Gives a question taken from a reply its choices, so the person answers with one click. The
+	 * session's own model writes them from the end of the reply. The card is there meanwhile, and
+	 * stays as it is when this fails, when the question has no fixed answers, or when the person has
+	 * answered by then.
 	 */
 	async #offerChoices(
 		session: Session,

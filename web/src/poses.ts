@@ -1,7 +1,7 @@
 /**
- * The mascot's poses (blueprint, section 12; what each is for: docs/products/yew/mascot.md in Tenon-AI). Each is
- * `web/public/mascot/<pose>.webp`, all on the same 373 by 400 canvas, so changing the pose in a place
- * never makes it jump. A new pose joins this list.
+ * The mascot's poses (blueprint, section 12). Each is `web/public/mascot/<pose>.webp`, all on the
+ * same 373 by 400 canvas, so changing the pose in a place never makes it jump. A new pose joins
+ * this list.
  */
 export const MASCOT_POSES = [
 	"greeting",

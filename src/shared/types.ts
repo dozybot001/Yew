@@ -93,8 +93,8 @@ export const FILE_OPENERS = ["system", "vscode", "cursor", "zed", "finder"] as c
 export type FileOpener = (typeof FILE_OPENERS)[number];
 
 /**
- * A mode as stored or sent: the three of now, and the ones before 1.7 (founder, 11-18): "auto"
- * (ask when needed) is the default now, and "manual" (ask each time) is gone and reads as default.
+ * A mode as stored or sent: the three of now, and the ones before 1.7: "auto" (ask when needed) is
+ * the default now, and "manual" (ask each time) is gone and reads as default.
  */
 export function normalizePermissionMode(value: unknown): PermissionMode | null {
 	if (value === "default" || value === "review" || value === "skip") return value;
@@ -114,7 +114,7 @@ export const COMPACT_CAP = 300_000;
  * The context size at which a session's history is compacted unless the session sets its own: 80% of
  * the model's window, at most COMPACT_CAP. A window of a million tokens would otherwise fill to
  * 800,000 before compacting, and every request is billed for the context it carries (blueprint 6.1,
- * item 1; the founder, 11-21).
+ * item 1).
  */
 export function defaultCompactAt(contextWindow: number): number {
 	return Math.min(Math.floor(contextWindow * 0.8), COMPACT_CAP);
@@ -440,8 +440,8 @@ export interface PermissionRequest {
  * Permissions (授权) only the person gives (blueprint 6.1, item 6): what cannot be taken back on
  * this computer or reaches other people, and Yew Harness's own command line, which manages the
  * person's keys and the service. The default mode asks about them like any risky call; the
- * automatic mode does not put them to its check; skip mode asks about no permission, these included
- * (the founder, 11-21: 「跳过模式跳过所有授权」), and marks them in the record.
+ * automatic mode does not put them to its check; skip mode asks about no permission, these
+ * included, and marks them in the record.
  */
 export const DECISION_REASONS: ReadonlySet<ConfirmReason> = new Set<ConfirmReason>([
 	"yew-cli",

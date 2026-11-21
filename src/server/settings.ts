@@ -67,12 +67,12 @@ export const SETTING_DEFAULTS = {
 	opening: "auto" as OpeningMode,
 	/**
 	 * Whether commands in the system sandbox may use the SSH agent and the usual credential files;
-	 * off by default (founder, 11-18, on the security group's advice; blueprint, section 11).
+	 * off by default for security (blueprint, section 11).
 	 */
 	sandboxCredentials: false as boolean,
 	/**
 	 * Folders sessions may not read, besides credentials and Yew Harness's own data: file tools refuse
-	 * them, searches leave them out, and the system sandbox closes them (the security group, 11-18).
+	 * them, searches leave them out, and the system sandbox closes them.
 	 */
 	hiddenFolders: [] as string[],
 	/** Additional domains all sandboxed commands may reach without asking (blueprint 6.12, item 49). */
@@ -84,7 +84,7 @@ export const SETTING_DEFAULTS = {
 	reviewTraceMain: true as boolean,
 	/**
 	 * Which browser the built-in browser server drives: the person's own Chrome through Playwright's
-	 * extension, with their sign-ins (founder, 11-18), or a separate window of its own.
+	 * extension, with their sign-ins, or a separate window of its own.
 	 */
 	browser: "own" as BrowserMode,
 	/** Whether Yew Harness asks npm for a new version once a day (blueprint, "版本与更新"). */
@@ -285,9 +285,9 @@ export function parseExtraDirs(
 		if (resolved === "/" || resolved === home) {
 			throw invalid(`${raw} is too broad; pick a specific folder inside it.`, field);
 		}
-		// Not a protected place, not a folder that holds one (the security group, 11-20: /Users or
-		// ~/.config written to would reach them), not ~/Library (LaunchAgents, app data) and not a
-		// hidden folder of the home folder, read-only included.
+		// Not a protected place, not a folder that holds one (/Users or ~/.config written to would
+		// reach them), not ~/Library (LaunchAgents, app data) and not a hidden folder of the home
+		// folder, read-only included.
 		const holdsSecret = options.offLimits.some((secret) => isInside(secret, resolved));
 		const library = isInside(resolved, join(home, "Library"));
 		const dotFolder =

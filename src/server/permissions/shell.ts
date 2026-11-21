@@ -527,7 +527,7 @@ export function mustConfirmReason(argv: string[]): ConfirmReason | null {
 	return null;
 }
 
-/** git config keys that only name things and never make git run a program (the security group, 11-20). */
+/** git config keys that only name things and never make git run a program. */
 const SAFE_CONFIG_KEY =
 	/^(user\.[a-z0-9-]+|remote\.[^\s=]+\.(url|pushurl|fetch)|branch\.[^\s=]+\.(remote|merge|rebase|pushremote|description)|init\.defaultbranch)$/i;
 /** git config flags that keep to the repository's own file and do nothing else. */
@@ -542,7 +542,7 @@ const CONFIG_FLAGS = new Set([
 	"--path",
 ]);
 
-/** git init and clone options that never run anything (the security group, 11-20), in full. */
+/** git init and clone options that never run anything, in full. */
 const SETUP_FLAGS = new Set([
 	"--depth",
 	"--branch",

@@ -119,7 +119,7 @@ export function tracedMainWords(store: Store, sessionId: string, limit = 4000): 
 		return [];
 	}
 	// Only the source of the letter chain this turn came from: words from an earlier task must not
-	// vouch for a later step (the security group, 11-20).
+	// vouch for a later step.
 	const entryIds = new MailStore(store).recentOriginEntries(sessionId, 1);
 	const words: string[] = [];
 	let room = limit;
@@ -143,8 +143,7 @@ export function tracedMainWords(store: Store, sessionId: string, limit = 4000): 
 
 /**
  * The step as the check reads it, as JSON inside a tag: the tool, what it does and why Yew would
- * ask. The command is text a page or file may have steered, so it cannot close the tag
- * (the security group, 11-18).
+ * ask. The command is text a page or file may have steered, so it cannot close the tag.
  */
 export function stepText(request: PermissionRequest): string {
 	const why = (request.reasons ?? []).map((reason) => REASONS[reason] ?? reason);

@@ -112,11 +112,11 @@ function strongest(effects: RuleEffect[]): RuleEffect | null {
  * cannot be remembered; then the session's rules, where deny beats ask beats allow; then the
  * built-in defaults. What is asked is a permission (授权), settled by the session's mode: asked in
  * the default mode, put to the check first in review mode (except what only the person gives:
- * DECISION_REASONS), and run with its risk marked in skip mode, which asks about no permission
- * (the founder, 11-21). Yew's own data and the folders the person keeps from sessions are closed by
- * the sandbox and the outer guard, not by a question: a command that names one is not asked about
- * for that. Only on a system with no guard are they asked about, with running outside the sandbox
- * and Yew's command line, and then in every mode.
+ * DECISION_REASONS), and run with its risk marked in skip mode, which asks about no permission.
+ * Yew's own data and the folders the person keeps from sessions are closed by the sandbox and the
+ * outer guard, not by a question: a command that names one is not asked about for that. Only on a
+ * system with no guard are they asked about, with running outside the sandbox and Yew's command
+ * line, and then in every mode.
  * Text in the transcript never counts as approval: only the person's answer in Yew does.
  */
 export class PermissionEngine {

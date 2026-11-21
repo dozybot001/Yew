@@ -285,8 +285,7 @@ CREATE TABLE artifact_versions (
 	// Taking a conversation back (blueprint 6.11, item 42): entries after the point stay in the
 	// database, marked, and are no longer shown or sent to the model.
 	"ALTER TABLE messages ADD COLUMN rewound INTEGER NOT NULL DEFAULT 0;",
-	// Rewinding deletes what was taken back (security review, 2026-11-18); entries taken back before
-	// that lose their content now.
+	// Rewinding deletes what was taken back; entries taken back before that lose their content now.
 	`UPDATE messages SET body = json_object('role', role, 'content', json('[]'), 'timestamp', created_at)
 	WHERE rewound = 1;
 DELETE FROM approvals WHERE tool_call_id IN (SELECT tool_calls.id FROM tool_calls
@@ -344,9 +343,9 @@ DELETE FROM session_events;`,
 	// as Yew's, so they still count as Yew's own words and not the person's.
 	`UPDATE messages SET body = replace(body, '[From Jig, not from the person]', '[From Yew, not from the person]')
 	WHERE body LIKE '%[From Jig, not from the person]%';`,
-	// Permission modes (blueprint 6.1, item 6; founder, 11-18): "auto" (ask when needed) is the
-	// default mode now and "manual" (ask each time) is gone, so both become "default". The table of
-	// scheduled tasks checks its modes, so it is made again; letters keep the task they belong to.
+	// Permission modes (blueprint 6.1, item 6): "auto" (ask when needed) is the default mode now and
+	// "manual" (ask each time) is gone, so both become "default". The table of scheduled tasks checks
+	// its modes, so it is made again; letters keep the task they belong to.
 	`
 UPDATE sessions SET options = json_set(options, '$.permissionMode', 'default')
 	WHERE json_extract(options, '$.permissionMode') IN ('auto', 'manual');

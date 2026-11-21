@@ -126,7 +126,7 @@ function openPdf(data: Uint8Array) {
 		standardFontDataUrl: STANDARD_FONT_URL,
 		useSystemFonts: false,
 		// No isEvalSupported here: pdfjs 6 dropped the option along with its eval path; it builds
-		// no code from a file's fonts or functions (checked 11-20 for the security group).
+		// no code from a file's fonts or functions.
 		verbosity: pdfjs.VerbosityLevel.ERRORS,
 	});
 }

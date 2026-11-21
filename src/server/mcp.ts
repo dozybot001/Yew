@@ -69,9 +69,9 @@ const BROWSER_READS = new Set([
 ]);
 
 /**
- * In the person's own Chrome, what only reads and can be remembered (the security group, 11-18);
- * browser_tabs counts only for listing. Anything else, going back, closing a page and resizing the
- * window included, changes the tabs and windows the person works in, and is asked every time.
+ * In the person's own Chrome, what only reads and can be remembered; browser_tabs counts only for
+ * listing. Anything else, going back, closing a page and resizing the window included, changes the
+ * tabs and windows the person works in, and is asked every time.
  */
 const OWN_BROWSER_READS = new Set([
 	"browser_snapshot",
@@ -85,9 +85,9 @@ const OWN_BROWSER_READS = new Set([
 ]);
 
 /**
- * Browser tools Yew does not offer, whoever runs the server (the security group, 11-18):
- * browser_run_code_unsafe runs any JavaScript in the browser server's own Node process, which is
- * outside the system sandbox, so one approval of it would be running code outside the sandbox.
+ * Browser tools Yew does not offer, whoever runs the server: browser_run_code_unsafe runs any
+ * JavaScript in the browser server's own Node process, which is outside the system sandbox, so one
+ * approval of it would be running code outside the sandbox.
  */
 const BROWSER_REFUSED = new Set(["browser_run_code_unsafe"]);
 
@@ -179,7 +179,7 @@ export function outward(tool: string): boolean {
 }
 
 /**
- * What is special about a call to an MCP tool (security reviews, 2026-11-16 and 2026-11-18).
+ * What is special about a call to an MCP tool.
  *
  * - Computer control acts on the whole screen: it can type into a terminal or click in the person's
  *   own browser, past every rule Yew has. Each action is asked about, cannot be remembered, and an
@@ -227,7 +227,7 @@ export function special(
 	}
 	if (server === "browser") {
 		// In the person's own Chrome, with their sign-ins: each action is asked about, cannot be
-		// remembered, and an earlier "always allow" does not cover it (the security group, 11-18).
+		// remembered, and an earlier "always allow" does not cover it.
 		if (ownBrowser(config, env)) {
 			if (OWN_BROWSER_READS.has(tool) || (tool === "browser_tabs" && args.action === "list")) {
 				return {};
@@ -925,10 +925,10 @@ export class McpHub {
 	}
 
 	/**
-	 * Keeps the browser off Yew Harness itself (the security group, 11-18), whose page in the
-	 * person's Chrome is signed in: a call whose arguments name Yew Harness's address is refused; in
-	 * the person's own Chrome, so is every call while a tab shared with the session has Yew Harness
-	 * open, or when the shared tabs cannot be listed. Returns why, or null to go ahead.
+	 * Keeps the browser off Yew Harness itself, whose page in the person's Chrome is signed in:
+	 * a call whose arguments name Yew Harness's address is refused; in the person's own Chrome, so is
+	 * every call while a tab shared with the session has Yew Harness open, or when the shared tabs
+	 * cannot be listed. Returns why, or null to go ahead.
 	 */
 	async #keepOffHarness(
 		server: Server,

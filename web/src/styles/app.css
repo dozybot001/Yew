@@ -2,9 +2,9 @@
  * Yew's design tokens: a black, white and grey interface (blueprint, section 12). Primary buttons,
  * focus rings and unread counts are near-black on light themes and near-white on dark ones; links
  * are underlined. Yew's forest green is the mark's leaf and wordmark and a switch that is on; the
- * red of the berry is only in the mark. Text contrast is at least 4.5:1. Borders are
- * deliberately faint (founder's call, 2026-11-08); fields are told apart by their fill, icon and
- * placeholder, and a focused field gets a stronger border.
+ * red of the berry is only in the mark. Text contrast is at least 4.5:1. Borders are deliberately
+ * faint; fields are told apart by their fill, icon and placeholder, and a focused field gets a
+ * stronger border.
  * Four type sizes only: 12 (meta), 14 (body), 16 (titles), 22 (page titles and wordmark).
  */
 :root,
@@ -1777,7 +1777,7 @@ body.scroll-locked {
 		display: none;
 	}
 }
-/* The count of what waits for you: a quiet grey chip, not a bright one (founder, 2026-11-09). */
+/* The count of what waits for you: a quiet grey chip, not a bright one. */
 .badge {
 	min-width: 18px;
 	height: 18px;
@@ -3586,7 +3586,7 @@ button.about-row {
 	grid-template-columns: subgrid;
 	border-radius: var(--radius);
 }
-/* Unfolded, the line and the letter share one background, without a border (founder, 2026-11-09). */
+/* Unfolded, the line and the letter share one background, without a border. */
 .letter-item[data-open="true"] {
 	background: var(--surface);
 }

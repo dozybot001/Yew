@@ -5,14 +5,14 @@
 # Usage: backup-signing-key.sh <folder> [<another folder> ...]
 #
 # Each folder is a place for one copy of the backup; at least one must be off this Mac (a USB drive,
-# or a folder in iCloud Drive that is not shared). Where they are is the founder's call.
+# or a folder in iCloud Drive that is not shared). Where they go is up to whoever keeps the key.
 #
-# Run it in a terminal the founder types into. The image passphrase is read from the keyboard and
+# Run it in a terminal you type into yourself. The image passphrase is read from the keyboard and
 # must never be piped in, passed as an argument, or typed into an assistant's session.
 #
 # The backup is one AES-256 encrypted disk image holding the keystore, its password and a note of the
 # fingerprints. The keystore password is written straight into the mounted image, so it never rests
-# on the ordinary disk. The image's own passphrase is typed by the founder and stays nowhere on this Mac.
+# on the ordinary disk. The image's own passphrase is typed in by hand and stays nowhere on this Mac.
 set -euo pipefail
 umask 077
 source "$(dirname "${BASH_SOURCE[0]}")/signing-common.sh"

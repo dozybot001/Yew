@@ -35,10 +35,9 @@ import { secretLocations } from "./permissions/paths.ts";
  *   have a key; any other site is put to the person while the command runs. Yew Harness's own port,
  *   local ports, private networks and Unix sockets stay closed.
  *
- * On by default on macOS (founder, 11-18: 「现在开放」, after the security group's tests passed) and
- * on Linux (founder, 11-18: 「Linux 上的沙箱也打开」). `YEW_SANDBOX=off` turns it off; commands then
- * run as the person, as they did before. Where it cannot start or run a command, it stays off and
- * `yew serve` and the settings say so.
+ * On by default on macOS and Linux. `YEW_SANDBOX=off` turns it off; commands then run as the
+ * person, as they did before. Where it cannot start or run a command, it stays off and `yew serve`
+ * and the settings say so.
  */
 
 /** Where the sandbox's commands run from, and what they must not touch. */
@@ -172,9 +171,9 @@ export function sandboxEnvironment(places: Pick<SandboxPlaces, "root">): Record<
 }
 
 /**
- * The keychain files: never readable, whatever the setting for credentials says (the security group,
- * 11-18), so the keychain's items cannot be read from the sandbox. git over HTTPS with saved
- * credentials and gh run outside the sandbox.
+ * The keychain files: never readable, whatever the setting for credentials says, so the keychain's
+ * items cannot be read from the sandbox. git over HTTPS with saved credentials and gh run outside
+ * the sandbox.
  */
 function keychains(places: Pick<SandboxPlaces, "userHome">): string {
 	return join(real(places.userHome), "Library", "Keychains");
@@ -183,7 +182,7 @@ function keychains(places: Pick<SandboxPlaces, "userHome">): string {
 /**
  * What WebKit keeps for the Mac app (macos/, `yew app install`) on macOS: the cookie that signs its
  * window in to Yew Harness, the cache of the interface and its local storage. Closed like the data
- * folder, for reading and writing (the security group, 11-18).
+ * folder, for reading and writing.
  */
 export function appWebData(
 	places: Pick<SandboxPlaces, "userHome">,
@@ -507,8 +506,8 @@ export function sandboxConfig(
 }
 
 /**
- * Whether `yew serve` starts the sandbox: on macOS and Linux unless `YEW_SANDBOX=off` (founder,
- * 11-18: Linux too). `YEW_SANDBOX=on` asks for it elsewhere as well; startSandbox says why not.
+ * Whether `yew serve` starts the sandbox: on macOS and Linux unless `YEW_SANDBOX=off`.
+ * `YEW_SANDBOX=on` asks for it elsewhere as well; startSandbox says why not.
  */
 export function sandboxWanted(
 	setting: string | undefined,

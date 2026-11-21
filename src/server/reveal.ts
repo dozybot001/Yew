@@ -135,7 +135,7 @@ export function openFileCommand(
 /**
  * What the system default may open: documents, pictures, PDFs, audio and video. Anything else could be
  * run, installed or followed by the program registered for it (scripts, apps, profiles, installers),
- * and third-party apps register more of those, so only this list is opened (the security group, 11-21).
+ * and third-party apps register more of those, so only this list is opened.
  * The old Office formats (.doc, .xls, .ppt) can carry macros and are left out; the new ones cannot.
  */
 const DOCUMENT_TYPES = new Set(

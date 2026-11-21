@@ -7,11 +7,11 @@
  * tokens. Tokens and registered clients are secrets: they are kept in the system keychain, never in
  * mcp.json, the database or logs.
  *
- * What a server says about where to sign in is checked before it is used (security review,
- * 2026-11-18): every address is https; the details are for this server and from the sign-in server
- * Yew asked; PKCE with S256 is supported; a sign-in server that names itself in the browser's return
- * is the one the browser went to (RFC 9207). Requests that carry a code, a secret or a token do not
- * follow redirects. Signing out asks the server to void the tokens where it says how (RFC 7009).
+ * What a server says about where to sign in is checked before it is used: every address is https;
+ * the details are for this server and from the sign-in server Yew asked; PKCE with S256 is
+ * supported; a sign-in server that names itself in the browser's return is the one the browser went
+ * to (RFC 9207). Requests that carry a code, a secret or a token do not follow redirects. Signing
+ * out asks the server to void the tokens where it says how (RFC 7009).
  */
 import { createHash, randomBytes } from "node:crypto";
 import type { KeyStore } from "./keys.ts";

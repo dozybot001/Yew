@@ -212,7 +212,7 @@ export function serveCommand(): Command {
 				);
 			}
 			// Commands that do not run in the sandbox still cannot reach Yew's data or the Mac app's
-			// sign-in (guard.ts; the security group, 11-18).
+			// sign-in (guard.ts).
 			const { homedir: userHome } = await import("node:os");
 			const { startGuard, guardKind } = await import("../server/guard.ts");
 			const guardState = startGuard(

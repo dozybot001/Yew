@@ -4,10 +4,10 @@ import { basename, dirname, join } from "node:path";
 import { findRepositories } from "./sandbox.ts";
 
 /**
- * The outer guard (the security group, 11-18; blueprint, section 11). A session's command that does
- * not run in the system sandbox (one the person let run outside it, or every command where the
- * sandbox is off) still runs in a layer that keeps it from answering a decision in the person's
- * place, even in skip mode, in ways Yew cannot see in the command's text:
+ * The outer guard (blueprint, section 11). A session's command that does not run in the system
+ * sandbox (one the person let run outside it, or every command where the sandbox is off) still runs
+ * in a layer that keeps it from answering a decision in the person's place, even in skip mode, in
+ * ways Yew cannot see in the command's text:
  *
  * - it cannot read or write where decisions are kept and answered: Yew Harness's data folder, and
  *   the Mac app's web storage, which holds its sign-in; nor the folders the person keeps from
@@ -70,7 +70,7 @@ export function resolved(path: string): string {
 
 /**
  * Files and folders in the home folder that run by themselves later, outside the guard: login items,
- * the shells' start-up files, git's and ssh's settings (the security group, 11-18).
+ * the shells' start-up files, git's and ssh's settings.
  */
 export function startupPlaces(home: string): { files: string[]; folders: string[] } {
 	const at = (path: string) => resolved(join(home, path));
@@ -129,8 +129,8 @@ export function guardProfile(
 			...gitPatterns.map((pattern) => `(regex #"${pattern}")`),
 		].join(" ")})`,
 	];
-	// git-setup: repositories' own settings files, only under the folders the session may write
-	// (the security group, 11-20); a later rule wins in a Seatbelt profile.
+	// git-setup: repositories' own settings files, only under the folders the session may write;
+	// a later rule wins in a Seatbelt profile.
 	if (mode === "git-setup") {
 		const configs = GIT_CONFIGS.map((pattern) => `(regex #"${pattern}")`).join(" ");
 		for (const root of writable.map(resolved)) {

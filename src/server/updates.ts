@@ -6,8 +6,8 @@ import { conflict, invalid } from "./errors.ts";
 import type { Store } from "./store.ts";
 
 /**
- * Versions and updates (blueprint, "v1 之后：版本与更新"; founder, 11-19): what runs, what is
- * installed on this computer, and the newest version on npm.
+ * Versions and updates (blueprint, "v1 之后：版本与更新"): what runs, what is installed on this
+ * computer, and the newest version on npm.
  *
  * Once a day, unless turned off, Yew Harness asks the npm registry the person's npm uses for the
  * newest version of the package: nothing but that request, with `yew/<version>` as the user agent.
@@ -134,7 +134,7 @@ export class Updates {
 	#checking: Promise<UpdateState> | null = null;
 	/**
 	 * A mirror's package that is not npm's own got installed: no restart and no new Mac app until it
-	 * is installed again from npm's registry (the security group, 11-19).
+	 * is installed again from npm's registry.
 	 */
 	#blocked: { command: string; cleared: () => boolean } | null = null;
 
@@ -373,8 +373,8 @@ export class Updates {
 	async #install(version: string): Promise<void> {
 		const prefix = globalPrefix(this.#root);
 		const registry = await this.#registryUrl();
-		// From a mirror, the package must be the one npm's own registry has (the security group, 11-19):
-		// a different one is not installed. When npm's registry cannot be reached, it goes ahead.
+		// From a mirror, the package must be the one npm's own registry has: a different one is not
+		// installed. When npm's registry cannot be reached, it goes ahead.
 		let official: string | null = null;
 		if (registry !== DEFAULT_REGISTRY) {
 			const [mirror, fromNpm] = await Promise.all([

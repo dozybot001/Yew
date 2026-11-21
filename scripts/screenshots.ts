@@ -502,7 +502,7 @@ function seed(folder: string, lang: Lang, modelUrl: string): { env: NodeJS.Proce
 	store.setSetting("language", lang);
 	store.setSetting("theme", "system");
 	// The sidebar mascot's bubble would say the same thing in every picture; the website shows her in a
-	// claim of her own (founder, 2026-11-18: 「配图里每一张图左下角都有提醒，这个是否要去除一下？」).
+	// claim of her own.
 	store.setSetting("mascot", false);
 	store.setSetting("workspaces", [{ id: randomUUID(), name: "acme-shop", path: cwd }]);
 	const product = store.createGroup(story.teams.product);

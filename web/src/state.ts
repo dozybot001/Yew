@@ -317,7 +317,7 @@ export interface AppState {
 	decisions: PagedList<Card>;
 	/**
 	 * The approval center is a page of its own: you go there to clear what waits across sessions, and
-	 * into a session to work on one thing (founder, 2026-11-09). Null shows the session or home.
+	 * into a session to work on one thing. Null shows the session or home.
 	 */
 	page: "center" | "schedules" | "artifacts" | "usage" | "map" | null;
 	centerTab: CenterTab;

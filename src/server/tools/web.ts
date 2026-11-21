@@ -294,7 +294,7 @@ const openInBrowser: Opener = (url) =>
 /**
  * Opens an http(s) address in the person's default browser, for them to see: a page, a local
  * development server. Commands outside the sandbox cannot open programs or addresses themselves
- * (the guard closes LaunchServices; the security group, 11-18), so this is how a session does it.
+ * (the guard closes LaunchServices), so this is how a session does it.
  * Yew opens it, not a command. Asked about the first time for each site in the default mode.
  */
 export function openUrlTool(open: Opener = openInBrowser): ToolDefinition {
@@ -339,7 +339,7 @@ export function openUrlTool(open: Opener = openInBrowser): ToolDefinition {
 			if (url.protocol !== "http:" && url.protocol !== "https:") {
 				return errorResult("Only http and https addresses are opened.");
 			}
-			// Not Yew Harness's own page (the security group, 11-18), as with the browser tools.
+			// Not Yew Harness's own page, as with the browser tools.
 			const port = ownPort();
 			if (port !== null && namesHarness(url.href, port)) {
 				return errorResult(

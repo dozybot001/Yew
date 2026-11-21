@@ -811,12 +811,11 @@ export class Store {
 
 	/**
 	 * Takes the conversation back to just after `throughSeq` (blueprint 6.11, item 42). What came after
-	 * is deleted, since a rewind is often for a key or something private pasted by mistake (security
-	 * review, 2026-11-18): each entry keeps a row without content, so numbering and references stay
-	 * whole, and its tool calls' arguments and results, the approvals asked for them, its search entries
-	 * and the session's event history go. Files changed, commands run and letters sent meanwhile stay as
-	 * they are. It cannot go back past the latest summary of earlier history. Returns how many entries
-	 * were taken back.
+	 * is deleted, since a rewind is often for a key or something private pasted by mistake: each entry
+	 * keeps a row without content, so numbering and references stay whole, and its tool calls'
+	 * arguments and results, the approvals asked for them, its search entries and the session's event
+	 * history go. Files changed, commands run and letters sent meanwhile stay as they are. It cannot go
+	 * back past the latest summary of earlier history. Returns how many entries were taken back.
 	 */
 	rewindSession(id: string, throughSeq: number): number {
 		const count = this.tx(() => {

@@ -11,7 +11,7 @@ import type { BrowserMode } from "./settings.ts";
  * computer. Yew does not build these in; it runs two open-source servers.
  *
  * - browser: Playwright MCP by Microsoft (Apache-2.0). By default it drives the person's own Chrome
- *   through Playwright's extension, with their sign-ins, in the tabs they hand it (founder, 11-18);
+ *   through Playwright's extension, with their sign-ins, in the tabs they hand it;
  *   set to a separate window, it opens a Chrome of its own with a profile kept in Yew's data folder.
  * - computer: computer-use-mcp by Adam Jones (MIT). Screenshots, mouse and keyboard for the whole
  *   screen; macOS asks once for Screen Recording and Accessibility for the program that runs Yew.
@@ -87,7 +87,7 @@ export function builtinMcp(
 				// Page snapshots and screenshots it saves; otherwise they land in the folder Yew was started in.
 				"--output-dir",
 				join(yewHome, "tmp", "browser"),
-				// One more layer over Yew Harness's own port (the security group, 11-18).
+				// One more layer over Yew Harness's own port.
 				...(port ? ["--blocked-origins", `http://127.0.0.1:${port};http://localhost:${port}`] : []),
 			],
 			// Its root for files: uploads and named screenshots stay in this empty folder, not the whole

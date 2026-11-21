@@ -13,7 +13,7 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 
 /**
- * New versions of the app (blueprint, "版本与更新"; founder, 11-19): once a day, unless turned off,
+ * New versions of the app (blueprint, "版本与更新"): once a day, unless turned off,
  * Gitee, where the app is published, is asked for its newest release; only that request, with the
  * app's version as the user agent. The About page then links to the release page; nothing is
  * downloaded or installed from here.

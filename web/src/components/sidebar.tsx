@@ -627,7 +627,7 @@ function SessionRow({
 					{/*
 					 * On the right: the status while it is not idle (waiting for you comes first), else the
 					 * unread count, else the time. The unread count is a plain grey number, weaker than the
-					 * approval center's count of what waits for you, which keeps its chip (founder, 2026-11-09).
+					 * approval center's count of what waits for you, which keeps its chip.
 					 */}
 					{session.status !== "idle" ? (
 						<span className={`dot row-dot dot-${session.status}`} aria-hidden="true" />

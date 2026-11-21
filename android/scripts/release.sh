@@ -66,7 +66,7 @@ MANIFEST="$("$BUILD_TOOLS/aapt2" dump xmltree --file AndroidManifest.xml "$PENDI
 printf '%s\n' "$MANIFEST" | grep -q 'usesCleartextTraffic.*=false' || fail "这个包没有关掉明文连接"
 printf '%s\n' "$MANIFEST" | grep -q 'allowBackup.*=false' || fail "这个包没有关掉系统备份"
 
-# 3. Its permissions are exactly the ones on this list (the Android notes in Tenon-AI, docs/products/yew/android.md, section 4.6).
+# 3. Its permissions are exactly the ones on this list.
 OWN_PERMISSION="$PACKAGE.DYNAMIC_RECEIVER_NOT_EXPORTED_PERMISSION"
 PERMISSIONS="$("$BUILD_TOOLS/aapt2" dump permissions "$PENDING")" || fail "读不出包的权限"
 USED="$(printf '%s\n' "$PERMISSIONS" | sed -n "s/^uses-permission: name='\([^']*\)'.*$/\1/p" | sort)"

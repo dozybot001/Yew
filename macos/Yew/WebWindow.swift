@@ -187,7 +187,7 @@ final class WebWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDel
 		}
 		let ours = app.isYew(url) || isYewBlob(url)
 		// Only Yew Harness's own files are saved from the window; any other download link goes to the
-		// person's browser (the security group, 11-18).
+		// person's browser (a security requirement).
 		if navigationAction.shouldPerformDownload {
 			if ours {
 				decisionHandler(.download)
@@ -353,7 +353,7 @@ final class WebWindow: NSObject, NSWindowDelegate, WKNavigationDelegate, WKUIDel
 	}
 
 	/// A saved file is marked as downloaded, so macOS checks it before it is opened: what a session
-	/// made could be anything (the security group, 11-18).
+	/// made could be anything.
 	func downloadDidFinish(_ download: WKDownload) {
 		guard let file = saving.removeValue(forKey: ObjectIdentifier(download)) else { return }
 		Quarantine.mark(file, from: download.originalRequest?.url)

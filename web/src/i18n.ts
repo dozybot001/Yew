@@ -964,7 +964,7 @@ const zh = {
 	extraDirsHelp:
 		"在主工作目录之外，让这个会话直接读取或修改的其他目录（沙箱与文件工具同步生效；凭据目录和隐藏目录始终拒绝）。",
 	extraDirAccess: "目录权限",
-	extraDirsPlaceholder: "输入绝对路径，例如 ~/Tenon-AI",
+	extraDirsPlaceholder: "输入绝对路径，例如 ~/Projects/website",
 	removeFolder: "移除目录 {path}",
 	sessionDomainsSection: "沙箱联网域名",
 	sessionDomainsLabel: "本会话允许的域名",
@@ -2186,7 +2186,7 @@ const en: Record<MessageKey, string> = {
 	extraDirsHelp:
 		"Extra folders this session can read or edit alongside its main working folder. Enforced by both file tools and the sandbox; credentials and hidden folders stay blocked.",
 	extraDirAccess: "Folder access",
-	extraDirsPlaceholder: "Absolute path, e.g. ~/Tenon-AI",
+	extraDirsPlaceholder: "Absolute path, e.g. ~/Projects/website",
 	removeFolder: "Remove folder {path}",
 	sessionDomainsSection: "Sandbox network domains",
 	sessionDomainsLabel: "Domains allowed for this session",

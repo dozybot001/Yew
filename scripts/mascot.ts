@@ -1,5 +1,5 @@
 /**
- * Turns the mascot's generated pictures into the files Yew shows (the pose list in Tenon-AI, docs/products/yew/mascot.md, section 7).
+ * Turns the mascot's generated pictures into the files Yew shows.
  *
  * Poses: every <pose>.png in the source folder (by default ~/Pictures/素材/Yew/poses, where the
  * originals stay out of git) becomes web/public/mascot/<pose>.webp:
