@@ -220,10 +220,10 @@ export function defaultSpot(sidebarWidth: number): Spot {
 
 /**
  * What fits where she starts, left of the composer, in a page this wide right of the sidebar: nothing
- * when she would reach under the composer, so she is not shown (founder 11-21: 「窄屏可以隐藏宠物，
- * 如果一直不好适配的话」); only she when her bubble reaching right would cover the composer's corner,
- * so there it reaches back over the sidebar; else both. Each side of the composer then has room for
- * her gap from the sidebar, her width or her bubble's, and EDGE.
+ * when she would reach under the composer, so she is not shown and the composer keeps its place; only
+ * she when her bubble reaching right would cover the composer's corner, so there it reaches back over
+ * the sidebar; else both. Each side of the composer then has room for her gap from the sidebar, her
+ * width or her bubble's, and EDGE.
  */
 export function roomBesideComposer(page: number, size: Size): "none" | "mascot" | "both" {
 	const needs = (width: number) => COMPOSER_WIDTH + 2 * (START_GAP + width + EDGE);

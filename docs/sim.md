@@ -1,18 +1,17 @@
 # 评测用的模拟环境：接口
 
-版本 0.4（2026-11-18），接口已和「Yew 模型 · 开发」对过，正在实现：装载世界和登录随 1.5.0 发布；开始的闸门和场景时钟、运行记录和事件流、`YEW_SIM_AWAY` 还没做，现在世界里 `queued` 的信在 `yew serve` 起来后就投递，日期按真实时间走。出处：蓝图第十一节「v1 之后：和 Yew 模型一起走」第 1 条；要求见 `~/Yew-model/docs/eval-design.md` 第十节。
+`@tenonai/yew/sim` 给评测用：把一个场景（「世界」）装进新的数据目录，起一个 `yew serve`，由控制器扮演人来交任务、答审批，最后对账判分。装载世界和登录已经随 npm 包发布（1.5.0 起）；开始的闸门和场景时钟、运行记录和事件流、`YEW_SIM_AWAY` 还没做，现在世界里 `queued` 的信在 `yew serve` 起来后就投递，日期按真实时间走。
 
 分工：
 
 - **Yew Harness 提供三样**：能装进场景的临时实例、评测模式下的几个开关、一份运行记录。
-- **控制器负责其余**（在 `~/Yew-model`）：假会话的剧本、模拟的人、容器和网络、什么时候停、对账和判分。
+- **控制器负责其余**：假会话的剧本、模拟的人、容器和网络、什么时候停、对账和判分。
 
 几条约定：
 
-- **控制器怎么用 Harness**（「Yew 模型 · 开发」11-18）：控制器用 Python，外壳是 Inspect AI（0.3.291）。装载世界仍用 npm 包子路径 `@tenonai/yew/sim` 里的 `loadWorld`：控制器调 `~/Yew-model` 的 Node 小脚本 `scripts/sim-load.mjs`，由它 import，世界文件和数据目录作参数传进去。登录在 Python 里照 `signIn`（`src/sim/client.ts`）的做法做：同样的链接正则、`POST /api/auth/exchange`、Cookie 和 Origin。这两处（`loadWorld` 的参数和返回、一次性链接的格式和换 Cookie 的接口）要改时，「Yew Harness · 开发」先告诉「Yew 模型 · 开发」。控制器按版本固定，被测的实例也装同一个版本的包，运行记录里的 Harness 版本就对得上。
+- **控制器怎么用 Harness**：控制器用 Python，外壳是 Inspect AI（0.3.291）。装载世界用 npm 包子路径 `@tenonai/yew/sim` 里的 `loadWorld`：控制器调一个 Node 小脚本，由它 import，世界文件和数据目录作参数传进去。登录在 Python 里照 `signIn`（`src/sim/client.ts`）的做法做：同样的链接正则、`POST /api/auth/exchange`、Cookie 和 Origin。这两处（`loadWorld` 的参数和返回、一次性链接的格式和换 Cookie 的接口）是对外的接口，改动会写进更新记录。控制器按版本固定，被测的实例也装同一个版本的包，运行记录里的 Harness 版本就对得上。
 - **容器和网络归控制器**：容器不联网。被测模型和假会话都走一个 OpenAI 兼容的自定义服务商：`loadWorld` 的 `providers` 里 `baseUrl` 指向容器里 `127.0.0.1:13131` 的 Inspect bridge，bridge 经 `docker exec` 和控制器通信。这个服务商 `keyRequired: false`，不用放 Key。
 - **世界文件和人的规则不进容器**：装载在单独的一步里写进数据目录，跑 `yew serve` 的容器里没有世界文件；假会话的剧本和人的规则从头到尾留在控制器。
-- **改动的走法**：要改本文，「Yew 模型 · 开发」发消息给「Yew Harness · 开发」改，不直接改 `~/Yew`。
 
 ## 一、怎么跑
 
@@ -33,7 +32,7 @@
    - 看有什么待处理的：`GET /api/center`。
 9. 控制器判断该停了就停，在自己存的那份记录末尾写停止原因，再读 SQLite 或 `yew export` 对账。
 
-「Yew 模型 · 开发」11-18 在 1.5.0 上试跑（6 道样题、14 条剧本轨迹）时看到的两件事，都是有意如此，剧本要照着走：`edit` 之前要先 `read` 同一个文件；回复最后一段带「告诉我」这类话，也算回复末尾的提问，会作为兜底提问进审批中心。
+有两件事是有意如此，剧本要照着走：`edit` 之前要先 `read` 同一个文件；回复最后一段带「告诉我」这类话，也算回复末尾的提问，会作为兜底提问进审批中心。
 
 不加 skill 时 `skill` 传空字符串：`loadWorld` 总会在数据目录写一个 `AGENTS.md`。这个文件不存在时，Yew Harness 会退回去读 `~/.claude/CLAUDE.md`。控制器同时把 `HOME` 指向干净的目录。
 
@@ -130,18 +129,6 @@ JSON。时间都用 ISO 8601，带时区。会话、团队、工作区都用名�
 
 ## 五、协议版本
 
-`PROTOCOL_VERSION` 在 `src/shared/version.ts`，`/api/health` 的 `protocol` 字段能读到，也写进运行记录的第一行。信件、决定卡、授权请求、finish_task 的字段一改就升版本，并告诉「Yew 模型 · 开发」。
+`PROTOCOL_VERSION` 在 `src/shared/version.ts`，`/api/health` 的 `protocol` 字段能读到，也写进运行记录的第一行。信件、决定卡、授权请求、finish_task 的字段一改就升版本。
 
 - 第 1 版：finish_task 有可选的 `next`，写还剩什么、下一步谁做。
-
-## 修改记录
-
-- **0.4（2026-11-18）** 照「Yew 模型 · 开发」改开头的约定，接口没变：控制器改用 Python，外壳是 Inspect AI 0.3.291，装载经 Node 小脚本 import `loadWorld`，登录在 Python 里照 `signIn` 做，这两处要改先告诉对方；容器不联网，模型都经容器里的 Inspect bridge 走，去掉代理、放行名单和 `NODE_USE_ENV_PROXY`；放 Key 改为可选。写明哪些已实现、哪些还没做，以及试跑看到的两件事。评测开关从会话 Shell 的环境里去掉的那一行，撤回沙箱（a8ed7aa）时被一起撤掉了，这次补回。
-- **0.3（2026-11-18）** 照「Yew 模型 · 开发」的 18 处改：
-  - 加开始的闸门 `/api/sim/start`；
-  - 写全交任务的三种方式和怎么答暂存的信、兜底提问；
-  - 世界文件加 `openedBy`、`status`、信的 `key`、卡片的其余字段和 `deliveredTo`，信和决定由装载按时间插进记录，`choice` 用标签；
-  - 日期只留 YEW_SIM_DATE 加世界文件一个来源；
-  - 运行记录加 `prompt`、`message` 两种行，`model_call`、`tool_call`、`approval`、`session` 各补字段，助手的调用也记。
-- **0.2（2026-11-18）** 「Yew 模型 · 开发」答复：装载和登录做成函数，从 `@tenonai/yew/sim` 发布；「不在」用全局开关，排在最后；容器、网络和放行名单归控制器，留出 Ollama。
-- **0.1（2026-11-18）** 草案，按「Yew 模型 · 开发」的十四条写。已做：协议版本 1。

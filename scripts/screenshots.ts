@@ -1,5 +1,5 @@
 /**
- * The website's screenshots of Yew (docs/introduction.md, section 7): six pictures, each in Chinese and
+ * The screenshots of Yew Harness for the website and the README: six pictures, each in Chinese and
  * English, light and dark, saved as docs/assets/yew-<picture>-<zh|en>-<light|dark>.png.
  *
  * Every picture is Yew's real interface over local demo data. For each language the script sets up a

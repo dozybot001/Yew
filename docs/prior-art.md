@@ -4,7 +4,7 @@
 
 ## 一、结论
 
-- **不 fork，也不在现成项目上构建。** 按 [M1 实现计划](archive/m1-plan.md)自己写服务、Agent 循环、工具、权限和界面，参照下面这些项目的设计，没有复制代码。
+- **不 fork，也不在现成项目上构建。** 服务、Agent 循环、工具、权限和界面都自己写，参照下面这些项目的设计，没有复制代码。
   - 产品形态最接近的 Paseo、T3 Code 只包装 Claude Code、Codex 等外部命令行，没有自己的 Agent 循环。
   - 技术形态最接近的 OpenCode 自带循环、模型可换，但新版绑定 Effect 和 Bun，界面用 SolidJS，约 1.1 万个文件；fork 等于接手它的循环。
   - OpenClaw 是多渠道的个人助理网关，体量过大。pi 的 `apps/p2` 技术栈和 Yew Harness 最像（Node、React 19、pi），但 README 写明是原型，很快删除。
@@ -15,7 +15,7 @@
   4. Yew Harness 的审批可能挂几个小时、跨重启，循环要在每个工具调用上落库和恢复，这一层要自己掌握。
 
   它的循环文件 959 行，连同 Agent 类和类型约 2100 行，照着改写的成本不高。
-- **设计主要参照这几处**：pi（MIT）、OpenCode（MIT）、Gemini CLI（Apache-2.0）、Kimi Code（MIT）、OpenClaw（MIT）、T3 Code（MIT）。都是参照设计自己写，没有复制代码；2026-11-14 法务组把只读命令名单、「允许并记住」的前缀和剥包装命令三处和原文比过，不构成复制。
+- **设计主要参照这几处**：pi（MIT）、OpenCode（MIT）、Gemini CLI（Apache-2.0）、Kimi Code（MIT）、OpenClaw（MIT）、T3 Code（MIT）。都是参照设计自己写，没有复制代码；只读命令名单、「允许并记住」的前缀和剥包装命令这三处和原文逐一比过，不构成复制。
 
 ## 二、复制规则
 
@@ -109,7 +109,6 @@
   - 每 15 秒发一条 SSE 注释保活；客户端按静默时长识别手机休眠后的半开连接。
 - **Paseo `docs/timeline-sync.md`**（Apache-2.0）：实时增量和权威历史分两条路；发现序号缺口就按游标分页补齐；单条大小封顶截断，工具项 64 KiB，其他 256 KiB。
 - **Codex `codex-rs/app-server/README.md` 的 Thread read state 一节**：已读状态用 `{firstUnread, revision}` 表示，只有持久、可见的终态结果才推进它。
-- Yew Harness 的做法见 M1 计划第四节。
 
 ### 5.2 本机接口安全
 
@@ -138,7 +137,7 @@
 | 审批与提问的状态 | OpenCode `packages/app/src/session/requests/permission-machine.ts`、`question-machine.ts` | 各用一个状态机管键盘操作和切换 |
 | 长记录 | assistant-ui 的 virtualization 指南；pi `apps/p2/src/web/use-chat-scroll.ts`、`virtual-list.ts`；use-stick-to-bottom（MIT） | 按「行」虚拟化，不按消息，因为一轮可能有上百个工具调用；先试 `content-visibility: auto`；Chrome、Firefox 交给 `overflow-anchor`，Safari 手动锚定 |
 
-assistant-ui、ai-elements 不整体引入，只按需参考结构，符合「控件自绘」（规范第 7 节）。
+assistant-ui、ai-elements 不整体引入，只按需参考结构，控件照旧自绘。
 
 ## 六、M2：手机
 
@@ -169,14 +168,7 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，符合「�
 - **A2A `specification/a2a.proto`**（v1.0.1，Apache-2.0）：只借状态名（含 input_required、rejected、auth_required），以及「消息不可变、编号由发送方生成」。它面向跨网络的 Agent，进程内的会话用不上它的 JSON-RPC 和 gRPC。
 - **OpenClaw `docs/concepts/session-tool.md`、`docs/tools/loop-detection.md`**：别的会话发来的信，在提示和记录里都标为非用户；回复只送一次，不再回灌给对方；同一工具、同样参数、同样错误连续 3 次就拦截。
 - **RFC 3834**：带 Auto-Submitted 头的信不自动回复。
-- 对蓝图第七节的修改建议，做 M3 时和创始人定：
-  1. 信件只记投递状态：排队、已送达、暂存、拒收。投递在同一个事务里写进对方的记录并改状态。「已处理」移到请求自己的状态里：待接、进行中、待输入、完成、拒绝、失败、撤回。请求到终态时，结果自动回给发信人。「空闲时通知我」加过期时间。
-  2. 信封补 `in_reply_to`、`deadline`、`origin`（这条链起于哪个本人决定或定时任务）、`auto`、`delivery` 五个字段。只有请求、决定和本人消息在工具调用之间插入，通知和回报等本轮结束再送。（发信人，requestId）唯一。
-  3. 防循环收成三条：额度按你的每次动作计算；自动生成的信不能回复；转发次数在每个本人决定处重新计，同一对会话在一条链里往返超过上限就转暂存。
-  4. 期限到了只提醒，不替你选。暂存设上限，满了就拒收新信并告知发信人。
-  5. Shell 子进程和你是同一个系统用户，能运行 `yew send`、访问本机接口。Yew Harness 给子进程设会话标记，`yew send` 见到标记就把信记在该会话名下并扣它的额度。审批和决定接口只认浏览器配对得到的 Cookie，命令行凭据只能发信。
-  6. 同一项审批不重复出卡，参数相同的待批请求合并成一张（Hermes `tools/approval.py`）。
-  7. 「A2A 信箱」改叫「会话信箱」，免得被当成实现了 A2A 协议。
+- **Hermes `tools/approval.py`**（MIT，参考设计）：同一项审批不重复出卡，参数相同的待批请求合并成一张。
 
 ### 7.2 定时任务
 
@@ -191,7 +183,7 @@ assistant-ui、ai-elements 不整体引入，只按需参考结构，符合「�
   - 扫描 `<项目>/.agents/skills`、`~/.agents/skills`、`~/.yew/skills`，兼容 `.claude/skills`；同名时项目级优先，并告警。
   - YAML 宽松解析；项目技能先经信任再加载。
   - 技能清单进系统提示，技能内容不被压缩掉。
-  - `allowed-tools` 只当提示，不当放行（规范 21.2 不许规则整体放行）。
+  - `allowed-tools` 只当提示，不当放行：规则不能整体放行工具。
 - **MCP**：官方 TypeScript SDK v2（`@modelcontextprotocol/client` 2.4.0，Apache-2.0）作依赖，备选 `@earendil-works/pi-mcp`（MIT）。
 - **自带的 MCP 服务**（2026-11-16，不是 Yew Harness 本身的依赖，不复制代码；整棵依赖树锁在 `mcp-builtin/package-lock.json`，第一次使用时用 `npm ci --ignore-scripts` 装进数据目录）：浏览器用 microsoft/playwright-mcp（`@playwright/mcp`，Apache-2.0）；电脑操控用 domdomegg/computer-use-mcp（MIT）。比较过的：chrome-devtools-mcp（Apache-2.0，偏调试）；mediar-ai/mcp-server-macos-use（MIT，npm 包里带 posthog 等与功能无关的依赖，不用）。版本写在 `mcp-builtin/package.json`，升级时重新生成锁文件、看它们的更新记录，并对 `mcp-builtin` 运行 `npm audit`。2026-11-16 的审计：sharp 的高危（libvips 等）用 `overrides` 固定到已修复的 0.35.5；剩下 8 条中危都是 file-type 在解析恶意构造的文件时死循环（GHSA-5v7r-6r5c-r473），经 jimp 被 nut-js 带入。豁免理由：这里处理的只有本机截下的屏幕图像，没有外来文件；上游修复后随版本升级去掉。
   - 只做 stdio 和 Streamable HTTP。

@@ -94,7 +94,6 @@ The documents are written in Chinese.
 
 - [The system sandbox](docs/sandbox.md): what sessions' commands can and cannot do (also in English)
 - [Hooks](docs/hooks.md): commands of your own that run at set points of a session (also in English)
-- [External introduction](docs/introduction.md): the definition and capabilities used on the website and in stores
 - [Data inventory](docs/data-inventory.md): what Yew Harness keeps on your computer, and how to delete it
 - [Development conventions](AGENTS.md) and [changelog](CHANGELOG.md)
 

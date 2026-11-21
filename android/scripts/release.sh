@@ -18,7 +18,7 @@ cd "$ANDROID_DIR"
     fail "android/、package.json 或 src/shared/policy.ts 有没提交的改动。发布的包要对得上一个提交。"
 VERSION="$(sed -n 's/^.*"version": *"\([0-9][0-9.]*\)".*$/\1/p' ../package.json | head -1)"
 [ -n "$VERSION" ] || fail "读不到版本号"
-# The privacy policy in the package must be the one that covers Android (legal group, 2026-11-15).
+# The privacy policy in the package must be the one that covers Android.
 grep -q '安卓' app/src/main/res/values-zh-rCN/policy.xml && grep -q 'Android' app/src/main/res/values/policy.xml ||
     fail "应用里的隐私政策还没有安卓的内容。等它并进 src/shared/policy.ts 后跑 sync-policy.ts，再出包。"
 
@@ -98,4 +98,4 @@ printf '%s\n' "$PERMISSIONS" | sed 's/^/  /'
 echo "SHA256SUMS："
 sed 's/^/  /' "$OUT_DIR/SHA256SUMS"
 echo
-echo "这一步没有发布任何东西。对外放出要等：签名密钥的备份和恢复演练做完、安全组验过这个包；上传由主开发会话做。"
+echo "这一步没有发布任何东西。对外放出前，要先做完签名密钥的备份和恢复演练，再对这个包做一次安全复核。"
