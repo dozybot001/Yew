@@ -1,7 +1,7 @@
 /**
- * A session's letters over one turn (blueprint section 7): what it sent and read, the call that waits
- * for another session's answer, the scheduled run a turn may be, and what Yew sends on the session's
- * behalf when the turn ends. The loop in runner.ts asks this module; it does not keep letter state.
+ * A session's letters over one turn: what it sent and read, the call that waits for another
+ * session's answer, the scheduled run a turn may be, and what Yew sends on the session's behalf
+ * when the turn ends. The loop in runner.ts asks this module; it does not keep letter state.
  */
 import { isAbsolute, join } from "node:path";
 import { plainLine } from "../../shared/messages.ts";
@@ -36,7 +36,7 @@ export function freeName(store: Store, base: string): string {
 	}
 }
 
-/** A turn a scheduled task started (M3 plan, section 9). */
+/** A turn a scheduled task started. */
 export interface ScheduledRun {
 	letterId: string;
 	scheduleId: string;
@@ -301,12 +301,12 @@ export class Mailroom {
 	}
 
 	/**
-	 * The turn is over (blueprint 6.3, item 11). Sessions waiting for this one get its last reply. Every
+	 * The turn is over. Sessions waiting for this one get its last reply. Every
 	 * session whose request it read and has not answered hears how the turn ended: when the turn finished
 	 * normally and nothing it asked others is still open, its last reply goes back as the report and the
 	 * request is done; after an error, a stop, or while it waits for answers of its own, a notice says so
 	 * and the request stays open, so the real result still follows. A task session's opener hears about
-	 * every turn (M2 plan, section 6). What is owed is read from the database, so a restart in the middle
+	 * every turn. What is owed is read from the database, so a restart in the middle
 	 * loses nothing. Yew's letters never ask for more letters, so this cannot loop.
 	 */
 	endTurn(
@@ -437,7 +437,7 @@ export class Mailroom {
 
 	/**
 	 * A scheduled run ended. Its result goes on the task, and to the main conversation as a report, which
-	 * sums it up for the person (M3 plan, decision 3). For `task_session` runs, the owner standing
+	 * sums it up for the person. For `task_session` runs, the owner standing
 	 * session also receives the report, and a clean run archives the temporary task session when
 	 * `autoArchive` is on. A run the person stopped needs no report.
 	 */
@@ -581,8 +581,8 @@ export class Mailroom {
 	}
 
 	/**
-	 * Opens a task session for `parent` and sends it the brief as a request (blueprint 6.2, item 8). Its
-	 * permissions are never above the parent's: same mode and rules, the parent's folder or one inside it.
+	 * Opens a task session for `parent` and sends it the brief as a request. Its permissions are never
+	 * above the parent's: same mode and rules, the parent's folder or one inside it.
 	 */
 	openChild(
 		parent: Session,

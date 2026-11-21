@@ -86,7 +86,7 @@ const OFFER =
 /**
  * The question a reply ends with, if it ends with one: its last paragraph (outside code) when that asks
  * something or offers a next step. A session that asks the person this way goes idle, so Yew puts the
- * question in the approval center for it (blueprint principle 8: Yew carries this, not a prompt rule).
+ * question in the approval center for it: Yew's code carries this, not a rule in the prompt.
  */
 export function askedInReply(text: string): string | null {
 	const prose = text.replace(/```[\s\S]*?(```|$)/g, "").trim();
@@ -148,14 +148,14 @@ const MAX_MESSAGE_CHARS = 100_000;
 const MAX_STEPS = 500;
 /** How many times in a row a reply cut off at the model's output limit is continued by itself. */
 const MAX_CUT_REPLIES = 8;
-/** How long a session waits for another one's answer (blueprint 7.1: one wait, no polling). */
+/** How long a session waits for another one's answer: one wait, no polling. */
 const WAIT_MS = 30 * 60 * 1000;
-/** The result of a call that was running when Yew stopped (blueprint 7.3). */
 
 const CUT_CALL =
 	"Not run: your reply was cut off at the output limit before its tool calls were complete. Make the call again; write long content in parts.";
 const CUT_TOO_OFTEN = "The reply was cut off at the model's output limit several times in a row.";
 
+/** The result of a call that was running when Yew stopped. */
 const RESTARTED =
 	"Yew restarted while this call was running. It may or may not have finished; check the current state before running it again.";
 
@@ -229,9 +229,9 @@ const failure = (text: string): ToolResult => ({
 });
 
 /**
- * Runs sessions. Each working session is one async loop in this process (M1 plan, section 4): ask the
- * model, check and run the tools it calls, feed back the results, and repeat until the model stops.
- * Every step is stored as it happens, so a restart can tell what was in flight.
+ * Runs sessions. Each working session is one async loop in this process: ask the model, check and
+ * run the tools it calls, feed back the results, and repeat until the model stops. Every step is
+ * stored as it happens, so a restart can tell what was in flight.
  */
 export class Agents {
 	readonly #store: Store;
@@ -379,7 +379,7 @@ export class Agents {
 		await this.#live.get(sessionId)?.done;
 	}
 
-	/** The person sends a message: it starts a turn, or waits in the queue while one runs (blueprint 7.1). */
+	/** The person sends a message: it starts a turn, or waits in the queue while one runs. */
 	send(
 		sessionId: string,
 		text: string,
@@ -393,7 +393,7 @@ export class Agents {
 			throw conflict("This session is archived. Restore it first.", undefined, "session-archived");
 		const attachments =
 			attachmentIds.length > 0 ? this.attachments.verifyPending(sessionId, attachmentIds) : [];
-		// The person stepped in: a full quota of letters again, and a new chain of hand-offs (blueprint 7.1).
+		// The person stepped in: a full quota of letters again, and a new chain of hand-offs.
 		this.#dropReplyQuestions(sessionId);
 		this.#held.resume(sessionId);
 		this.#store.resetLettersSent(sessionId);
@@ -478,9 +478,9 @@ export class Agents {
 	}
 
 	/**
-	 * Takes the conversation back to a point the person picked (blueprint 6.11, item 42): one of its
-	 * replies, or just before one of the person's messages. Not while it works. A question Yew made of a
-	 * reply goes with the reply. Returns how many entries were taken back.
+	 * Takes the conversation back to a point the person picked: one of its replies, or just before
+	 * one of the person's messages. Not while it works. A question Yew made of a reply goes with the
+	 * reply. Returns how many entries were taken back.
 	 */
 	rewind(sessionId: string, entryId: string): number {
 		if (this.isRunning(sessionId)) {
@@ -519,8 +519,8 @@ export class Agents {
 	}
 
 	/**
-	 * Starts a fresh context window in place for a session (blueprint 6.12, item 50); the session must
-	 * not be working. Full history stays searchable and scrollable; only the active model window resets.
+	 * Starts a fresh context window in place for a session; the session must not be working. Full
+	 * history stays searchable and scrollable; only the active model window resets.
 	 */
 	async renewNow(sessionId: string, summarize = true): Promise<"done" | "nothing" | "failed"> {
 		if (this.isRunning(sessionId)) {
@@ -866,7 +866,7 @@ export class Agents {
 	/**
 	 * A session started from the home page is named after the start of its first message. After its
 	 * first turn its own model gives it a short name, once; a name the person or the main conversation
-	 * chose is kept (blueprint section 5).
+	 * chose is kept.
 	 */
 	async #nameAfterFirstTurn(sessionId: string): Promise<void> {
 		const session = this.#store.getSession(sessionId);
@@ -994,7 +994,10 @@ export class Agents {
 		}
 	}
 
-	/** Checks every call of a batch first (asking where needed), then runs the allowed ones (prior-art 4.1). */
+	/**
+	 * Checks every call of a batch first (asking where needed), then runs the allowed ones
+	 * (docs/prior-art.md, 4.1).
+	 */
 	async #runCalls(
 		sessionId: string,
 		rows: ToolCallView[],
@@ -1121,7 +1124,7 @@ export class Agents {
 			}
 			const run = this.#mail.run(sessionId);
 			if (decision.effect === "ask" && run?.unattended) {
-				// Nobody is there to say yes: refuse now rather than wait (blueprint 6.1, item 6).
+				// Nobody is there to say yes: refuse now rather than wait.
 				run.refused.push(decision.request.summary);
 				results.set(row.id, {
 					result: {
@@ -1354,9 +1357,9 @@ export class Agents {
 	}
 
 	/**
-	 * A permission a running command asks for, such as reaching a site (blueprint 6.1, item 6): what
-	 * only the person gives in the session's mode goes to them; otherwise skip mode allows it, and the
-	 * automatic mode's check decides first. True when allowed; else the request to ask the person with.
+	 * A permission a running command asks for, such as reaching a site: what only the person gives in
+	 * the session's mode goes to them; otherwise skip mode allows it, and the automatic mode's check
+	 * decides first. True when allowed; else the request to ask the person with.
 	 */
 	async #settlePermit(
 		sessionId: string,
@@ -1552,7 +1555,7 @@ export class Agents {
 		return context;
 	}
 
-	// --- letters (blueprint section 7) ---
+	// --- letters ---
 
 	#mailContext(sessionId: string, live: Live, callId: string): MailContext {
 		return {
@@ -1588,8 +1591,8 @@ export class Agents {
 
 	/**
 	 * Starts a session that has letters waiting, when it is free: idle, or stopped by an error. A session
-	 * that needs review (blueprint 7.3) or that the person stopped waits for the person; one that is
-	 * working gets its letters between tool calls.
+	 * that needs review or that the person stopped waits for the person; one that is working gets its
+	 * letters between tool calls.
 	 */
 	#wake(sessionId: string): void {
 		if (this.isRunning(sessionId) || this.#held.isPaused(sessionId)) return;

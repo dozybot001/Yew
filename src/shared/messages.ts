@@ -132,7 +132,7 @@ export interface Notice {
 		| "changed"
 		/** A daily spending limit: data has the code (budget-warning or budget-reached), scope, spent and limit. */
 		| "budget"
-		/** The automatic mode's check let a step run (blueprint 6.1, item 6): data has tool, summary, reason. */
+		/** The automatic mode's check let a step run: data has tool, summary, reason. */
 		| "reviewed"
 		/** One of the person's hooks failed or stopped a message: data has event, kind and text. */
 		| "hook";
@@ -193,7 +193,7 @@ export interface PersonQuote {
 export type AttachmentKind = "image" | "pdf" | "text";
 
 /**
- * Lightweight reference to a file the person attached to a message (blueprint 6.12, item 46).
+ * Lightweight reference to a file the person attached to a message.
  * The bytes live under `~/.yew/attachments/<sessionId>/` and are hydrated into model input on demand,
  * so SQLite, SSE streams and phone sync never carry raw base64 payloads.
  */
