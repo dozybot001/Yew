@@ -2,20 +2,16 @@ import assert from "node:assert/strict";
 import { describe, test } from "node:test";
 import { createApp } from "../src/server/http/app.ts";
 import { MailStore, type NewLetter } from "../src/server/mail/store.ts";
-import type { AssistantMessage } from "../src/shared/messages.ts";
-import type { Approval, Card, Entry } from "../src/shared/types.ts";
 import {
-	flowPath,
 	layoutMap,
 	MAX_ROWS,
 	type MapGroup,
 	type MapSession,
 	NODE_H,
-	NODE_W,
 	outline,
 	pickFlows,
 } from "../web/src/map-layout.ts";
-import { blockedSessions, tally, turnProgress, waitingOn } from "../web/src/progress.ts";
+import { checkLayout, session } from "./helpers/map.ts";
 import { newStore, sessionInput } from "./helpers/store.ts";
 
 const HOUR = 3600 * 1000;
@@ -119,41 +115,6 @@ describe("sessions map: letters", () => {
 		assert.deepEqual(body.letters, []);
 	});
 });
-
-const session = (
-	id: string,
-	extra: Partial<MapSession> = {},
-	createdAt = Number(id.replace(/\D/g, "")) || 0,
-): MapSession => ({ id, groupId: null, parentId: null, createdAt, ...extra });
-
-/** Every pair of nodes stands apart, and every session stands below the one that opened it. */
-function checkLayout(sessions: MapSession[], groups: MapGroup[], mainId: string | null) {
-	const layout = layoutMap(sessions, groups, mainId);
-	assert.equal(layout.nodes.length, sessions.length);
-	assert.equal(new Set(layout.nodes.map((node) => node.id)).size, sessions.length);
-	const at = new Map(layout.nodes.map((node) => [node.id, node]));
-	for (const [i, a] of layout.nodes.entries()) {
-		assert.ok(a.x >= 0 && a.y >= 0);
-		assert.ok(a.x + NODE_W <= layout.width && a.y + NODE_H <= layout.height);
-		for (const b of layout.nodes.slice(i + 1)) {
-			const apart = Math.abs(a.x - b.x) >= NODE_W || Math.abs(a.y - b.y) >= NODE_H;
-			assert.ok(apart, `${a.id} and ${b.id} overlap`);
-		}
-		if (a.parentId) {
-			const parent = at.get(a.parentId);
-			assert.ok(parent && parent.y + NODE_H <= a.y, `${a.id} is not below ${a.parentId}`);
-			assert.ok(parent && parent.x < a.x, `${a.id} is not indented under ${a.parentId}`);
-		}
-	}
-	// A column's heading does not lie on a session.
-	for (const column of layout.columns) {
-		for (const node of layout.nodes) {
-			const beside = node.x >= column.x + column.width || node.x + NODE_W <= column.x;
-			assert.ok(beside || node.y >= column.y + 20 || node.y + NODE_H <= column.y);
-		}
-	}
-	return layout;
-}
 
 describe("sessions map: layout", () => {
 	const teams: MapGroup[] = [
@@ -280,104 +241,31 @@ describe("sessions map: layout", () => {
 		assert.equal(picked.hidden, 1);
 		assert.equal(pickFlows(flows, new Set(["s1", "s2", "s3"]), 24).hidden, 0);
 
-		const layout = layoutMap(
-			[session("s1"), session("s2"), session("s3", { groupId: "g1" })],
-			teams,
-			null,
+		const sessions = [session("s1"), session("s2"), session("s3", { groupId: "g1" })];
+		const lines = [flows[0], flows[2], flows[3], flows[1]].filter((flow) => flow !== undefined);
+		const layout = layoutMap(sessions, teams, null, lines);
+		// A line to a session that is not on the map is left out; the others keep the order given.
+		assert.deepEqual(
+			layout.flows.map((flow) => [flow.from, flow.to, flow.count]),
+			[
+				["s1", "s2", 5],
+				["s2", "s1", 2],
+				["s3", "s1", 1],
+			],
 		);
-		const at = (id: string) => layout.nodes.find((node) => node.id === id) as never;
-		const there = flowPath(at("s1"), at("s2"), layout.nodes);
-		const back = flowPath(at("s2"), at("s1"), layout.nodes);
-		// The two directions of a pair do not lie on each other.
-		assert.notEqual(there.labelY, back.labelY);
-		assert.match(flowPath(at("s3"), at("s1"), layout.nodes).d, /^M[\d.]+ [\d.]+ C/);
-		for (const path of [there, back]) assert.ok(path.labelX <= layout.width);
-	});
-});
-
-const assistant = (...tools: string[]): AssistantMessage =>
-	({
-		role: "assistant",
-		content: tools.map((name, i) => ({ type: "toolCall", id: `c${i}`, name, arguments: {} })),
-		timestamp: 0,
-	}) as unknown as AssistantMessage;
-
-let seq = 0;
-const entry = (body: object, createdAt: number): Entry =>
-	({ id: `e${++seq}`, sessionId: "s", seq, createdAt, ...body }) as Entry;
-const said = (text: string, at: number) =>
-	entry({ role: "user", message: { role: "user", content: text, timestamp: at } }, at);
-const did = (at: number, ...tools: string[]) =>
-	entry({ role: "assistant", message: assistant(...tools) }, at);
-
-describe("session progress", () => {
-	test("counts the turn since the person's last message, the reply being written included", () => {
-		const entries = [
-			said("first", 100),
-			did(110, "read", "read", "shell"),
-			said("second", 200),
-			did(210, "read", "edit"),
-			entry({ role: "toolResult", message: {} }, 215),
-			// Yew's own notes to the model do not start a turn.
-			said("[From Yew, not from the person] a job ended", 220),
-			did(230, "grep", "shell", "todo_write"),
-		];
-		const turn = turnProgress(entries, assistant("shell"));
-		assert.equal(turn.startedAt, 200);
-		assert.deepEqual(turn.tools, ["read", "edit", "grep", "shell", "todo_write", "shell"]);
-		assert.deepEqual(tally(turn.tools), {
-			counts: { read: 1, edit: 1, search: 1, shell: 2 },
-			others: 1,
-		});
-		assert.deepEqual(turnProgress(entries.slice(0, 3), null), { startedAt: 200, tools: [] });
-	});
-
-	test("a letter starts a turn; after a stop the next work counts from its first step", () => {
-		const letter = entry(
-			{
-				role: "user",
-				message: { role: "user", content: "[From Yew, not from the person] letter", timestamp: 1 },
-				letter: { id: "l", kind: "request", summary: "", body: "" },
-			},
-			300,
-		);
-		assert.equal(turnProgress([said("a", 100), did(110, "read"), letter], null).startedAt, 300);
-		const stopped = entry({ role: "notice", notice: { kind: "interrupted", timestamp: 0 } }, 400);
-		const resumed = turnProgress(
-			[said("a", 100), did(110, "read"), stopped, did(500, "write")],
-			null,
-		);
-		assert.deepEqual(resumed, { startedAt: 500, tools: ["write"] });
-		assert.deepEqual(turnProgress([said("a", 100), stopped], null), { startedAt: null, tools: [] });
-		// Nothing that starts a turn is loaded: the counts stand, the time is not known.
-		assert.deepEqual(turnProgress([did(10, "read")], null), { startedAt: null, tools: ["read"] });
-	});
-
-	test("what a session waits for: the oldest of its requests, questions and cards", () => {
-		const approval = (id: string, sessionId: string, kind: Approval["kind"], createdAt: number) =>
-			({ id, sessionId, kind, status: "pending", createdAt }) as Approval;
-		const card = (requestedBy: string | null, createdBy: string | null, createdAt: number) =>
-			({ status: "pending", requestedBy, createdBy, createdAt }) as Card;
-		const approvals = [
-			approval("a1", "s1", "permission", 50),
-			approval("a2", "s1", "question", 40),
-			{ ...approval("a3", "s1", "question", 1), status: "resolved" } as Approval,
-			approval("a4", "s2", "permission", 5),
-		];
-		const cards = [
-			card("s3", "main", 20),
-			card(null, "main", 30),
-			{ ...card("s1", "main", 2), status: "decided" } as Card,
-		];
-		assert.deepEqual(waitingOn("s1", approvals, cards), { kind: "question", since: 40, count: 2 });
-		assert.deepEqual(waitingOn("s3", approvals, cards), { kind: "decision", since: 20, count: 1 });
-		// A card nobody else asked for keeps the session that put it up waiting.
-		assert.deepEqual(waitingOn("main", approvals, cards), {
-			kind: "decision",
-			since: 30,
-			count: 1,
-		});
-		assert.equal(waitingOn("s9", approvals, cards), null);
-		assert.deepEqual([...blockedSessions(approvals, cards)].sort(), ["main", "s1", "s2", "s3"]);
+		const [there, back, single] = layout.flows;
+		assert.ok(there && back && single);
+		// The two directions of a pair are two lines that do not touch.
+		for (const point of there.points) {
+			assert.ok(!back.points.some((other) => other[0] === point[0] && other[1] === point[1]));
+		}
+		// Straight stretches and rounded corners, no curves.
+		for (const flow of layout.flows) assert.match(flow.d, /^M[\d.]+ [\d.]+( [LQ][\d. ]+)+$/);
+		// A count where more than one letter went, inside the picture.
+		assert.equal(single.label, null);
+		for (const { label } of [there, back]) {
+			assert.ok(label && label.x > 0 && label.x < layout.width && label.y < layout.height);
+		}
+		assert.notDeepEqual(there.label, back.label);
 	});
 });

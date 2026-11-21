@@ -3,10 +3,10 @@ import type { Group, LetterFlow, Session } from "../../../src/shared/types.ts";
 import { loadMap, selectSession } from "../actions.ts";
 import { t, useLang } from "../i18n.ts";
 import {
-	flowPath,
+	ARROW_LEN,
+	ARROW_W,
 	HEAD_H,
 	layoutMap,
-	type MapNode,
 	NODE_H,
 	NODE_W,
 	type OutlineItem,
@@ -89,9 +89,9 @@ function OutlineList({
 }
 
 /**
- * All sessions in one picture (blueprint 6.9, item 26): who opened whom, where the letters of the last
- * 24 hours went, and what each session is doing. A page of its own, like usage. The lines are a
- * picture; every session on it is a button, and the list under it says the same in words.
+ * All sessions in one picture: who opened whom, where the letters of the last 24 hours went, and what
+ * each session is doing. A page of its own, like usage. The lines are a picture; every session on it
+ * is a button, and the list under it says the same in words.
  */
 export function MapPage() {
 	useLang();
@@ -127,16 +127,12 @@ export function MapPage() {
 		};
 	}, [tick, count, tries]);
 
-	const layout = layoutMap(live, groups, mainId);
-	const at = new Map(layout.nodes.map((node) => [node.id, node]));
-	const onMap = new Set(at.keys());
+	const onMap = new Set(live.map((session) => session.id));
 	const { drawn, hidden } = pickFlows(flows ?? [], onMap, FLOW_LIMIT);
 	const listed = (flows ?? []).filter((flow) => onMap.has(flow.from) && onMap.has(flow.to));
-	const between = (flow: LetterFlow): [MapNode, MapNode] | null => {
-		const from = at.get(flow.from);
-		const to = at.get(flow.to);
-		return from && to ? [from, to] : null;
-	};
+	// The lines are laid out with the sessions: a gap that carries many of them grows wider.
+	const layout = layoutMap(live, groups, mainId, drawn);
+	const at = new Map(layout.nodes.map((node) => [node.id, node]));
 	return (
 		<main className="main center-main">
 			<header className="session-header">
@@ -147,7 +143,7 @@ export function MapPage() {
 			</header>
 			<div
 				className="center-body"
-				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+				// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 				tabIndex={0}
 			>
 				<div className="map-page">
@@ -184,7 +180,7 @@ export function MapPage() {
 								className="map-scroll"
 								role="group"
 								aria-label={t("mapPicture")}
-								// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard (spec 18.6)
+								// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 								tabIndex={0}
 							>
 								<div className="map-canvas" style={{ width: layout.width, height: layout.height }}>
@@ -197,14 +193,17 @@ export function MapPage() {
 										<defs>
 											<marker
 												id={marker}
-												markerWidth="7"
-												markerHeight="7"
-												refX="6.5"
-												refY="3.5"
+												markerWidth={ARROW_LEN}
+												markerHeight={ARROW_W}
+												refX={ARROW_LEN - 0.5}
+												refY={ARROW_W / 2}
 												orient="auto"
 												markerUnits="userSpaceOnUse"
 											>
-												<path className="map-arrow" d="M0 0.5L7 3.5L0 6.5Z" />
+												<path
+													className="map-arrow"
+													d={`M0 0L${ARROW_LEN} ${ARROW_W / 2}L0 ${ARROW_W}Z`}
+												/>
 											</marker>
 										</defs>
 										{layout.nodes.map((node) => {
@@ -213,22 +212,19 @@ export function MapPage() {
 												<path key={node.id} className="map-opened" d={openedPath(parent, node)} />
 											) : null;
 										})}
-										{drawn.map((flow) => {
-											const ends = between(flow);
-											if (!ends) return null;
-											const path = flowPath(ends[0], ends[1], layout.nodes);
+										{layout.flows.map((flow) => {
 											const faded = active !== null && flow.from !== active && flow.to !== active;
 											return (
 												<g
 													key={`${flow.from}>${flow.to}`}
 													className={faded ? "map-faded" : undefined}
 												>
-													<path className="map-flow" d={path.d} markerEnd={`url(#${marker})`} />
-													{flow.count > 1 && (
+													<path className="map-flow" d={flow.d} markerEnd={`url(#${marker})`} />
+													{flow.label && (
 														<text
 															className="chart-tick map-flow-count"
-															x={path.labelX}
-															y={path.labelY + 4}
+															x={flow.label.x}
+															y={flow.label.y + 4}
 															textAnchor="middle"
 														>
 															{flow.count}
