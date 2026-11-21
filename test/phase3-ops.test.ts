@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
-import { mkdirSync, realpathSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
+import { basename, join } from "node:path";
 import { describe, test } from "node:test";
 import type { Context } from "@earendil-works/pi-ai";
 import { toModelMessages } from "../src/server/agent/context.ts";
@@ -15,6 +15,7 @@ import { PermissionEngine } from "../src/server/permissions/engine.ts";
 import {
 	classifyGuardMode,
 	gitSettingsNote,
+	guardPreview,
 	mustConfirmReason,
 	parseShell,
 	sshPreview,
@@ -188,8 +189,8 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 			mkdirSync(join(apps, `${app}.app`));
 		}
 		mkdirSync(join(cwd, "Evil.app"));
-		assert.equal(classifyGuardMode("open -a Safari", [apps]), "launch-app");
-		assert.equal(classifyGuardMode('open -a "Visual Studio Code"', [apps]), "launch-app");
+		assert.equal(classifyGuardMode("open -a Safari", { apps: [apps] }), "launch-app");
+		assert.equal(classifyGuardMode('open -a "Visual Studio Code"', { apps: [apps] }), "launch-app");
 		for (const cmd of [
 			"open -a Safari notes.txt",
 			"open -a Safari https://example.com",
@@ -202,13 +203,13 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 			'open -a "Script Editor"',
 			"open -a Nowhere",
 		]) {
-			assert.equal(classifyGuardMode(cmd, [apps]), "default", cmd);
+			assert.equal(classifyGuardMode(cmd, { apps: [apps] }), "default", cmd);
 		}
-		assert.equal(classifyGuardMode("open -a Xcode", [apps]), "launch-app");
+		assert.equal(classifyGuardMode("open -a Xcode", { apps: [apps] }), "launch-app");
 		const parsedApp = parseShell("open -a Xcode");
 		assert.equal(parsedApp.understood, true);
 		assert.equal(mustConfirmReason(parsedApp.segments[0]?.argv ?? []), "launch-app");
-		assert.equal(classifyGuardMode("open -a Xcode && echo hi", [apps]), "default");
+		assert.equal(classifyGuardMode("open -a Xcode && echo hi", { apps: [apps] }), "default");
 		for (const asking of askingSessions) {
 			const appVerdict = engine.decide(
 				{ kind: "command", tool: "shell", command: "open -a Xcode" },
@@ -227,6 +228,77 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 		);
 	});
 
+	test("git -C opens the guard only for a folder the session may write, named by its full path", () => {
+		const given = tempDir("yew-gitc-cwd-");
+		const cwd = realpathSync(given);
+		const extra = realpathSync(tempDir("yew-gitc-extra-"));
+		const readOnly = realpathSync(tempDir("yew-gitc-read-"));
+		const outside = realpathSync(tempDir("yew-gitc-out-"));
+		for (const root of [cwd, extra, readOnly, outside]) {
+			mkdirSync(join(root, "repo", ".git"), { recursive: true });
+		}
+		symlinkSync(join(outside, "repo"), join(cwd, "away"));
+		symlinkSync(join(cwd, "repo"), join(cwd, "near"));
+		// The working folder as the session has it, links and all, and an extra folder it may write.
+		const folders = { writable: [given, extra] };
+		const repo = join(cwd, "repo");
+
+		for (const cmd of [
+			`git -C ${repo} config user.name A`,
+			`git -C "${repo}" config --local user.email a@example.com`,
+			`git -C ${join(extra, "repo")} remote add origin https://example.com/r.git`,
+			`git -C ${extra} init sub`,
+			`git -C ${cwd} clone --depth 1 https://example.com/r.git work`,
+			`git -C ${join(cwd, "near")} config user.name A`,
+		]) {
+			assert.equal(classifyGuardMode(cmd, folders), "git-setup", cmd);
+		}
+		for (const cmd of [
+			// Outside the folders the session may write: elsewhere, through a link, or read-only.
+			`git -C ${join(outside, "repo")} config user.name A`,
+			`git -C ${join(cwd, "away")} config user.name A`,
+			`git -C ${join(readOnly, "repo")} config user.name A`,
+			// Not a full path written out as is.
+			"git -C repo config user.name A",
+			`git -C ${repo}/.. config user.name A`,
+			`git -C ${cwd}/../${basename(outside)}/repo config user.name A`,
+			"git -C ~/repo config user.name A",
+			"git -C $HOME/repo config user.name A",
+			`git -C "$PWD/repo" config user.name A`,
+			`git -C ${cwd}/re* config user.name A`,
+			`git -C ${cwd}/rep? config user.name A`,
+			`git -C ${join(cwd, "missing")} config user.name A`,
+			'git -C "" config user.name A',
+			// One -C and nothing else before the subcommand.
+			`git -C ${cwd} -C ${repo} config user.name A`,
+			`git -C ${repo} -c core.fsmonitor=evil config user.name A`,
+			`git -c core.fsmonitor=evil -C ${repo} config user.name A`,
+			`git -C ${repo} --git-dir=${join(outside, "repo", ".git")} config user.name A`,
+			// What may be set stays the same.
+			`git -C ${repo} config core.hooksPath /tmp/h`,
+			`git -C ${cwd} clone --upload-pack=evil https://example.com/r.git`,
+			`git -C ${repo} config user.name A && echo hi`,
+		]) {
+			assert.equal(classifyGuardMode(cmd, folders), "default", cmd);
+		}
+		// Without the folders the session may write, -C opens nothing.
+		assert.equal(classifyGuardMode(`git -C ${repo} config user.name A`), "default");
+
+		// The card names the repository -C points at, links resolved.
+		const target = (cmd: string) =>
+			/at (.+): only its own settings file/.exec(guardPreview(cmd, cwd, folders) ?? "")?.[1];
+		assert.equal(target(`git -C ${join(cwd, "near")} config user.name A`), repo);
+		assert.equal(target(`git -C ${extra} init sub`), join(extra, "sub"));
+		assert.equal(
+			target(`git -C ${cwd} clone --depth 1 https://example.com/r.git work`),
+			join(cwd, "work"),
+		);
+		assert.equal(
+			guardPreview(`git -C ${join(cwd, "away")} config user.name A`, cwd, folders),
+			null,
+		);
+	});
+
 	test("a command refused a repository's settings is told when they are let through", () => {
 		for (const output of [
 			// The guard, git config and git remote on a line with cd or -C.
@@ -242,7 +314,8 @@ describe("phase 3.1: outer guard split & ssh/scp preview", () => {
 			assert.ok(note, output);
 			assert.match(note, /outside the sandbox/);
 			assert.match(note, /on its own/);
-			assert.match(note, /no cd, -C/);
+			assert.match(note, /one -C and the full path of a folder this session may write/);
+			assert.match(note, /no cd, -c/);
 		}
 		for (const output of [
 			"error: could not lock config file /Users/u/.gitconfig: Operation not permitted",

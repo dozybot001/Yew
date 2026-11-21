@@ -1,4 +1,5 @@
 import { join } from "node:path";
+import type { Session } from "../../shared/types.ts";
 import { classifyGuardMode, guardPreview, sshPreview } from "../permissions/shell.ts";
 import { activeSandbox, type SiteQuestion } from "../sandbox.ts";
 import { validateSandboxDomain } from "../settings.ts";
@@ -35,8 +36,18 @@ const PARAMETERS = {
 const OUTSIDE_SANDBOX = {
 	type: "boolean",
 	description:
-		"Run outside the sandbox when the command needs saved credentials (such as git push), repository setup (git init, clone, remote or local git config, as one git command on its own: no cd, -C or other commands with it), launching a desktop app (open -a <name>, on its own), listening on a local port, or writing outside the session's folders. Whether the person is asked follows the session's permission mode.",
+		"Run outside the sandbox when the command needs saved credentials (such as git push), repository setup (git init, clone, remote or local git config, as one git command on its own: no cd or other commands with it; for a repository outside the working folder, git -C with the full path of a folder you may write), launching a desktop app (open -a <name>, on its own), listening on a local port, or writing outside the session's folders. Whether the person is asked follows the session's permission mode.",
 };
+
+/** The folders a session's commands may write: its working folder and the extra folders it may write. */
+function writableFolders(session: Session): string[] {
+	return [
+		...(session.cwd ? [session.cwd] : []),
+		...(session.options.extraDirs ?? [])
+			.filter((dir) => dir.access === "write")
+			.map((dir) => dir.path),
+	];
+}
 
 export const shellTool: ToolDefinition = {
 	name: "shell",
@@ -72,7 +83,9 @@ export const shellTool: ToolDefinition = {
 		const description = typeof args.description === "string" ? args.description.trim() : "";
 		const ssh = command ? sshPreview(command) : null;
 		// A command that opens the outer guard says what it changes, or that the app runs unprotected.
-		const guard = command ? guardPreview(command, session.cwd) : null;
+		const guard = command
+			? guardPreview(command, session.cwd, { writable: writableFolders(session) })
+			: null;
 		const combined = [guard, ssh, description].filter(Boolean).join("\n");
 		return combined ? { description: combined.slice(0, 600) } : {};
 	},
@@ -82,12 +95,7 @@ export const shellTool: ToolDefinition = {
 		const timeout = int(args, "timeout_seconds", 1, MAX_TIMEOUT) ?? DEFAULT_TIMEOUT;
 		const cwd = ctx.session.cwd;
 		if (!cwd) return errorResult("This session has no working folder.");
-		const writableDirs = [
-			cwd,
-			...(ctx.session.options.extraDirs ?? [])
-				.filter((dir) => dir.access === "write")
-				.map((dir) => dir.path),
-		];
+		const writableDirs = writableFolders(ctx.session);
 		const allowedSites = ctx.session.options.allowedDomains ?? [];
 		const logDir = join(ctx.tmpDir, "output");
 
@@ -122,7 +130,7 @@ export const shellTool: ToolDefinition = {
 			logDir,
 			onOutput: ctx.output,
 			outsideSandbox: outside,
-			guardMode: classifyGuardMode(command),
+			guardMode: classifyGuardMode(command, { writable: writableDirs }),
 			writableDirs,
 			allowedSites,
 			// A site outside the sandbox's list is put to the person on this call's card.
