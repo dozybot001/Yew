@@ -8,11 +8,14 @@ import { fileURLToPath } from "node:url";
 import { McpHub } from "../src/server/mcp.ts";
 import { PermissionEngine } from "../src/server/permissions/engine.ts";
 import {
+	checkRepositories,
+	gitInternals,
+	snapshotRepositories,
+} from "../src/server/repositories.ts";
+import {
 	activeSandbox,
 	appWebData,
-	checkRepositories,
 	commandFilesystem,
-	gitInternals,
 	INSTALL_DIR,
 	PACKAGE_SITES,
 	type SandboxPlaces,
@@ -20,7 +23,6 @@ import {
 	sandboxConfig,
 	sandboxEnvironment,
 	sandboxWanted,
-	snapshotRepositories,
 	startSandbox,
 	stopSandbox,
 } from "../src/server/sandbox.ts";

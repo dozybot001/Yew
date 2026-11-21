@@ -21,11 +21,10 @@ import {
 	isReadOnly,
 	matchesPrefix,
 	mustConfirmReason,
-	parseShell,
 	pathArguments,
 	rememberPrefix,
-	unwrap,
 } from "./shell.ts";
+import { parseShell, unwrap } from "./shell-parse.ts";
 
 /** What a tool call touches, as far as permissions are concerned. Tools describe themselves this way. */
 export type Subject =

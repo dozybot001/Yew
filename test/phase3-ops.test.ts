@@ -16,10 +16,9 @@ import {
 	classifyGuardMode,
 	gitSettingsNote,
 	guardPreview,
-	mustConfirmReason,
-	parseShell,
-	sshPreview,
-} from "../src/server/permissions/shell.ts";
+} from "../src/server/permissions/guard-mode.ts";
+import { mustConfirmReason, sshPreview } from "../src/server/permissions/shell.ts";
+import { parseShell } from "../src/server/permissions/shell-parse.ts";
 import type { ToolDefinition } from "../src/server/tools/types.ts";
 import { newStore, sessionInput, tempDir } from "./helpers/store.ts";
 

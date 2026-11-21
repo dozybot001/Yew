@@ -4,12 +4,8 @@ import { homedir } from "node:os";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { type Decision, PermissionEngine, type Subject } from "../src/server/permissions/engine.ts";
-import {
-	mustConfirmReason,
-	parseShell,
-	rememberPrefix,
-	unwrap,
-} from "../src/server/permissions/shell.ts";
+import { mustConfirmReason, rememberPrefix } from "../src/server/permissions/shell.ts";
+import { parseShell, unwrap } from "../src/server/permissions/shell-parse.ts";
 import type { PermissionRule, Session } from "../src/shared/types.ts";
 import { tempDir } from "./helpers/store.ts";
 

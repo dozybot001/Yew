@@ -3,16 +3,9 @@ import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { containersNote, type GuardMode, guardedArgs } from "../guard.ts";
 import { newId } from "../ids.ts";
-import { gitSettingsNote } from "../permissions/shell.ts";
-import {
-	activeSandbox,
-	checkRepositories,
-	OUTSIDE_GIT,
-	quote,
-	type SiteQuestion,
-	sandboxed,
-	snapshotRepositories,
-} from "../sandbox.ts";
+import { gitSettingsNote } from "../permissions/guard-mode.ts";
+import { checkRepositories, snapshotRepositories } from "../repositories.ts";
+import { activeSandbox, OUTSIDE_GIT, quote, type SiteQuestion, sandboxed } from "../sandbox.ts";
 
 export const MAX_LINES = 2000;
 export const MAX_BYTES = 50 * 1024;

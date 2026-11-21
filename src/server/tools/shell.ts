@@ -1,6 +1,7 @@
 import { join } from "node:path";
 import type { Session } from "../../shared/types.ts";
-import { guardFor, guardPreview, sshPreview } from "../permissions/shell.ts";
+import { guardFor, guardPreview } from "../permissions/guard-mode.ts";
+import { sshPreview } from "../permissions/shell.ts";
 import { activeSandbox, type SiteQuestion } from "../sandbox.ts";
 import { validateSandboxDomain } from "../settings.ts";
 import { startCommand } from "./process.ts";

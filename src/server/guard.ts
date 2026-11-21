@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, readdirSync, realpathSync, statSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, dirname, join } from "node:path";
-import { findRepositories } from "./sandbox.ts";
+import { findRepositories } from "./repositories.ts";
 
 /**
  * The outer guard. A session's command that does not run in the system
