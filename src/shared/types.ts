@@ -52,6 +52,11 @@ export interface SessionOptions {
 	extraDirs?: ExtraDir[];
 	/** Additional domains this session's sandboxed commands may reach without asking. */
 	allowedDomains?: string[];
+	/**
+	 * Its commands outside the sandbox may use container engines and virtual machines (Docker and the
+	 * like). A container can mount any folder, Yew's data too, so only the person turns this on.
+	 */
+	allowContainers?: boolean;
 	/** What happens to letters from other sessions: delivered, held for the person, or refused. */
 	receive?: ReceivePolicy;
 	/** Letters the session may send per message or decision from the person; null or absent: the default. */
@@ -448,11 +453,12 @@ export interface PermissionRequest {
 }
 
 /**
- * Permissions (授权) only the person gives: what cannot be taken back on
- * this computer or reaches other people, and Yew Harness's own command line, which manages the
- * person's keys and the service. The default mode asks about them like any risky call; the
- * automatic mode does not put them to its check; skip mode asks about no permission, these
- * included, and marks them in the record.
+ * Permissions (授权) only the person gives: what cannot be taken back on this computer or reaches
+ * other people, Yew Harness's own command line, which manages the person's keys and the service,
+ * and the system's services (launchctl, systemctl, crontab), which start programs outside Yew
+ * Harness's protection. The default mode asks about them like any risky call; the automatic mode
+ * does not put them to its check; skip mode asks about no permission, these included, and marks
+ * them in the record.
  */
 export const DECISION_REASONS: ReadonlySet<ConfirmReason> = new Set<ConfirmReason>([
 	"yew-cli",
@@ -470,6 +476,7 @@ export const DECISION_REASONS: ReadonlySet<ConfirmReason> = new Set<ConfirmReaso
 	"write-disk",
 	"delete-outside",
 	"service-action",
+	"system-services",
 	"raise-budget",
 ]);
 

@@ -760,6 +760,16 @@ export function gitSetupTarget(argv: string[], cwd: string): string {
 	return dir;
 }
 
+/** A command's guard mode and, for a repository setup, the repository it changes. */
+export function guardFor(
+	command: string,
+	cwd: string,
+	folders: GuardFolders = {},
+): { mode: GuardMode; repository: string | null } {
+	const { mode, argv, folder } = guardChoice(command, folders);
+	return { mode, repository: mode === "git-setup" ? gitSetupTarget(argv, folder ?? cwd) : null };
+}
+
 /** What a card for a command that opens the guard says, besides the command; null for any other. */
 export function guardPreview(
 	command: string,

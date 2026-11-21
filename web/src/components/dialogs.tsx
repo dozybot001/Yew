@@ -261,7 +261,9 @@ export function SessionSettingsDialog({
 	const [newDirAccess, setNewDirAccess] = useState<ExtraDirAccess>("read");
 	const savedDomains = (session.options.allowedDomains ?? []).join("\n");
 	const [domainsText, setDomainsText] = useState(savedDomains);
+	const [containers, setContainers] = useState(session.options.allowContainers === true);
 	const roleId = useId();
+	const containersId = useId();
 	const compactId = useId();
 	const compactErrorId = useId();
 	const quotaId = useId();
@@ -302,6 +304,9 @@ export function SessionSettingsDialog({
 				...(budget !== savedBudget ? { dailyBudget: Number(budget) || null } : {}),
 				canPostCards: canPost,
 				canOrganize,
+				...(containers !== (session.options.allowContainers === true)
+					? { allowContainers: containers }
+					: {}),
 				...(JSON.stringify(extraDirs) !== JSON.stringify(savedExtraDirs) ? { extraDirs } : {}),
 				...(domainsText !== savedDomains ? { allowedDomains: nextDomains } : {}),
 			},
@@ -318,6 +323,7 @@ export function SessionSettingsDialog({
 		budget !== savedBudget ||
 		canPost !== (session.options.canPostCards === true) ||
 		canOrganize !== (session.options.canOrganize === true) ||
+		containers !== (session.options.allowContainers === true) ||
 		JSON.stringify(extraDirs) !== JSON.stringify(savedExtraDirs) ||
 		domainsText !== savedDomains;
 	return (
@@ -449,6 +455,17 @@ export function SessionSettingsDialog({
 						<span className="field-error">{fieldError(save.error, "allowedDomains")}</span>
 					)}
 				</section>
+			)}
+			{session.cwd !== null && (
+				<SettingGroup title={t("containersSection")}>
+					<SettingRow
+						label={t("allowContainers")}
+						labelId={containersId}
+						hint={t("allowContainersHint")}
+					>
+						<Switch labelledBy={containersId} checked={containers} onChange={setContainers} />
+					</SettingRow>
+				</SettingGroup>
 			)}
 			<SettingGroup title={t("lettersSection")}>
 				<SettingRow label={t("receive")} labelId={receiveId} hint={t(`receive_${receive}_hint`)}>

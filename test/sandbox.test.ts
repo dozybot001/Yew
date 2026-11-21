@@ -130,6 +130,26 @@ describe("sandbox configuration", () => {
 		assert.deepEqual(checkRepositories(snapshotRepositories([folder])), []);
 	});
 
+	test("a repository a command names is checked after it however deep it is, and once", () => {
+		const folder = join(base, "repo-named");
+		const deep = join(folder, ...Array.from({ length: 10 }, (_, index) => `d${index}`), "inner");
+		const near = join(folder, "near");
+		for (const place of [deep, near]) mkdirSync(place, { recursive: true });
+		const walked = snapshotRepositories([folder]);
+		const named = snapshotRepositories([folder, deep, near]);
+		// What a git init or clone with -C can leave there: a repository, here one kept elsewhere.
+		for (const place of [deep, near]) writeFileSync(join(place, ".git"), "gitdir: ../kept\n");
+		// The walk through the folder does not go as deep as the first.
+		const missed = checkRepositories(walked);
+		assert.equal(missed.length, 1);
+		assert.ok(missed[0]?.includes(near));
+		const notes = checkRepositories(named);
+		assert.equal(notes.length, 2);
+		for (const place of [deep, near]) {
+			assert.ok(notes.some((note) => note.includes(`made a repository at ${place}`)));
+		}
+	});
+
 	test("the data folder cannot be read; credential files and the SSH agent only when the setting allows", () => {
 		assert.ok(config.filesystem.denyRead.includes(places.home));
 		assert.ok(config.filesystem.denyRead.includes(join(homedir(), ".ssh")));

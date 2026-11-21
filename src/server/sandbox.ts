@@ -364,8 +364,16 @@ const RUNS_PROGRAMS =
  */
 export function checkRepositories(before: RepositoryState): string[] {
 	const notes: string[] = [];
+	// A repository found from two of the folders, or by two spellings of one folder, is checked once.
+	const seen = new Set<string>();
 	for (const folder of before.folders) {
 		for (const repository of findRepositories(folder)) {
+			let real = repository.git;
+			try {
+				real = realpathSync(repository.git);
+			} catch {}
+			if (seen.has(real)) continue;
+			seen.add(real);
 			const made = !before.repositories.has(repository.git);
 			const where = dirname(repository.git);
 			if (!repository.folder) {

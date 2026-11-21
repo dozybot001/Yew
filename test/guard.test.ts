@@ -2,11 +2,16 @@
 // Yew's data folder, the Mac app's web storage and the folders the person keeps from sessions. The
 // normal flow only; whether it can be got around is tested separately.
 import assert from "node:assert/strict";
-import { spawnSync } from "node:child_process";
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { join } from "node:path";
+import { execFile, spawnSync } from "node:child_process";
+import { existsSync, mkdirSync, readFileSync, statSync, symlinkSync, writeFileSync } from "node:fs";
+import { createServer, type Server } from "node:net";
+import { tmpdir } from "node:os";
+import { dirname, join } from "node:path";
 import { afterEach, describe, test } from "node:test";
 import {
+	containerPlaces,
+	containersNote,
+	type GuardReach,
 	guardedArgs,
 	guardKind,
 	guardProfile,
@@ -25,13 +30,74 @@ describe("the guard", () => {
 		assert.match(profile, /^\(version 1\)\n\(allow default\)\n/);
 		assert.match(
 			profile,
-			/\(deny file-read\* file-write\* \(subpath "\/Users\/me\/\.yew"\) \(subpath "\/odd\/\\"name\\""\)\)\n/,
+			/\(deny file-read\* file-write\* \(subpath "\/Users\/me\/\.yew"\) \(subpath "\/odd\/\\"name\\""\) /,
 		);
 		assert.match(profile, /\(literal "\/Users\/me\/\.zshrc"\)/);
 		assert.match(profile, /\(literal "\/Users\/me\/\.ssh\/config"\)/);
 		assert.match(profile, /\(subpath "\/Users\/me\/Library\/LaunchAgents"\)/);
 		assert.match(profile, /\(regex #"\/\\\.git\/\(modules\/\.\+\/\)\?hooks/);
 		assert.match(profile, /\(deny lsopen\)\n\(deny appleevent-send\)$/);
+	});
+
+	test("container engines and virtual machines are closed unless the session may use containers", () => {
+		const home = "/Users/me";
+		const line = (profile: string, start: string) =>
+			profile.split("\n").find((text) => text.startsWith(start)) ?? "";
+		const closed = guardProfile(["/Users/me/.yew"], home);
+		const files = line(closed, "(deny file-read* file-write*");
+		const network = line(closed, "(deny network-outbound");
+		for (const folder of [
+			".docker",
+			"Library/Containers/com.docker.docker",
+			".orbstack",
+			".colima",
+			".config/colima",
+			".lima",
+			".rd",
+			".local/share/containers",
+		]) {
+			// Closed like Yew's data, so the keys to their machines cannot be read, and no socket in
+			// them can be reached.
+			assert.ok(files.includes(`(subpath "${home}/${folder}")`), folder);
+			assert.ok(network.includes(`(remote unix-socket (subpath "${home}/${folder}"))`), folder);
+		}
+		assert.ok(network.includes('(remote unix-socket (path-literal "/var/run/docker.sock"))'));
+		for (const port of [22, 2375, 2376, 6443]) {
+			assert.ok(network.includes(`(remote ip "localhost:${port}")`), String(port));
+		}
+		assert.match(
+			closed,
+			/\(deny mach-lookup \(global-name-prefix "com\.apple\.Virtualization\."\) \(xpc-service-name-prefix "com\.apple\.Virtualization\."\)\)/,
+		);
+
+		// The person lets the session use containers: only ssh to this computer stays closed.
+		const open = guardProfile(["/Users/me/.yew"], home, "default", [], { containers: true });
+		assert.equal(
+			line(open, "(deny file-read* file-write*"),
+			'(deny file-read* file-write* (subpath "/Users/me/.yew"))',
+		);
+		assert.equal(
+			line(open, "(deny network-outbound"),
+			'(deny network-outbound (remote ip "localhost:22"))',
+		);
+		assert.doesNotMatch(open, /mach-lookup/);
+	});
+
+	test("a container engine kept from a command is said, with who can open it", () => {
+		for (const output of [
+			"Cannot connect to the Docker daemon at unix:///Users/me/.docker/run/docker.sock. Is the docker daemon running?",
+			"permission denied while trying to connect to the docker API at unix:///var/run/docker.sock",
+			"The connection to the server 127.0.0.1:6443 was refused - did you specify the right host or port?",
+			"limactl: open /Users/me/.lima/default/lima.yaml: operation not permitted",
+		]) {
+			assert.match(
+				containersNote(output) ?? "",
+				/allow containers in this session's settings/,
+				output,
+			);
+		}
+		assert.equal(containersNote("docker: 'compose' is not a docker command."), null);
+		assert.equal(containersNote("ls: x: Permission denied"), null);
 	});
 
 	test("Linux lays an empty folder over each folder and binds the rest as it is", () => {
@@ -41,16 +107,28 @@ describe("the guard", () => {
 		const work = tempDir("yew-work-");
 		mkdirSync(join(work, ".git", "hooks"), { recursive: true });
 		writeFileSync(join(work, ".git", "config"), "[core]");
-		const args = guardedArgs("/bin/sh", "ls", work, {
-			kind: "linux",
+		mkdirSync(join(home, ".colima", "default"), { recursive: true });
+		const state = {
+			kind: "linux" as const,
 			program: "/usr/bin/bwrap",
 			places: [data, "/nowhere/file"],
 			hidden: () => [],
 			home,
 			runtime: null,
-		});
+		};
+		const args = guardedArgs("/bin/sh", "ls", work, state);
 		// Start-up files as the system sees them, links resolved.
 		const bashrc = resolved(join(home, ".bashrc"));
+		// A container engine's folder gets an empty one laid over it; its sockets elsewhere (the
+		// system's own, which this computer may or may not have) an empty file.
+		const isFolder = (path: string) => existsSync(path) && statSync(path).isDirectory();
+		const engines = containerPlaces(home, tmpdir());
+		const others = [...new Set(engines.folders.map(resolved))]
+			.filter((path) => isFolder(path) && path !== resolved(join(home, ".colima")))
+			.flatMap((path) => ["--tmpfs", path]);
+		const sockets = [...new Set(engines.files.map(resolved))]
+			.filter((path) => existsSync(path) && !isFolder(path))
+			.flatMap((path) => ["--ro-bind", "/dev/null", path]);
 		assert.deepEqual(args, {
 			file: "/usr/bin/bwrap",
 			args: [
@@ -59,6 +137,10 @@ describe("the guard", () => {
 				"/",
 				"--tmpfs",
 				data,
+				"--tmpfs",
+				resolved(join(home, ".colima")),
+				...others,
+				...sockets,
 				"--ro-bind",
 				bashrc,
 				bashrc,
@@ -74,6 +156,9 @@ describe("the guard", () => {
 				"ls",
 			],
 		});
+		// The person lets the session use containers: nothing laid over their places.
+		const open = guardedArgs("/bin/sh", "ls", work, state, "default", [work], { containers: true });
+		assert.ok(open && !open.args.includes(resolved(join(home, ".colima"))));
 	});
 
 	test("without a guard there is nothing to run in", () => {
@@ -142,5 +227,98 @@ describe("the guard", () => {
 		const denied = spawnSync(closed.file, closed.args, { encoding: "utf8" });
 		assert.notEqual(denied.status, 0);
 		assert.doesNotMatch(denied.stdout, /kept from sessions/);
+	});
+
+	test("a command in it cannot reach a container engine unless the session may use containers", {
+		skip: runs ? false : "no sandbox-exec or bubblewrap here",
+	}, async () => {
+		const data = tempDir("yew-data-");
+		writeFileSync(join(data, "yew.db"), "the decisions");
+		// Short: a socket's path has a length limit.
+		const home = tempDir("yew-h-");
+		const started = startGuard([data], home, (name) => findProgram(name));
+		if (started.kind === "none") {
+			assert.ok(started.problem);
+			return;
+		}
+		const work = tempDir("yew-work-");
+		// Where Docker Desktop, Colima and Lima take orders.
+		const sockets = [
+			join(home, ".docker", "run", "docker.sock"),
+			join(home, ".colima", "default", "docker.sock"),
+			join(home, ".lima", "default", "sock", "docker.sock"),
+		].map(resolved);
+		const servers = await Promise.all(
+			sockets.map((path) => {
+				mkdirSync(dirname(path), { recursive: true });
+				return new Promise<Server>((done) => {
+					const server = createServer();
+					server.listen(path, () => done(server));
+				});
+			}),
+		);
+		const connect = (path: string, reach: GuardReach) => {
+			const code =
+				"require('node:net').connect(process.argv[1]).on('connect', () => { console.log('connected'); process.exit(0); }).on('error', (error) => { console.log(error.code); process.exit(1); })";
+			const command = `'${process.execPath}' -e "${code}" '${path}'`;
+			const args = guardedArgs("/bin/sh", command, work, undefined, "default", [work], reach);
+			assert.ok(args);
+			return new Promise<string>((done) => {
+				execFile(args.file, args.args, { encoding: "utf8", timeout: 20_000 }, (_error, stdout) =>
+					done(stdout.trim()),
+				);
+			});
+		};
+		try {
+			for (const [index, socket] of sockets.entries()) {
+				// A link to the socket from a folder the command may write leads to the same place.
+				const link = join(work, `link-${index}.sock`);
+				symlinkSync(socket, link);
+				for (const path of [socket, link]) {
+					assert.notEqual(await connect(path, {}), "connected", path);
+					assert.equal(await connect(path, { containers: true }), "connected", path);
+				}
+			}
+		} finally {
+			for (const server of servers) server.close();
+		}
+	});
+
+	test("a command in it cannot have a program started outside it later", {
+		skip: process.platform === "darwin" ? false : "macOS only",
+	}, () => {
+		const data = tempDir("yew-data-");
+		writeFileSync(join(data, "yew.db"), "the decisions");
+		const started = startGuard([data], tempDir("yew-person-"), (name) => findProgram(name));
+		if (started.kind === "none") {
+			assert.ok(started.problem);
+			return;
+		}
+		const work = tempDir("yew-work-");
+		const run = (command: string) => {
+			const args = guardedArgs("/bin/sh", command, work);
+			assert.ok(args);
+			return spawnSync(args.file, args.args, { encoding: "utf8", timeout: 20_000 });
+		};
+		// launchd turns down a job sent from inside the guard.
+		const label = `cn.tenonai.yew.test.${process.pid}`;
+		try {
+			assert.notEqual(run(`launchctl submit -l ${label} -- /usr/bin/true`).status, 0);
+			assert.notEqual(spawnSync("launchctl", ["list", label]).status, 0);
+		} finally {
+			spawnSync("launchctl", ["remove", label]);
+		}
+		// cron and at would run a job later; their programs (setuid) do not start in the guard.
+		for (const command of ["crontab -l", "at -l"]) {
+			const ran = run(command);
+			assert.notEqual(ran.status, 0, command);
+			assert.match(ran.stderr, /not permitted/i, command);
+		}
+		// A .command file would run in Terminal: LaunchServices is closed.
+		const marker = join(work, "opened");
+		const script = join(work, "probe.command");
+		writeFileSync(script, `#!/bin/sh\ntouch '${marker}'\n`, { mode: 0o755 });
+		assert.notEqual(run(`open '${script}'`).status, 0);
+		assert.equal(existsSync(marker), false);
 	});
 });

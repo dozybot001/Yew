@@ -1,7 +1,7 @@
 import { type ChildProcess, spawn } from "node:child_process";
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
-import { type GuardMode, guardedArgs } from "../guard.ts";
+import { containersNote, type GuardMode, guardedArgs } from "../guard.ts";
 import { newId } from "../ids.ts";
 import { gitSettingsNote } from "../permissions/shell.ts";
 import {
@@ -134,6 +134,10 @@ export async function startCommand(options: {
 	outsideSandbox?: boolean;
 	/** Guard relaxation profile for explicitly approved Decision commands (`git-setup` or `launch-app`). */
 	guardMode?: GuardMode;
+	/** The repository a `git-setup` command names: checked after it, however deep it is. */
+	repository?: string | null;
+	/** The person lets this session use container engines outside the sandbox. */
+	containers?: boolean;
 	/** Folders this command may write inside the sandbox; defaults to `[cwd]`. */
 	writableDirs?: string[];
 	/** Extra domains this command may reach inside the sandbox without asking. */
@@ -168,11 +172,17 @@ export async function startCommand(options: {
 		for (const name of box.unset) delete env[name];
 		Object.assign(env, box.env);
 	}
-	// When running a human-approved `git-setup` decision outside the sandbox, snapshot repos for post-run audit.
-	const gitAudit = !box && guardMode === "git-setup" ? snapshotRepositories(writable) : null;
+	// A repository setup outside the sandbox is checked when it ends: the repositories in the folders
+	// it may write, and the one it names, which may be deeper than the walk through those folders goes.
+	const gitAudit =
+		!box && guardMode === "git-setup"
+			? snapshotRepositories([...writable, ...(options.repository ? [options.repository] : [])])
+			: null;
 	const guarded = box
 		? null
-		: guardedArgs(shell, options.command, options.cwd, undefined, guardMode, writable);
+		: guardedArgs(shell, options.command, options.cwd, undefined, guardMode, writable, {
+				containers: options.containers === true,
+			});
 	const outsideEnv =
 		outside || guardMode === "git-setup"
 			? {
@@ -216,8 +226,16 @@ export async function startCommand(options: {
 		const { blocked, notes } = box?.finish() ?? { blocked: [], notes: [] };
 		const auditNotes = gitAudit ? checkRepositories(gitAudit) : [];
 		// A repository's settings refused by the sandbox or the guard: say when they are let through.
-		const settings = box || guarded ? gitSettingsNote(output.render()) : null;
-		const allNotes = [...notes, ...auditNotes, ...(settings ? [settings] : [])];
+		// A container engine refused by the guard: say who can open it.
+		const rendered = box || guarded ? output.render() : "";
+		const settings = rendered ? gitSettingsNote(rendered) : null;
+		const engines = guarded && options.containers !== true ? containersNote(rendered) : null;
+		const allNotes = [
+			...notes,
+			...auditNotes,
+			...(settings ? [settings] : []),
+			...(engines ? [engines] : []),
+		];
 		if (allNotes.length > 0) {
 			output.push(`\n[Yew Harness, after the command]\n${allNotes.join("\n")}\n`);
 		}

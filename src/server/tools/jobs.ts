@@ -27,6 +27,7 @@ export class Jobs {
 		outsideSandbox?: boolean;
 		writableDirs?: string[];
 		allowedSites?: string[];
+		containers?: boolean;
 	}): Promise<Job> {
 		const id = `job-${this.#next++}`;
 		const running = await startCommand({ ...options, background: true });

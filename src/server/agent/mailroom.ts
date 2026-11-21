@@ -642,6 +642,7 @@ export class Mailroom {
 					...(parent.options.allowedDomains?.length
 						? { allowedDomains: parent.options.allowedDomains }
 						: {}),
+					...(cwd !== null && parent.options.allowContainers ? { allowContainers: true } : {}),
 				},
 				parentId: parent.id,
 			});

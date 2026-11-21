@@ -373,6 +373,18 @@ describe("api: approval center and letters", () => {
 		}
 	});
 
+	test("the person lets a session use containers in its settings", async () => {
+		const { call } = setup();
+		const { product } = await twoSessions(call);
+		const path = `/api/sessions/${product.id}`;
+		const updated = await (
+			await call("PATCH", path, { options: { allowContainers: true } })
+		).json();
+		assert.equal(updated.options.allowContainers, true);
+		const bad = await call("PATCH", path, { options: { allowContainers: "yes" } });
+		assert.equal(bad.status, 400);
+	});
+
 	test("a session from the home page is named by Yew once; a name the person picks stays", async () => {
 		const { call } = setup();
 		const started = await (

@@ -304,6 +304,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			}
 			const canPostCards = optBoolean(options, "canPostCards");
 			const canOrganize = optBoolean(options, "canOrganize");
+			const allowContainers = optBoolean(options, "allowContainers");
 			const dailyBudget = options.dailyBudget;
 			if (dailyBudget !== undefined && !isBudget(dailyBudget)) {
 				throw invalid("dailyBudget must be an amount in US dollars above 0, or null.", "options");
@@ -333,6 +334,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			if (letterQuota !== undefined) next.letterQuota = letterQuota as number | null;
 			if (canPostCards !== undefined) next.canPostCards = canPostCards;
 			if (canOrganize !== undefined) next.canOrganize = canOrganize;
+			if (allowContainers !== undefined) next.allowContainers = allowContainers;
 			if (extraDirs !== undefined) next.extraDirs = extraDirs;
 			if (allowedDomains !== undefined) next.allowedDomains = allowedDomains;
 			// A new limit starts without the room given by continuing under the old one.

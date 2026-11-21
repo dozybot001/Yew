@@ -454,6 +454,7 @@ export class Scheduler {
 					...(owner.options.allowedDomains?.length
 						? { allowedDomains: owner.options.allowedDomains }
 						: {}),
+					...(owner.options.allowContainers ? { allowContainers: true } : {}),
 				},
 				parentId: owner.id,
 			});

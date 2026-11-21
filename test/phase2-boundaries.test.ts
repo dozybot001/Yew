@@ -302,6 +302,7 @@ describe("phase 2.3: dual-mode scheduled tasks (task_session)", () => {
 				permissionMode: "default",
 				extraDirs: [{ path: extra, access: "read" }],
 				allowedDomains: ["status.tenonai.cn"],
+				allowContainers: true,
 			},
 		});
 
@@ -328,6 +329,7 @@ describe("phase 2.3: dual-mode scheduled tasks (task_session)", () => {
 		assert.equal(taskSession.parentId, owner.id);
 		assert.deepEqual(taskSession.options.extraDirs, [{ path: extra, access: "read" }]);
 		assert.deepEqual(taskSession.options.allowedDomains, ["status.tenonai.cn"]);
+		assert.equal(taskSession.options.allowContainers, true);
 
 		await agents.whenIdle(taskSession.id);
 		await agents.whenIdle(owner.id);

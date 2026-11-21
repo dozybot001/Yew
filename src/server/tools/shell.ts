@@ -1,6 +1,6 @@
 import { join } from "node:path";
 import type { Session } from "../../shared/types.ts";
-import { classifyGuardMode, guardPreview, sshPreview } from "../permissions/shell.ts";
+import { guardFor, guardPreview, sshPreview } from "../permissions/shell.ts";
 import { activeSandbox, type SiteQuestion } from "../sandbox.ts";
 import { validateSandboxDomain } from "../settings.ts";
 import { startCommand } from "./process.ts";
@@ -97,6 +97,7 @@ export const shellTool: ToolDefinition = {
 		if (!cwd) return errorResult("This session has no working folder.");
 		const writableDirs = writableFolders(ctx.session);
 		const allowedSites = ctx.session.options.allowedDomains ?? [];
+		const containers = ctx.session.options.allowContainers === true;
 		const logDir = join(ctx.tmpDir, "output");
 
 		if (bool(args, "background")) {
@@ -108,6 +109,7 @@ export const shellTool: ToolDefinition = {
 				outsideSandbox: outside,
 				writableDirs,
 				allowedSites,
+				containers,
 			});
 			return {
 				content: [
@@ -123,6 +125,7 @@ export const shellTool: ToolDefinition = {
 		const permit = ctx.permit;
 		// A question still open when the command has ended is withdrawn.
 		const asking = new AbortController();
+		const guard = guardFor(command, cwd, { writable: writableDirs });
 		const running = await startCommand({
 			command,
 			cwd,
@@ -130,7 +133,9 @@ export const shellTool: ToolDefinition = {
 			logDir,
 			onOutput: ctx.output,
 			outsideSandbox: outside,
-			guardMode: classifyGuardMode(command, { writable: writableDirs }),
+			guardMode: guard.mode,
+			repository: guard.repository,
+			containers,
 			writableDirs,
 			allowedSites,
 			// A site outside the sandbox's list is put to the person on this call's card.

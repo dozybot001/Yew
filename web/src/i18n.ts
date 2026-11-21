@@ -973,6 +973,10 @@ const zh = {
 	extraDirsPlaceholder: "输入绝对路径，例如 ~/Projects/website",
 	removeFolder: "移除目录 {path}",
 	sessionDomainsSection: "沙箱联网域名",
+	containersSection: "容器",
+	allowContainers: "允许用 Docker 等容器",
+	allowContainersHint:
+		"打开后，这个会话在沙箱外的命令可以用 Docker、OrbStack、Colima、Lima、Podman 这类容器和虚拟机。容器能挂载这台电脑上的任何目录，包括 Yew Harness 的数据目录，所以默认关着，只有你能打开。",
 	sessionDomainsLabel: "本会话允许的域名",
 	sandboxAllowedDomains: "沙箱全局允许的域名",
 	sandboxDomainsHelp:
@@ -2201,6 +2205,10 @@ const en: Record<MessageKey, string> = {
 	extraDirsPlaceholder: "Absolute path, e.g. ~/Projects/website",
 	removeFolder: "Remove folder {path}",
 	sessionDomainsSection: "Sandbox network domains",
+	containersSection: "Containers",
+	allowContainers: "Allow Docker and other containers",
+	allowContainersHint:
+		"When on, this session's commands outside the sandbox can use container engines and virtual machines such as Docker, OrbStack, Colima, Lima and Podman. A container can mount any folder on this computer, Yew Harness's data folder included, so this stays off unless you turn it on.",
 	sessionDomainsLabel: "Domains allowed for this session",
 	sandboxAllowedDomains: "Global sandbox allowed domains",
 	sandboxDomainsHelp:
