@@ -1,6 +1,6 @@
 import { useId } from "react";
 import { FILE_OPENERS, type FileOpener } from "../../../../src/shared/types.ts";
-import { saveSettings } from "../../actions.ts";
+import { saveSettings } from "../../actions/settings.ts";
 import { t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
 import { Dialog, Select, SettingGroup, SettingRow, Switch } from "../ui.tsx";

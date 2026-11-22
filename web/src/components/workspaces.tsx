@@ -1,5 +1,5 @@
 import { useId, useState } from "react";
-import { saveSettings } from "../actions.ts";
+import { saveSettings } from "../actions/settings.ts";
 import { api } from "../api.ts";
 import { t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";

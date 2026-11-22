@@ -6,7 +6,7 @@ import {
 	type PermissionMode,
 	type PermissionRequest,
 } from "../../../src/shared/types.ts";
-import { answerApproval } from "../actions.ts";
+import { answerApproval } from "../actions/messages.ts";
 import { formatCost, formatWaited, hasMessage, type MessageKey, t } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";
 import { Capped, Diff, ScrollBlock } from "./content.tsx";

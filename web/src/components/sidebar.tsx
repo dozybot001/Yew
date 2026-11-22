@@ -1,21 +1,16 @@
 import { type ReactNode, useEffect, useRef, useState } from "react";
 import type { Group, Session } from "../../../src/shared/types.ts";
+import { openArtifacts, openMap, openSchedules, openUsage } from "../actions/pages.ts";
 import {
 	deleteGroup,
 	duplicateSession,
 	exportSession,
-	openArtifacts,
-	openCenter,
-	openMap,
-	openSchedules,
-	openUsage,
 	renameGroup,
-	saveSettings,
-	selectSession,
-	setMainSession,
 	toggleArchived,
 	updateSession,
-} from "../actions.ts";
+} from "../actions/sessions.ts";
+import { saveSettings } from "../actions/settings.ts";
+import { openCenter, selectSession, setMainSession } from "../actions.ts";
 import { api } from "../api.ts";
 import { formatAgo, t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";

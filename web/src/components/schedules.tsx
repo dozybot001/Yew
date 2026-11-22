@@ -13,8 +13,8 @@ import {
 	runScheduleNow,
 	type ScheduleInput,
 	saveSchedule,
-	selectSession,
-} from "../actions.ts";
+} from "../actions/pages.ts";
+import { selectSession } from "../actions.ts";
 import { ApiError } from "../api.ts";
 import { formatWhen, type MessageKey, t, useLang } from "../i18n.ts";
 import { useAppState } from "../state.ts";

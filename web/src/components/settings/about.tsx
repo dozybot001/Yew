@@ -1,12 +1,7 @@
 import { type ReactNode, useEffect, useId, useState } from "react";
 import { POLICY_VERSION } from "../../../../src/shared/policy.ts";
-import {
-	checkUpdates,
-	installUpdate,
-	loadUpdates,
-	restartYew,
-	saveSettings,
-} from "../../actions.ts";
+import { saveSettings } from "../../actions/settings.ts";
+import { checkUpdates, installUpdate, loadUpdates, restartYew } from "../../actions/updates.ts";
 import { formatAgo, getLang, t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
 import {

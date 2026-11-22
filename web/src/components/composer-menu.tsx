@@ -13,7 +13,7 @@ import {
 	type SessionFileMatch,
 	type SessionSkillItem,
 	searchSessionFiles,
-} from "../actions.ts";
+} from "../actions/messages.ts";
 import { t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";
 import { useAppState } from "../state.ts";

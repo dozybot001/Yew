@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AssistantMessage, ToolResultMessage } from "../../../src/shared/messages.ts";
 import type { ChangeStep, Entry, Session } from "../../../src/shared/types.ts";
-import { forkSession, loadEarlier, markRead, rewindSession, toolCallFor } from "../actions.ts";
+import { forkSession, rewindSession } from "../actions/sessions.ts";
+import { loadEarlier, markRead, toolCallFor } from "../actions.ts";
 import { formatAgo, formatCost, getLang, t, useLang } from "../i18n.ts";
 import { YEW_NOTE } from "../progress.ts";
 import { type TranscriptState, useAppState } from "../state.ts";

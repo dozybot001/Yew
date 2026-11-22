@@ -20,19 +20,16 @@ import {
 	compactSession,
 	continueSession,
 	editQueued,
-	freeName,
-	loadModels,
 	removePendingAttachment,
 	renewSession,
-	selectSession,
 	sendMessage,
-	startSession,
 	stopSession,
-	takePrefill,
-	updateSession,
 	uploadAttachment,
 	withdrawQueued,
-} from "../actions.ts";
+} from "../actions/messages.ts";
+import { freeName, startSession, takePrefill, updateSession } from "../actions/sessions.ts";
+import { loadModels } from "../actions/settings.ts";
+import { selectSession } from "../actions.ts";
 import { formatCost, formatNumber, permissionHint, t, useLang } from "../i18n.ts";
 import { useImeGuard } from "../ime.ts";
 import { continueMarkdownList, indentMarkdownList, type TextEdit } from "../markdown-edit.ts";

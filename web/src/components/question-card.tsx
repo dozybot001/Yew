@@ -5,7 +5,7 @@ import {
 	type QuestionRequest,
 	questionsOf,
 } from "../../../src/shared/types.ts";
-import { answerApproval } from "../actions.ts";
+import { answerApproval } from "../actions/messages.ts";
 import { formatWaited, t } from "../i18n.ts";
 import { QuestionIcon, SendIcon } from "./icons.tsx";
 import { Button, CardHead, ErrorBox, useAction, useNow } from "./ui.tsx";

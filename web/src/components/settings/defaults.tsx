@@ -1,6 +1,6 @@
 import { useEffect, useId, useState } from "react";
 import { PERMISSION_MODES, type PermissionMode } from "../../../../src/shared/types.ts";
-import { saveSettings, spentToday } from "../../actions.ts";
+import { saveSettings, spentToday } from "../../actions/settings.ts";
 import { formatCost, permissionHint, t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
 import { cleanAmount } from "../dialogs.tsx";

@@ -1,12 +1,7 @@
 import { useEffect, useId, useMemo, useState } from "react";
 import type { Artifact } from "../../../src/shared/types.ts";
-import {
-	artifactText,
-	artifactVersions,
-	deleteArtifact,
-	openArtifact,
-	selectSession,
-} from "../actions.ts";
+import { artifactText, artifactVersions, deleteArtifact, openArtifact } from "../actions/pages.ts";
+import { selectSession } from "../actions.ts";
 import { formatNumber, formatWhen, t, useLang } from "../i18n.ts";
 import { useAppState } from "../state.ts";
 import { Markdown } from "./content.tsx";

@@ -12,14 +12,8 @@ import {
 	type SessionKind,
 	type ThinkingLevel,
 } from "../../../src/shared/types.ts";
-import {
-	createGroup,
-	createSession,
-	pickFolder,
-	renameGroup,
-	spentToday,
-	updateSession,
-} from "../actions.ts";
+import { createGroup, createSession, renameGroup, updateSession } from "../actions/sessions.ts";
+import { pickFolder, spentToday } from "../actions/settings.ts";
 import { ApiError } from "../api.ts";
 import { formatCost, t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";

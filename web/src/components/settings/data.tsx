@@ -1,14 +1,13 @@
 import { useCallback, useEffect, useId, useState } from "react";
 import type { Session } from "../../../../src/shared/types.ts";
+import { deleteArchivedSessions, loadArchived } from "../../actions/sessions.ts";
 import {
 	cleanUpData,
-	deleteArchivedSessions,
 	exportData,
-	loadArchived,
 	loadData,
 	pickFolder,
 	revealData,
-} from "../../actions.ts";
+} from "../../actions/settings.ts";
 import { formatBytes, formatClock, t, useLang } from "../../i18n.ts";
 import type { DataCleanup, DataExport, DataOverview } from "../../state.ts";
 import { ConfirmDialog } from "../dialogs.tsx";

@@ -7,7 +7,7 @@ import {
 	removeMcpServer,
 	saveSettings,
 	signOutMcpServer,
-} from "../../actions.ts";
+} from "../../actions/settings.ts";
 import { hasMessage, type MessageKey, t, useLang } from "../../i18n.ts";
 import { type McpServerView, useAppState } from "../../state.ts";
 import { ConfirmDialog } from "../dialogs.tsx";

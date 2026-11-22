@@ -8,7 +8,7 @@ import {
 	saveKey,
 	saveSearchKey,
 	testProvider,
-} from "../../actions.ts";
+} from "../../actions/settings.ts";
 import { hasMessage, t, useLang } from "../../i18n.ts";
 import {
 	type PingResult,

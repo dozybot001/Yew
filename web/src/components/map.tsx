@@ -1,6 +1,7 @@
 import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { Group, LetterFlow, Session } from "../../../src/shared/types.ts";
-import { loadMap, selectSession } from "../actions.ts";
+import { loadMap } from "../actions/pages.ts";
+import { selectSession } from "../actions.ts";
 import { t, useLang } from "../i18n.ts";
 import {
 	ARROW_LEN,

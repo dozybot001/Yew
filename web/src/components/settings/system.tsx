@@ -1,5 +1,5 @@
 import { useEffect, useId, useState } from "react";
-import { loadSystem, saveSettings, saveSystem } from "../../actions.ts";
+import { loadSystem, saveSettings, saveSystem } from "../../actions/settings.ts";
 import { t, useLang } from "../../i18n.ts";
 import { type SystemStatus, useAppState } from "../../state.ts";
 import { Dialog, ErrorBox, SettingGroup, SettingRow, Switch, useAction } from "../ui.tsx";

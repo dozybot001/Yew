@@ -7,7 +7,7 @@ import {
 	saveSettings,
 	setDevicePush,
 	setPhoneAccess,
-} from "../../actions.ts";
+} from "../../actions/settings.ts";
 import { formatAgo, t, useLang } from "../../i18n.ts";
 import { NOTIFY_KINDS, useAppState } from "../../state.ts";
 import { ConfirmDialog } from "../dialogs.tsx";
