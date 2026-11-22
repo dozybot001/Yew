@@ -27,7 +27,7 @@ import { PhonesDialog } from "./settings/phones.tsx";
 import { ProvidersDialog } from "./settings/providers.tsx";
 import { SkillsDialog } from "./settings/skills.tsx";
 import { SystemDialog } from "./settings/system.tsx";
-import { useNarrow } from "./sidebar.tsx";
+import { useNarrow } from "./sidebar/parts.tsx";
 import { Button } from "./ui.tsx";
 
 /** The settings window's sections, in order. */
