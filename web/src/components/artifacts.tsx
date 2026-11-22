@@ -8,7 +8,7 @@ import { Markdown } from "./content.tsx";
 import { ConfirmDialog } from "./dialogs.tsx";
 import { TrashIcon } from "./icons.tsx";
 import { Mascot } from "./mascot.tsx";
-import { SidebarToggle } from "./session.tsx";
+import { SidebarToggle } from "./sidebar-toggle.tsx";
 import { Button, ErrorBox, Select, useAction } from "./ui.tsx";
 
 interface ChartData {

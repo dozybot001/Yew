@@ -21,7 +21,7 @@ import { useAppState } from "../state.ts";
 import { ConfirmDialog } from "./dialogs.tsx";
 import { CheckIcon, PlayIcon, PlusIcon, RenameIcon, TrashIcon } from "./icons.tsx";
 import { Mascot } from "./mascot.tsx";
-import { SidebarToggle } from "./session.tsx";
+import { SidebarToggle } from "./sidebar-toggle.tsx";
 import {
 	Button,
 	Dialog,

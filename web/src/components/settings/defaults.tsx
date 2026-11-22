@@ -5,7 +5,7 @@ import { formatCost, permissionHint, t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
 import { cleanAmount } from "../dialogs.tsx";
 import { CheckIcon } from "../icons.tsx";
-import { ModelPicker } from "../session.tsx";
+import { ModelPicker } from "../model-picker.tsx";
 import { Button, Dialog, ErrorBox, Field, Select, SettingRow, Switch, useAction } from "../ui.tsx";
 
 /**

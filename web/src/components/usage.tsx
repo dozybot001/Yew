@@ -5,7 +5,7 @@ import { selectSession } from "../actions.ts";
 import { formatCost, formatNumber, getLang, t, useLang } from "../i18n.ts";
 import { useAppState } from "../state.ts";
 import { RetryIcon } from "./icons.tsx";
-import { SidebarToggle } from "./session.tsx";
+import { SidebarToggle } from "./sidebar-toggle.tsx";
 import { Button, ErrorBox } from "./ui.tsx";
 
 const DAYS = 30;

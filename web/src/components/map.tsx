@@ -20,7 +20,7 @@ import {
 import { blockedSessions } from "../progress.ts";
 import { useAppState } from "../state.ts";
 import { ChatIcon, CodeIcon, RetryIcon } from "./icons.tsx";
-import { SidebarToggle } from "./session.tsx";
+import { SidebarToggle } from "./sidebar-toggle.tsx";
 import { Button, ErrorBox } from "./ui.tsx";
 
 /** The picture draws letter lines for this many pairs, the busiest ones. */

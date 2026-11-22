@@ -19,7 +19,7 @@ import { formatCost, t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";
 import { useAppState } from "../state.ts";
 import { CheckIcon, CloseIcon, FolderIcon, PlusIcon } from "./icons.tsx";
-import { ModelPicker } from "./session.tsx";
+import { ModelPicker } from "./model-picker.tsx";
 import {
 	Button,
 	Dialog,
