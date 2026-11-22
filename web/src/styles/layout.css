@@ -1,0 +1,346 @@
+/* --- layout --- */
+
+.app {
+	position: relative;
+	display: grid;
+	grid-template-columns: 260px minmax(0, 1fr);
+	height: 100dvh;
+	overflow: hidden;
+}
+.app.app-collapsed {
+	grid-template-columns: 56px minmax(0, 1fr);
+}
+/*
+ * Atmospheric full-height Yew backdrop behind sessions and the home stage.
+ * Shown gently on desktop when 「界面里的 Yew」 is on: clearer on the open home screen, quieter while
+ * reading conversations, with soft edge feathering and translucent frosted panels so UI surfaces
+ * sit naturally in the same space without reducing text contrast.
+ */
+.yew-backdrop-layer {
+	display: none;
+	position: absolute;
+	grid-column: 2;
+	grid-row: 1;
+	inset: 0;
+	z-index: 0;
+	overflow: hidden;
+	pointer-events: none;
+	user-select: none;
+	background: radial-gradient(
+		74% 72% at 88% 72%,
+		color-mix(in srgb, var(--mark-ink) 7%, transparent),
+		transparent 72%
+	);
+	transition: background 420ms ease;
+}
+:root[data-theme="dark"] .yew-backdrop-layer {
+	background: radial-gradient(
+		74% 72% at 88% 72%,
+		color-mix(in srgb, var(--mark-ink) 11%, transparent),
+		transparent 72%
+	);
+}
+.app.with-yew.yew-working .yew-backdrop-layer {
+	background: radial-gradient(
+		78% 76% at 88% 70%,
+		color-mix(in srgb, var(--mark-ink) 12%, transparent),
+		transparent 74%
+	);
+}
+.app.with-yew.yew-feature .yew-backdrop-layer {
+	background: radial-gradient(
+		64% 70% at 50% 62%,
+		color-mix(in srgb, var(--mark-ink) 6%, transparent),
+		transparent 72%
+	);
+}
+:root[data-theme="dark"] .app.with-yew.yew-working .yew-backdrop-layer {
+	background: radial-gradient(
+		78% 76% at 88% 70%,
+		color-mix(in srgb, var(--mark-ink) 17%, transparent),
+		transparent 74%
+	);
+}
+:root[data-theme="dark"] .app.with-yew.yew-feature .yew-backdrop-layer {
+	background: radial-gradient(
+		64% 70% at 50% 62%,
+		color-mix(in srgb, var(--mark-ink) 10%, transparent),
+		transparent 72%
+	);
+}
+.yew-backdrop {
+	position: absolute;
+	right: -8px;
+	bottom: -10px;
+	height: min(94%, 820px);
+	max-width: 48%;
+	object-fit: contain;
+	object-position: right bottom;
+	opacity: 0.2;
+	-webkit-mask-image: linear-gradient(to top, transparent 0%, #000 10%, #000 100%);
+	mask-image: linear-gradient(to top, transparent 0%, #000 10%, #000 100%);
+	transition: opacity 320ms ease;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-drag: none;
+}
+:root[data-theme="dark"] .yew-backdrop {
+	opacity: 0.24;
+}
+.app.with-yew.yew-working .yew-backdrop {
+	opacity: 0.26;
+}
+.app.with-yew.yew-home .yew-backdrop {
+	opacity: 0.42;
+}
+/* Feature pages (center, schedules, artifacts, usage, map): enlarged, centered Q-pose backdrop. */
+.app.with-yew.yew-feature .yew-backdrop-feature {
+	left: 50%;
+	right: auto;
+	top: 54%;
+	bottom: auto;
+	height: min(56%, 420px);
+	max-width: 60%;
+	object-position: center;
+	transform: translate(-50%, -50%);
+	opacity: 0.12;
+	-webkit-mask-image: none;
+	mask-image: none;
+}
+:root[data-theme="dark"] .app.with-yew.yew-working .yew-backdrop {
+	opacity: 0.3;
+}
+:root[data-theme="dark"] .app.with-yew.yew-home .yew-backdrop {
+	opacity: 0.46;
+}
+:root[data-theme="dark"] .app.with-yew.yew-feature .yew-backdrop-feature {
+	opacity: 0.14;
+}
+@media (prefers-reduced-motion: reduce) {
+	.yew-backdrop,
+	.yew-backdrop-layer,
+	.composer-peek,
+	.companion-mascot-btn {
+		transition: none;
+		animation: none;
+	}
+}
+.composer-peek {
+	display: none;
+	position: absolute;
+	left: calc(100% - 2px);
+	bottom: 12px;
+	pointer-events: none;
+	transform-origin: left bottom;
+	transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1);
+	filter: drop-shadow(0 4px 10px rgb(0 0 0 / 0.09));
+}
+.composer-box:focus-within .composer-peek {
+	transform: translateX(3px) rotate(1.5deg);
+}
+:root[data-theme="dark"] .composer-peek {
+	filter: drop-shadow(0 4px 12px rgb(0 0 0 / 0.32));
+}
+.empty-state .mascot,
+.empty-session .mascot {
+	filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.08));
+}
+:root[data-theme="dark"] .empty-state .mascot,
+:root[data-theme="dark"] .empty-session .mascot {
+	filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.28));
+}
+.empty-session {
+	display: grid;
+	justify-items: center;
+	gap: 8px;
+	margin: clamp(32px, 12dvh, 108px) auto 0;
+	/* A width of its own: sized by its words, the hint's share of that width breaks its one line. */
+	width: 100%;
+	max-width: 520px;
+	text-align: center;
+}
+.empty-session-title {
+	margin: 0;
+	font-size: var(--fs-l);
+	font-weight: 600;
+	color: var(--text);
+}
+.empty-session-path {
+	margin: 0;
+	font-family: var(--mono);
+	font-size: var(--fs-xs);
+	color: var(--text-3);
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.empty-session-brief {
+	margin: 2px 0 0;
+	font-size: var(--fs-s);
+	line-height: 1.6;
+	color: var(--text-2);
+	display: -webkit-box;
+	-webkit-line-clamp: 4;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	white-space: pre-line;
+}
+@media (min-width: 960px) {
+	.app.with-yew {
+		background: var(--bg);
+	}
+	.app.with-yew .sidebar,
+	.app.with-yew .rail {
+		position: relative;
+		z-index: 2;
+	}
+	.app.with-yew .yew-backdrop-layer {
+		display: block;
+	}
+	.app.with-yew .main {
+		position: relative;
+		z-index: 1;
+		background: transparent;
+		background-image: none;
+	}
+	.app.with-yew .home-mascot,
+	.app.with-yew.yew-feature .empty-state .mascot {
+		display: none;
+	}
+	/* Keep composer & page headers seamless over Yew's backdrop — no opaque bottom/top seam.
+	   Avoid backdrop-filter inside scrollable containers (WebKit drops GPU scroll tiles). */
+	.app.with-yew .main .composer {
+		background: transparent;
+	}
+	.app.with-yew .main .session-header {
+		background: linear-gradient(
+			to bottom,
+			color-mix(in srgb, var(--bg) 88%, transparent),
+			transparent
+		);
+	}
+	.app.with-yew .main .composer-box {
+		background: color-mix(in srgb, var(--surface) 92%, transparent);
+		transition:
+			border-color 180ms ease,
+			box-shadow 180ms ease;
+	}
+	.app.with-yew .main .composer-box:focus-within {
+		border-color: color-mix(in srgb, var(--mark-ink) 42%, var(--control-strong));
+		box-shadow:
+			0 0 0 3px color-mix(in srgb, var(--mark-ink) 12%, transparent),
+			var(--lift);
+	}
+	.app.with-yew .main .todo-card,
+	.app.with-yew .main .letter-card,
+	.app.with-yew .main .card,
+	.app.with-yew .main .artifact-viewer {
+		background: color-mix(in srgb, var(--surface) 92%, transparent);
+	}
+	.app.with-yew .main .msg-user {
+		background: color-mix(in srgb, var(--user-bubble) 94%, transparent);
+	}
+}
+@media (min-width: 1180px) {
+	.app.with-yew.yew-home .composer-peek {
+		display: block;
+	}
+}
+/*
+ * The folded sidebar (as in ChatGPT): Yew's graphic, then the main actions as icons. Folding and
+ * unfolding keeps the graphic and the icons where they were: centred 28 px from the left, the graphic
+ * 32 px from the top and the rows 42 px apart, as in the open sidebar. The edge is a shadow, not a
+ * border, so it does not shift the centre.
+ */
+.rail {
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	min-height: 0;
+	padding: 12px 0 14px;
+	background: var(--bg-side);
+	box-shadow: inset -1px 0 0 var(--divider);
+}
+.rail-brand {
+	display: grid;
+	place-items: center;
+	width: 40px;
+	height: 40px;
+	margin-bottom: 8px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text);
+	cursor: pointer;
+}
+.rail-mark {
+	display: grid;
+}
+.rail-open {
+	display: none;
+	color: var(--text-2);
+}
+.rail-brand:hover .rail-mark,
+.rail-brand:focus-visible .rail-mark {
+	display: none;
+}
+.rail-brand:hover .rail-open,
+.rail-brand:focus-visible .rail-open {
+	display: grid;
+}
+@media (hover: hover) {
+	.rail-brand:hover {
+		background: var(--hover);
+	}
+}
+.rail .btn-icon {
+	width: 40px;
+	min-height: 40px;
+}
+.rail .btn-icon[aria-current="page"] {
+	background: var(--selected);
+	color: var(--text);
+}
+.rail-spacer {
+	flex: 1;
+}
+.drawer-backdrop {
+	position: fixed;
+	inset: 0;
+	z-index: 15;
+	background: var(--backdrop);
+}
+.center-page {
+	display: grid;
+	place-items: center;
+	height: 100dvh;
+	padding: 16px;
+	text-align: center;
+}
+/* A start that takes no time shows no "Loading": the word comes only after a moment. */
+.loading-word {
+	animation: loading-word 0s 0.5s both;
+}
+@keyframes loading-word {
+	from {
+		visibility: hidden;
+	}
+}
+.center-page > div {
+	max-width: 440px;
+	display: grid;
+	gap: 12px;
+	justify-items: center;
+}
+.center-page h1 {
+	font-size: var(--fs-xl);
+}
+.banner {
+	padding: 8px 16px;
+	background: var(--surface-2);
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	text-align: center;
+}

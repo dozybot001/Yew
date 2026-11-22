@@ -1,0 +1,519 @@
+/* Scheduled tasks (M3 plan, section 9): one card per task, its times, session, letter and last run. */
+.schedule-list {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.schedule-card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	padding: 14px 16px;
+}
+.schedule-card p {
+	margin: 0;
+}
+.schedule-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+}
+.schedule-head h3 {
+	flex: 1;
+	min-width: 0;
+	overflow-wrap: anywhere;
+	font-size: var(--fs-m);
+	font-weight: 600;
+}
+.schedule-line {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 12px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
+.schedule-cron {
+	font-family: var(--mono);
+}
+.schedule-message {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.schedule-actions {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	margin-top: 4px;
+}
+
+/* Artifacts: the list, and the one that is open beside it. */
+.artifacts {
+	display: grid;
+	gap: 16px;
+}
+.artifact-list {
+	display: grid;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.artifact-row,
+.artifact-chip {
+	display: grid;
+	gap: 2px;
+	width: 100%;
+	min-height: 44px;
+	padding: 8px 12px;
+	border: 1px solid transparent;
+	border-radius: var(--radius-s);
+	background: none;
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.artifact-row:hover,
+.artifact-chip:hover {
+	background: var(--hover);
+}
+.artifact-row[aria-current="true"] {
+	background: var(--selected);
+}
+.artifact-chip {
+	width: auto;
+	max-width: 100%;
+	margin: 4px 0;
+	border-color: var(--border);
+	background: var(--surface);
+}
+.artifact-name {
+	overflow: hidden;
+	font-weight: 600;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.artifact-meta {
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
+.artifact-viewer {
+	display: grid;
+	gap: 12px;
+	min-width: 0;
+	padding: 16px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-m, 10px);
+	background: var(--surface);
+}
+.artifact-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px 16px;
+}
+.artifact-title {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.artifact-title h2 {
+	margin: 0;
+	overflow-wrap: anywhere;
+	font-size: var(--fs-l, 1.125rem);
+}
+.artifact-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+.artifact-actions a.btn {
+	border-color: var(--control);
+	text-decoration: none;
+}
+.artifact-frame {
+	width: 100%;
+	height: min(70vh, 720px);
+	border: 1px solid var(--border);
+	border-radius: var(--radius-s);
+	/* A page brings its own colors; it is shown on white as a browser would show it. */
+	background: #ffffff;
+}
+.artifact-text {
+	min-width: 0;
+	overflow-wrap: anywhere;
+}
+.artifact-json {
+	max-height: 70vh;
+	margin: 0;
+	padding: 12px;
+	overflow: auto;
+	border-radius: var(--radius-s);
+	background: var(--surface-2);
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.chart {
+	display: grid;
+	gap: 8px;
+	margin: 0;
+}
+.chart figcaption {
+	font-weight: 600;
+}
+.chart-svg {
+	width: 100%;
+	height: auto;
+}
+.chart-grid {
+	stroke: var(--divider);
+	stroke-width: 1;
+}
+.chart-tick {
+	fill: var(--text-2);
+	font-size: 11px;
+}
+.chart-bar {
+	fill: var(--text);
+}
+.chart-line {
+	fill: none;
+	stroke: var(--text);
+	stroke-width: 2;
+	stroke-linejoin: round;
+}
+.chart-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 16px;
+	margin: 0;
+	padding: 0;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	list-style: none;
+}
+.chart-legend li {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+}
+.chart-swatch {
+	width: 12px;
+	height: 12px;
+	border-radius: 2px;
+	background: var(--text);
+}
+.chart-table summary {
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	cursor: pointer;
+}
+.chart-table table {
+	margin-top: 8px;
+	border-collapse: collapse;
+	font-size: var(--fs-s);
+	font-variant-numeric: tabular-nums;
+}
+.chart-table th,
+.chart-table td {
+	padding: 4px 10px;
+	border-bottom: 1px solid var(--divider);
+	text-align: right;
+}
+.chart-table tbody th {
+	text-align: left;
+	font-weight: 400;
+}
+
+/* --- usage: today against the limit, a bar per day, the sessions of one day --- */
+
+.usage-today {
+	display: grid;
+	gap: 6px;
+}
+.usage-today p {
+	margin: 0;
+}
+.usage-figure {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+	gap: 4px 10px;
+}
+.usage-figure strong {
+	font-size: var(--fs-xl);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+}
+.usage-meter {
+	height: 4px;
+	border-radius: 2px;
+	background: var(--selected);
+	overflow: hidden;
+}
+.usage-meter span {
+	display: block;
+	height: 100%;
+	border-radius: 2px;
+	background: var(--text);
+}
+.usage-section {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 8px;
+}
+.usage-section > p {
+	margin: 0;
+}
+.usage-chart {
+	position: relative;
+	min-width: 0;
+}
+/* The picture lies over the buttons and lets the pointer through to them. */
+.usage-svg {
+	position: absolute;
+	inset: 0;
+	display: block;
+	pointer-events: none;
+}
+.usage-hits {
+	position: absolute;
+	display: flex;
+}
+.usage-hit {
+	flex: 1 1 0;
+	min-width: 0;
+	padding: 0;
+	border: none;
+	border-radius: 3px;
+	background: none;
+	cursor: pointer;
+}
+.usage-hit:focus-visible {
+	outline-offset: 0;
+}
+@media (hover: hover) {
+	.usage-hit:hover {
+		background: var(--hover);
+	}
+}
+.usage-bar {
+	fill: var(--text);
+	opacity: 0.35;
+}
+.usage-bar-on {
+	fill: var(--text);
+	opacity: 1;
+}
+.usage-base {
+	stroke: var(--control-strong);
+	stroke-width: 1;
+}
+.usage-limit {
+	stroke: var(--text-2);
+	stroke-width: 1;
+	stroke-dasharray: 4 3;
+}
+.usage-day {
+	margin: 0;
+	font-size: var(--fs-m);
+	font-weight: 600;
+}
+.usage-note {
+	font-weight: 400;
+}
+.usage-table-wrap {
+	overflow-x: auto;
+}
+.usage-table {
+	width: 100%;
+	border-collapse: collapse;
+	font-size: var(--fs-s);
+	font-variant-numeric: tabular-nums;
+}
+.usage-table tr th,
+.usage-table tr td {
+	padding: 7px 0 7px 14px;
+	border-bottom: 1px solid var(--divider);
+	text-align: right;
+	white-space: nowrap;
+}
+.usage-table tr th:first-child {
+	padding-left: 0;
+	text-align: left;
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+.usage-name {
+	text-align: left;
+}
+.usage-table thead th {
+	color: var(--text-2);
+	font-weight: 400;
+}
+.usage-table tbody th {
+	min-width: 120px;
+	font-weight: 400;
+}
+.usage-table tfoot th,
+.usage-table tfoot td {
+	border-bottom: none;
+	font-weight: 600;
+}
+/* The label keeps a margin of page colour, so a bar behind it does not run into the words. */
+.usage-limit-label {
+	paint-order: stroke;
+	stroke: var(--bg);
+	stroke-width: 4px;
+	stroke-linejoin: round;
+}
+
+/* --- the sessions map: who opened whom, where letters went, each session's status --- */
+
+/* The words stand in the same column as on the other pages; the picture is in the middle of the
+   page and may be wider than that column. */
+.map-page {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-content: start;
+	gap: 12px;
+}
+.map-page > .center-inner {
+	width: 100%;
+}
+.map-caption {
+	display: grid;
+	gap: 6px;
+}
+.map-caption p {
+	margin: 0;
+}
+.map-legend {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.map-legend li {
+	display: inline-flex;
+	align-items: center;
+}
+.map-legend .row-dot {
+	margin-left: 0;
+}
+/* The box is as large as the picture, which is drawn larger where the window has the room. Where it
+   has less than the picture's own size, the picture keeps that size and scrolls both ways inside. */
+.map-scroll {
+	justify-self: center;
+	max-width: 100%;
+	overflow: auto;
+	scrollbar-gutter: stable;
+	overscroll-behavior: contain;
+	max-height: max(240px, calc(100dvh - 230px));
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	/* The page's own colour, so the figure behind the page does not show between the lines. */
+	background: var(--bg);
+}
+/* The sheet is laid out at the picture's own size and drawn larger from its top left corner; the
+   canvas around it has the size it is drawn at, which is what the box and its scrolling go by. */
+.map-sheet {
+	position: relative;
+	transform-origin: 0 0;
+}
+.map-lines {
+	position: absolute;
+	inset: 0;
+	display: block;
+	pointer-events: none;
+}
+.map-opened {
+	fill: none;
+	stroke: var(--control-strong);
+	stroke-width: 1.5;
+}
+.map-flow {
+	fill: none;
+	stroke: var(--text-2);
+	stroke-width: 1;
+}
+.map-arrow {
+	fill: var(--text-2);
+}
+/* The count keeps a margin of page colour, so the line under it does not run into the digits. */
+.map-flow-count {
+	fill: var(--text);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	paint-order: stroke;
+	stroke: var(--bg);
+	stroke-width: 4px;
+	stroke-linejoin: round;
+}
+/* Two counts on one line, for letters both ways: a ground of page colour, and a mark beside each
+   that points the way its letters went. */
+.map-flow-ground {
+	fill: var(--bg);
+}
+.map-flow-mark {
+	fill: var(--text);
+}
+/* While one session is pointed at or focused, the letters of the others step back. */
+.map-faded {
+	opacity: 0.12;
+}
+.map-head {
+	position: absolute;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	line-height: 20px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.map-node {
+	position: absolute;
+	display: grid;
+	grid-template-columns: 16px minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 8px;
+	padding: 0 10px;
+	border: 1px solid var(--control);
+	border-radius: var(--radius);
+	background: var(--surface);
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+}
+.map-node[data-main] {
+	border-color: var(--control-strong);
+	font-weight: 600;
+}
+/* The main conversation lies across the top as a bar, its name in the middle. */
+.map-node[data-bar] {
+	grid-template-columns: 16px minmax(0, max-content) auto;
+	justify-content: center;
+}
+.map-node .row-dot {
+	margin: 0 2px;
+}
+.map-node-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+@media (hover: hover) {
+	.map-node:hover {
+		background: var(--hover);
+	}
+}

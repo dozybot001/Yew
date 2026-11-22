@@ -1,0 +1,573 @@
+/* --- M2: the main conversation, the approval center and letters --- */
+
+/* The fixed entries at the top of the sidebar: a label, the main conversation's name, a count. */
+.nav-label {
+	flex: none;
+}
+.nav-detail {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+.nav-row .badge {
+	margin-left: auto;
+}
+.rail .rail-center {
+	position: relative;
+}
+.rail-badge {
+	position: absolute;
+	top: 2px;
+	right: 2px;
+	min-width: 15px;
+	height: 15px;
+	padding: 0 3px;
+	border-radius: 4px;
+	background: var(--surface-3);
+	color: var(--text);
+	font-size: 10px;
+	font-weight: 600;
+	line-height: 15px;
+	text-align: center;
+}
+/* A session opened by another sits under it, one step in per level. */
+.session-item[data-child="true"] {
+	margin-left: calc(var(--depth, 1) * 14px);
+}
+
+.tag {
+	flex: none;
+	display: inline-flex;
+	align-items: center;
+	height: 18px;
+	padding: 0 6px;
+	border: 1px solid var(--control);
+	border-radius: 5px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	font-weight: 500;
+	line-height: 1;
+	white-space: nowrap;
+}
+/* On a card's top line: a decision that cannot be undone, and a deadline that may be long. */
+.tag-danger {
+	border-color: currentColor;
+	color: var(--danger);
+}
+.tag-deadline {
+	display: inline-block;
+	max-width: 14em;
+	overflow: hidden;
+	color: var(--warning);
+	line-height: 16px;
+	text-overflow: ellipsis;
+}
+.link-button {
+	padding: 0;
+	border: none;
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-decoration: underline;
+	text-decoration-color: var(--control-strong);
+	text-underline-offset: 2px;
+	cursor: pointer;
+}
+.link-button:hover {
+	text-decoration-color: currentColor;
+}
+.session-parent {
+	flex: none;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+
+/* The approval center: a page of its own in place of the session. */
+.center-main {
+	grid-template-rows: auto minmax(0, 1fr);
+}
+.center-body {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 8px 20px 32px;
+}
+.center-inner,
+.center-panel {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	align-content: start;
+	gap: 18px;
+}
+.center-inner {
+	max-width: 760px;
+	margin: 0 auto;
+}
+.panel-tabs {
+	display: flex;
+	gap: 4px;
+}
+.panel-tab {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	min-height: 32px;
+	padding: 0 12px;
+	border: none;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--text-2);
+	font: inherit;
+	cursor: pointer;
+}
+.panel-tab[aria-selected="true"] {
+	background: var(--selected);
+	color: var(--text);
+	font-weight: 600;
+}
+@media (hover: hover) {
+	.panel-tab[aria-selected="false"]:hover {
+		background: var(--hover);
+	}
+}
+.center-section {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 10px;
+}
+.center-section h2 {
+	color: var(--text-3);
+	font-size: var(--fs-s);
+	font-weight: 600;
+}
+
+/* A decision card: the top line, the question, a few lines of context, options to click, a note. */
+.decision-card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 10px;
+	padding: 14px 16px 16px;
+	border-color: var(--border);
+}
+.decision-card h3 {
+	font-size: var(--fs-m);
+	font-weight: 600;
+}
+.decision-context {
+	max-height: 240px;
+	overflow-y: auto;
+	color: var(--text-2);
+}
+.decision-options {
+	display: grid;
+	gap: 6px;
+	margin: 0;
+	padding: 0;
+	border: none;
+	min-width: 0;
+}
+.decision-option {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	padding: 9px 12px;
+	border: 1px solid var(--control);
+	border-radius: var(--radius);
+	cursor: pointer;
+}
+.decision-option[data-checked="true"] {
+	border-color: var(--accent);
+	background: var(--surface-2);
+}
+.decision-option:has(input:focus-visible) {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+:root[data-input="pointer"] .decision-option:has(input:focus-visible) {
+	outline: none;
+}
+.decision-radio {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	margin-top: 3px;
+	border: 1.5px solid var(--control-strong);
+	border-radius: 50%;
+}
+.decision-option[data-checked="true"] .decision-radio {
+	border-color: var(--accent);
+	background: var(--accent);
+	box-shadow: inset 0 0 0 2.5px var(--surface-2);
+}
+/* A question where several options may be picked: square marks instead of round ones. */
+.decision-check {
+	flex: none;
+	width: 14px;
+	height: 14px;
+	margin-top: 3px;
+	border: 1.5px solid var(--control-strong);
+	border-radius: 3px;
+}
+.decision-option[data-checked="true"] .decision-check {
+	border-color: var(--accent);
+	background: var(--accent);
+	box-shadow: inset 0 0 0 2.5px var(--surface-2);
+}
+/* One question of a question card: the question, its options, then a row for the person's own words. */
+.question-block {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	min-width: 0;
+	margin: 0;
+	padding: 0;
+	border: none;
+}
+.question-block .request-title {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+.question-block .request-title .hint {
+	font-weight: 400;
+}
+.question-other {
+	cursor: text;
+}
+.question-other > label {
+	display: flex;
+	cursor: pointer;
+}
+.question-other-input {
+	flex: 1;
+	min-width: 0;
+	min-height: 20px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: inherit;
+	font: inherit;
+	resize: none;
+	field-sizing: content;
+}
+.question-other-input:focus-visible {
+	outline: none;
+}
+.question-other:focus-within {
+	border-color: var(--control-strong);
+}
+.decision-option-text {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.decision-option-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	font-weight: 500;
+}
+
+/* Letters in a conversation read as letters, not as the person's words. */
+.letter-card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	padding: 10px 14px 12px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+}
+.letter-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
+.letter-card .letter-head svg {
+	flex: none;
+	color: var(--text-3);
+}
+.letter-summary {
+	margin: 0;
+	font-weight: 500;
+	overflow-wrap: anywhere;
+}
+.letter-body,
+.letter-note {
+	margin: 0;
+	color: var(--text-2);
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+.letter-body .markdown {
+	white-space: normal;
+}
+/* The person's words a letter passes on, as Yew found them: set apart from what the sender wrote. */
+.letter-quotes {
+	display: grid;
+	gap: 8px;
+	padding: 8px 12px 10px;
+	border-radius: var(--radius-s);
+	background: var(--hover);
+}
+.letter-quotes-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	font-weight: 500;
+}
+.letter-quotes .letter-quotes-head svg {
+	flex: none;
+	color: var(--text-3);
+}
+.letter-quote {
+	display: grid;
+	gap: 2px;
+	margin: 0;
+}
+.letter-quote blockquote {
+	margin: 0;
+	padding-left: 10px;
+	border-left: 2px solid var(--control);
+	color: var(--text);
+	overflow-wrap: anywhere;
+	white-space: pre-wrap;
+}
+.letter-quote figcaption {
+	padding-left: 12px;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+.letter-list {
+	display: grid;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.letter-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 4px;
+	padding: 12px 0;
+	border-bottom: 1px solid var(--divider);
+}
+.letter-row-head {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px 8px;
+	font-size: var(--fs-s);
+	color: var(--text-2);
+}
+.letter-route {
+	font-weight: 500;
+	color: var(--text);
+}
+/* The letters list: one line per letter that unfolds in place, in the same card. */
+/*
+ * One grid for the whole list, so direction, kind and summary line up from row to row. The gap between
+ * rows is always there, so two unfolded letters stay apart and unfolding moves nothing.
+ */
+.letter-lines,
+.decision-lines {
+	gap: 4px 8px;
+}
+.letter-lines {
+	grid-template-columns: fit-content(16em) max-content minmax(0, 1fr) max-content max-content;
+}
+/* Decisions: number, question, what you chose, when. */
+.decision-lines {
+	grid-template-columns: max-content minmax(0, 1fr) fit-content(12em) max-content max-content;
+}
+.record-options {
+	display: grid;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.record-options li {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+}
+.record-options li[data-chosen="true"] {
+	color: var(--text);
+	font-weight: 500;
+}
+.record-check {
+	flex: none;
+	width: 1em;
+}
+.letter-item {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+	border-radius: var(--radius);
+}
+/* Unfolded, the line and the letter share one background, without a border. */
+.letter-item[data-open="true"] {
+	background: var(--surface);
+}
+.letter-line {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: subgrid;
+	align-items: center;
+	width: 100%;
+	min-height: 36px;
+	padding: 6px 10px;
+	border: 0;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--text-2);
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+.letter-line > .tag {
+	justify-self: start;
+	max-width: 100%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.letter-line-route {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text);
+}
+.letter-line-summary {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.letter-line-meta {
+	display: flex;
+	justify-self: end;
+	align-items: center;
+	gap: 8px;
+	font-size: var(--fs-s);
+	white-space: nowrap;
+}
+.letter-line[aria-expanded="true"] {
+	color: var(--text);
+}
+/* Unfolded, the summary is the letter's first line below, in full. */
+.letter-item[data-open="true"] .letter-line-summary {
+	visibility: hidden;
+}
+.letter-item > .letter-line[aria-expanded="true"] > .chevron {
+	transform: rotate(90deg);
+}
+@media (hover: hover) {
+	.letter-item[data-open="false"] > .letter-line:hover {
+		background: var(--hover);
+		color: var(--text);
+	}
+}
+.letter-panel {
+	display: grid;
+	grid-column: 1 / -1;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 10px;
+	padding: 2px 14px 12px;
+}
+.letter-content {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	color: var(--text-2);
+	overflow-wrap: anywhere;
+}
+.letter-panel p {
+	margin: 0;
+}
+@media (max-width: 640px) {
+	.letter-lines,
+	.decision-lines,
+	.letter-item {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.letter-line {
+		grid-template-columns: minmax(0, 1fr) auto auto auto;
+		grid-template-areas: "route tag meta chevron" "summary summary summary summary";
+		gap: 2px 8px;
+	}
+	.letter-line-route {
+		grid-area: route;
+	}
+	.letter-line > .tag {
+		grid-area: tag;
+	}
+	.letter-line-meta {
+		grid-area: meta;
+	}
+	.letter-line > .chevron {
+		grid-area: chevron;
+	}
+	.letter-line-summary {
+		grid-area: summary;
+	}
+}
+.letter-status {
+	color: var(--text-3);
+}
+.letter-status-held {
+	color: var(--warning);
+}
+.letter-status-refused,
+.letter-status-dropped {
+	color: var(--danger);
+}
+.field-heading {
+	margin-top: 6px;
+	font-size: var(--fs-m);
+	font-weight: 600;
+}
+.letter-card p,
+.decision-card p {
+	margin: 0;
+}
+
+/*
+ * Fixed heights with inner scrolling: thinking, long messages and letters, code blocks
+ * and an opened run of steps keep the conversation from growing without end. The limit shows only when
+ * it is reached: the block then fades out at the bottom while more lies below.
+ */
+.thinking-body,
+.msg-user,
+.letter-body,
+.letter-content,
+.note-summary,
+.markdown pre {
+	max-height: var(--cap);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.step-list {
+	max-height: var(--cap-tall);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+[data-more="true"] {
+	mask-image: linear-gradient(to bottom, #000 calc(100% - 32px), transparent);
+}
+
+/* A team or workspace row that a dragged session would land on. */
+.session-item[data-drop="true"] > .session-row {
+	background: var(--selected);
+	box-shadow: inset 0 0 0 1px var(--control-strong);
+}

@@ -1,0 +1,180 @@
+/* --- dialogs --- */
+
+.dialog {
+	padding: 0;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow);
+	max-width: calc(100vw - 32px);
+	max-height: calc(100dvh - 32px);
+	overflow: hidden;
+}
+.dialog::backdrop {
+	background: var(--backdrop);
+}
+.dialog-s {
+	width: var(--dialog-s-w);
+	height: min(var(--dialog-s-h), calc(100dvh - 32px));
+}
+.dialog-m {
+	width: var(--dialog-m-w);
+	height: min(var(--dialog-m-h), calc(100dvh - 32px));
+}
+.dialog-l {
+	width: var(--dialog-l-w);
+	height: min(var(--dialog-l-h), calc(100dvh - 32px));
+}
+.dialog-frame {
+	display: grid;
+	grid-template-rows: auto 1fr auto;
+	height: 100%;
+}
+.dialog-header {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	padding: 14px 16px 10px 22px;
+}
+.dialog-header h2 {
+	font-size: var(--fs-l);
+	font-weight: 600;
+}
+.dialog-body {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 8px 22px 18px;
+	display: grid;
+	align-content: start;
+	gap: 16px;
+}
+.dialog-body > p {
+	margin: 0;
+}
+.dialog-footer {
+	display: flex;
+	justify-content: flex-end;
+	align-items: center;
+	gap: 8px;
+	padding: 12px 22px 16px;
+	border-top: 1px solid var(--divider);
+}
+.unsaved {
+	margin-right: auto;
+}
+
+/* --- the settings window: the sections on the left, the chosen one on the
+   right, in the large dialog size. A settings dialog shown there is a panel, not a dialog of its own. --- */
+
+.settings-window {
+	width: var(--dialog-l-w);
+	height: min(var(--dialog-l-h), calc(100dvh - 32px));
+}
+.settings-frame {
+	display: grid;
+	grid-template-columns: 208px minmax(0, 1fr);
+	height: 100%;
+}
+.settings-nav {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	min-height: 0;
+	overflow-y: auto;
+	padding: 14px 10px 12px;
+	border-right: 1px solid var(--divider);
+	background: var(--bg-side);
+}
+.settings-nav-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	min-height: 36px;
+	padding: 0 6px 8px 10px;
+}
+.settings-nav-head h2 {
+	font-size: var(--fs-l);
+	font-weight: 600;
+}
+.settings-nav-list {
+	display: grid;
+	gap: 2px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.settings-nav-item {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	min-height: 36px;
+	padding: 0 10px;
+	border: none;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--text);
+	font: inherit;
+	text-align: left;
+	text-decoration: none;
+	cursor: pointer;
+}
+.settings-nav-item svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+	color: var(--text-2);
+}
+/* The chosen section has a grey fill and bold text, as the sidebar's selected row. */
+.settings-nav-item[aria-current="true"] {
+	background: var(--selected);
+	font-weight: 600;
+}
+@media (hover: hover) {
+	.settings-nav-item:not([aria-current="true"]):hover {
+		background: var(--hover);
+	}
+}
+.settings-feedback {
+	margin-top: auto;
+}
+.settings-pane {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	min-height: 0;
+}
+.settings-back {
+	align-self: flex-start;
+	margin: 12px 0 0 14px;
+}
+.dialog-panel {
+	display: flex;
+	flex-direction: column;
+	flex: 1;
+	min-height: 0;
+}
+.panel-body {
+	flex: 1;
+	min-height: 0;
+}
+/* A narrow window shows one level at a time and takes the whole screen. */
+@media (max-width: 760px) {
+	.settings-window {
+		width: calc(100vw - 32px);
+		height: calc(100dvh - 32px);
+	}
+	.settings-frame {
+		grid-template-columns: minmax(0, 1fr);
+	}
+	.settings-nav {
+		border-right: none;
+		background: none;
+	}
+}
+body.scroll-locked {
+	overflow: hidden;
+}

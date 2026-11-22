@@ -1,0 +1,379 @@
+/* --- sidebar --- */
+
+.sidebar {
+	display: grid;
+	/* One column that never grows with its content: a long name is cut, it never widens the sidebar. */
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto auto minmax(0, 1fr) auto;
+	min-height: 0;
+	background: var(--bg-side);
+	border-right: 1px solid var(--divider);
+}
+.sidebar-top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 60px;
+	/* The graphic's centre lines up with the icons below and with the folded rail (28 px). */
+	padding: 16px 12px 12px 17px;
+}
+.sidebar-nav {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	padding: 4px 10px 16px;
+}
+.nav-row {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	width: 100%;
+	min-height: 36px;
+	padding: 0 10px;
+	border: none;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--text);
+	text-align: left;
+	cursor: pointer;
+}
+.nav-row svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+	color: var(--text-2);
+}
+/* The selected row has a grey fill and bold text: the fill alone is below 3:1. */
+.nav-row[aria-current="page"] {
+	background: var(--selected);
+	font-weight: 600;
+}
+@media (hover: hover) {
+	.nav-row:not([aria-current="page"]):hover {
+		background: var(--hover);
+	}
+}
+/* The entry whose menu shows beside it stays marked while the menu is open. */
+.nav-row[aria-expanded="true"]:not([aria-current="page"]),
+.rail .btn-icon[aria-expanded="true"]:not([aria-current="page"]) {
+	background: var(--hover);
+}
+.sidebar-search {
+	position: relative;
+}
+.search-field {
+	position: relative;
+}
+.search-field svg {
+	position: absolute;
+	left: 11px;
+	top: 50%;
+	width: 15px;
+	height: 15px;
+	transform: translateY(-50%);
+	color: var(--text-3);
+	pointer-events: none;
+}
+.search-field .input {
+	min-height: 36px;
+	padding-left: 34px;
+	border-color: transparent;
+	background: var(--hover);
+}
+.search-field .input:focus-visible {
+	border-color: var(--control);
+	background: var(--bg);
+}
+.sidebar-list {
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 0 10px 10px;
+}
+/* Empty sections show a dashed box, as Claude does for an empty folder list. */
+.empty-box {
+	margin: 2px 0 6px;
+	padding: 10px 12px;
+	border: 1px dashed var(--control-strong);
+	border-radius: var(--radius);
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+.lockup-button {
+	margin: -4px -6px;
+	padding: 4px 6px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: none;
+	color: inherit;
+	font: inherit;
+	cursor: pointer;
+}
+.sidebar-bottom {
+	padding: 8px 10px 14px;
+}
+.group-heading {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	min-height: 30px;
+	margin-top: 14px;
+	padding: 0 2px 0 10px;
+	font-size: var(--fs-s);
+	font-weight: 600;
+	color: var(--text-3);
+}
+.group-heading .btn-icon {
+	width: 28px;
+	min-height: 28px;
+}
+/* A heading's name is a button that folds its list; it fills the line up to the heading's buttons. */
+.heading-toggle {
+	display: flex;
+	flex: 1 1 auto;
+	align-items: center;
+	gap: 4px;
+	min-width: 0;
+	min-height: 28px;
+	margin-left: -6px;
+	padding: 0 6px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: none;
+	color: inherit;
+	font: inherit;
+	text-align: left;
+	cursor: pointer;
+}
+@media (hover: hover) {
+	.heading-toggle:hover {
+		color: var(--text-2);
+	}
+}
+.heading-text {
+	flex: 0 1 auto;
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.heading-filter {
+	color: var(--text-2);
+}
+.archived-toggle {
+	margin: 10px 0 0;
+	font-size: var(--fs-s);
+	color: var(--text-2);
+}
+.session-item {
+	position: relative;
+}
+.session-row {
+	display: grid;
+	grid-template-columns: 16px minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	min-height: 36px;
+	margin: 2px 0;
+	padding: 0 10px;
+	border: none;
+	border-radius: var(--radius);
+	background: none;
+	text-align: left;
+	cursor: pointer;
+	color: var(--text);
+}
+/* The open session, and the team whose sessions are listed. */
+.session-row:is([aria-current="true"], [aria-pressed="true"]) {
+	background: var(--selected);
+	font-weight: 600;
+}
+@media (hover: hover) {
+	.session-row:not([aria-current="true"], [aria-pressed="true"]):hover {
+		background: var(--hover);
+	}
+}
+.session-icon {
+	position: relative;
+	display: inline-grid;
+	width: 16px;
+	height: 16px;
+	color: var(--text-3);
+}
+.session-icon svg {
+	width: 16px;
+	height: 16px;
+}
+.pin-icon {
+	width: 12px;
+	height: 12px;
+	color: var(--text-3);
+}
+.session-row-editing {
+	grid-template-columns: 16px minmax(0, 1fr);
+	cursor: default;
+	background: var(--selected);
+}
+.row-input {
+	min-width: 0;
+	height: 26px;
+	padding: 0 6px;
+	border: 1px solid var(--control-strong);
+	border-radius: 6px;
+	background: var(--surface);
+	color: var(--text);
+	font: inherit;
+	outline: none;
+}
+.row-error {
+	grid-column: 1 / -1;
+	padding: 0 0 6px 24px;
+}
+.session-name {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.session-time {
+	font-size: var(--fs-s);
+	font-weight: 400;
+	color: var(--text-3);
+	white-space: nowrap;
+}
+.session-row-menu {
+	position: absolute;
+	right: 4px;
+	top: 50%;
+	transform: translateY(-50%);
+}
+.session-row-menu .btn-icon {
+	width: 28px;
+	min-height: 28px;
+}
+/* With a mouse, a row's menu shows on hover or focus, in place of its time. */
+@media (hover: hover) {
+	.session-item:not(:hover, :focus-within) .session-row-menu,
+	.group-heading:not(:hover, :focus-within) .btn-icon:not(.heading-add) {
+		opacity: 0;
+	}
+	.session-item:is(:hover, :focus-within) :is(.session-time, .badge, .row-dot, .unread-count) {
+		visibility: hidden;
+	}
+}
+@media (hover: none) {
+	.session-row {
+		padding-right: 38px;
+	}
+	/* Sidebar rows show their menu in place of the time; lists elsewhere keep it. */
+	.session-row .session-time {
+		display: none;
+	}
+}
+/* The count of what waits for you: a quiet grey chip, not a bright one. */
+.badge {
+	min-width: 18px;
+	height: 18px;
+	padding: 0 5px;
+	border-radius: 5px;
+	background: var(--surface-3);
+	color: var(--text);
+	font-size: var(--fs-s);
+	font-weight: 600;
+	line-height: 1;
+	display: inline-grid;
+	place-items: center;
+}
+.dot {
+	width: 8px;
+	height: 8px;
+	border-radius: 50%;
+}
+.dot-working {
+	background: var(--accent);
+	animation: pulse 1.4s ease-in-out infinite;
+}
+.dot-waiting {
+	background: var(--warning);
+}
+.dot-error {
+	background: var(--danger);
+}
+.dot-needs_review {
+	background: var(--review);
+}
+.dot-idle {
+	background: transparent;
+}
+/* New replies since you last opened the session: a plain number, weaker than a count of to-dos. */
+.unread-count {
+	min-width: 18px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	text-align: center;
+}
+/* On a session row the status is a small dot on the right, where the time otherwise is. */
+.row-dot {
+	width: 6px;
+	height: 6px;
+	margin: 0 5px;
+}
+@keyframes pulse {
+	50% {
+		opacity: 0.35;
+	}
+}
+
+.search-results {
+	position: absolute;
+	left: 0;
+	right: 0;
+	top: 40px;
+	z-index: 5;
+	max-height: 60dvh;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 5px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	box-shadow: var(--shadow);
+}
+.search-hit {
+	display: block;
+	width: 100%;
+	margin: 2px 0;
+	padding: 6px 8px;
+	border: none;
+	border-radius: var(--radius-s);
+	background: none;
+	text-align: left;
+	cursor: pointer;
+}
+/* Teams and workspaces among the results: icon, name and what it is. */
+.search-hit-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+.search-hit-row svg {
+	flex: none;
+	color: var(--text-3);
+}
+.search-hit-row .hint {
+	margin-left: auto;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.search-hit mark {
+	background: var(--accent-soft);
+	color: inherit;
+	font-weight: 600;
+}
+@media (hover: hover) {
+	.search-hit:hover {
+		background: var(--hover);
+	}
+}

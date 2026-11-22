@@ -1,0 +1,370 @@
+/* --- brand: logomark + wordmark; the Tenon mark only in the publisher mark --- */
+
+.lockup {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+}
+.lockup-mark {
+	width: 22px;
+	height: 22px;
+	flex: none;
+}
+.mark-leaf {
+	fill: var(--mark-ink);
+}
+.wordmark {
+	width: calc(var(--word-h, 22px) * 2.091);
+	height: var(--word-h, 22px);
+	fill: var(--mark-ink);
+	overflow: visible;
+}
+/* "Yew" and a smaller "Harness" on the wordmark's baseline, which sits 0.16 of its height above
+   the bottom of the SVG (flex puts an SVG's baseline at its bottom edge). */
+.product-name {
+	--word-h: 22px;
+	display: inline-flex;
+	align-items: baseline;
+	gap: calc(var(--word-h) * 0.25);
+}
+.product-harness {
+	color: var(--mark-ink);
+	font-size: calc(var(--word-h) * 0.64);
+	font-weight: 600;
+	line-height: 1;
+	letter-spacing: 0.01em;
+	white-space: nowrap;
+	transform: translateY(calc(var(--word-h) * -0.16));
+}
+
+/* --- the mascot: decoration only, never in the way --- */
+
+.mascot {
+	display: block;
+	flex: none;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-drag: none;
+}
+.home-mascot,
+.page-mascot {
+	margin: 0 auto;
+}
+/* On About it lines up with the lockup under it. */
+/* About: the mascot on the left, the lockup beside her, larger than anywhere else. */
+.about-hero {
+	display: flex;
+	align-items: flex-end;
+	gap: 16px;
+}
+/* Close to her feet: the lockup's baseline near the bottom of the picture. */
+.about-lockup {
+	gap: 18px;
+	margin-bottom: 8px;
+}
+.about-lockup .lockup-mark {
+	width: 56px;
+	height: 56px;
+}
+.about-lockup .product-name {
+	--word-h: 56px;
+}
+@media (max-width: 480px) {
+	.about-hero {
+		gap: 10px;
+	}
+	.about-lockup {
+		gap: 10px;
+		margin-bottom: 8px;
+	}
+	.about-lockup .lockup-mark {
+		width: 34px;
+		height: 34px;
+	}
+	.about-lockup .product-name {
+		--word-h: 34px;
+	}
+}
+.page-mascot {
+	margin-bottom: 12px;
+}
+.empty-state {
+	display: grid;
+	justify-items: center;
+	gap: 4px;
+}
+@media (prefers-reduced-motion: no-preference) {
+	.home-mascot {
+		animation: mascot-float 4.5s ease-in-out infinite;
+	}
+}
+@keyframes mascot-float {
+	50% {
+		transform: translateY(-4px);
+	}
+}
+
+/*
+ * --- Yew floating over the window ---
+ * Placed by companion.tsx at her own edges away from the bubble. Above the sidebar and the page,
+ * below dialogs, menus and the opening. Only her picture and a bubble that goes somewhere take clicks.
+ */
+
+/* Her bubble is over her head in the lower half of the window and under her feet in the upper half,
+   reaching toward the middle; where she starts it keeps clear of the composer (companion.ts). */
+.companion {
+	position: fixed;
+	z-index: 12;
+	display: flex;
+	flex-direction: column-reverse;
+	align-items: flex-start;
+	gap: 6px;
+	width: max-content;
+	pointer-events: none;
+	user-select: none;
+	-webkit-user-select: none;
+}
+.companion-left {
+	align-items: flex-end;
+}
+.companion-top {
+	flex-direction: column;
+}
+.companion-mascot-btn {
+	flex: none;
+	padding: 0;
+	border: none;
+	background: transparent;
+	cursor: grab;
+	line-height: 0;
+	pointer-events: auto;
+	touch-action: none;
+	transition: transform 160ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+@media (hover: hover) {
+	.companion-mascot-btn:hover {
+		transform: translateY(-2px) scale(1.03);
+	}
+}
+.companion-mascot-btn:active {
+	transform: translateY(1px) scale(0.96);
+}
+/* Picked up: a little larger while she moves. */
+.companion-dragging .companion-mascot-btn,
+.companion-dragging .companion-mascot-btn:active {
+	cursor: grabbing;
+	transform: scale(1.06);
+}
+.companion-mascot {
+	filter: drop-shadow(0 6px 10px rgb(0 0 0 / 0.12));
+}
+:root[data-theme="dark"] .companion-mascot {
+	filter: drop-shadow(0 6px 12px rgb(0 0 0 / 0.4));
+}
+@media (prefers-reduced-motion: no-preference) {
+	.companion-mascot {
+		animation:
+			companion-in 0.36s cubic-bezier(0.34, 1.56, 0.64, 1),
+			mascot-float 4.5s ease-in-out 0.36s infinite;
+	}
+}
+@keyframes companion-in {
+	from {
+		opacity: 0;
+		transform: translateY(6px) scale(0.92);
+	}
+}
+.companion-bubble {
+	position: relative;
+	flex: none;
+	width: max-content;
+	/* max-width: set by companion.tsx, so the bubble stays in the window. */
+	margin: 0;
+	padding: 7px 10px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	box-shadow: var(--lift);
+	color: var(--text);
+	font: inherit;
+	font-size: var(--fs-s);
+	line-height: 1.45;
+	text-align: left;
+	overflow-wrap: anywhere;
+	text-wrap: pretty;
+}
+/* The tail points at her, over the middle of her picture. */
+.companion-bubble::before {
+	content: "";
+	position: absolute;
+	left: 30px;
+	bottom: -5px;
+	width: 8px;
+	height: 8px;
+	border-right: 1px solid var(--border);
+	border-bottom: 1px solid var(--border);
+	background: inherit;
+	transform: rotate(45deg);
+}
+.companion-left .companion-bubble::before {
+	left: auto;
+	right: 30px;
+}
+.companion-top .companion-bubble::before {
+	top: -5px;
+	bottom: auto;
+	transform: rotate(-135deg);
+}
+.companion-go {
+	cursor: pointer;
+	pointer-events: auto;
+}
+@media (hover: hover) {
+	.companion-go:hover {
+		background: var(--hover);
+	}
+}
+/* A short window keeps its room for the work; a narrow one does not draw her at all (main.tsx). */
+@media (max-height: 620px) {
+	.companion {
+		display: none;
+	}
+}
+
+/* --- the opening --- */
+
+.opening {
+	position: fixed;
+	inset: 0;
+	z-index: 100;
+	display: grid;
+	place-content: center;
+	justify-items: center;
+	gap: 24px;
+	padding: 16px;
+	/* There from the first frame, so nothing under it shows while it comes in; what is on it moves. */
+	background: var(--bg);
+}
+.opening-leaving {
+	opacity: 0;
+	transition: opacity 0.26s ease;
+}
+.opening-stage {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+}
+.opening-mark {
+	flex: none;
+	overflow: visible;
+}
+.opening-ring {
+	fill: none;
+	stroke: var(--control);
+	stroke-width: 0.6;
+	stroke-dasharray: 1;
+	stroke-dashoffset: 1;
+	animation: opening-draw 0.7s ease-out forwards;
+}
+.opening-leaf {
+	fill: var(--mark-ink);
+	fill-opacity: 0;
+	stroke: var(--mark-ink);
+	stroke-width: 1.2;
+	stroke-dasharray: 1;
+	stroke-dashoffset: 1;
+	animation:
+		opening-draw 0.5s ease-out 0.1s forwards,
+		opening-fill 0.3s ease-out 0.45s forwards;
+}
+.opening-berry {
+	transform: scale(0);
+	transform-box: fill-box;
+	transform-origin: center;
+	animation: opening-pop 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+}
+.opening-seed {
+	opacity: 0;
+	animation: opening-show 0.2s ease-out 0.6s forwards;
+}
+.opening-word {
+	--word-h: 52px;
+	opacity: 0;
+	transform: translateX(-8px);
+	animation: opening-settle 0.4s ease-out 0.45s forwards;
+}
+.opening-mascot {
+	margin-left: 4px;
+	opacity: 0;
+	transform: translateY(10px) scale(0.9);
+	animation: opening-settle 0.45s cubic-bezier(0.34, 1.56, 0.64, 1) 0.6s forwards;
+}
+/* A narrow window: the name gets smaller and Yew moves under it. */
+@media (max-width: 560px) {
+	.opening-stage {
+		flex-wrap: wrap;
+		justify-content: center;
+	}
+	.opening-word {
+		--word-h: 40px;
+	}
+}
+.opening-steps {
+	display: grid;
+	gap: 4px;
+	min-width: 240px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+.opening-step {
+	display: flex;
+	gap: 8px;
+	opacity: 0.6;
+	transition: opacity 0.2s;
+}
+.opening-step.done {
+	color: var(--text-2);
+	opacity: 1;
+}
+.opening-tick {
+	width: 1em;
+	text-align: center;
+}
+.opening-skip {
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+/* With "click to enter", the line under the steps asks for the click once everything has started. */
+.opening-enter {
+	color: var(--text-2);
+	font-weight: 600;
+}
+@keyframes opening-draw {
+	to {
+		stroke-dashoffset: 0;
+	}
+}
+@keyframes opening-fill {
+	to {
+		fill-opacity: 1;
+	}
+}
+@keyframes opening-pop {
+	to {
+		transform: scale(1);
+	}
+}
+@keyframes opening-show {
+	to {
+		opacity: 1;
+	}
+}
+@keyframes opening-settle {
+	to {
+		opacity: 1;
+		transform: none;
+	}
+}

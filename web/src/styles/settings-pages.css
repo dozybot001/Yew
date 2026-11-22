@@ -1,0 +1,230 @@
+/* Phone access: the relay address, and the pairing QR code on white so any camera reads it. */
+.relay-url {
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	color: var(--text-2);
+	overflow-wrap: anywhere;
+}
+.setting-empty {
+	padding: 10px 14px;
+}
+.pairing {
+	display: grid;
+	justify-items: center;
+	gap: 10px;
+	margin-top: 16px;
+	text-align: center;
+}
+.pairing-qr {
+	width: 220px;
+	height: 220px;
+	padding: 12px;
+	border-radius: var(--radius-l);
+	background: #ffffff;
+}
+
+/* Tabs under a dialog's title, in line with its body. */
+.dialog-tabs {
+	padding: 0 22px 8px;
+}
+
+/* Addresses, commands and names typed in the settings. */
+.mono-input {
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+}
+
+/* MCP servers: a row per server in the box; its details open under it. */
+.mcp-server + .mcp-server {
+	border-top: 1px solid var(--border);
+}
+.mcp-row {
+	flex-wrap: wrap;
+}
+.mcp-row .setting-control {
+	flex-wrap: wrap;
+}
+.mcp-code {
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	overflow-wrap: anywhere;
+}
+.mcp-detail {
+	display: grid;
+	gap: 10px;
+	padding: 0 14px 12px;
+}
+.mcp-line {
+	display: grid;
+	grid-template-columns: 7em minmax(0, 1fr);
+	gap: 8px;
+	align-items: baseline;
+	font-size: var(--fs-s);
+}
+.mcp-line > span:first-child {
+	color: var(--text-2);
+}
+.mcp-values {
+	display: grid;
+	gap: 6px;
+}
+.mcp-value {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.mcp-value .input {
+	flex: 1 1 12em;
+	width: auto;
+}
+.mcp-tools {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 4px 14px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+/* Skills: a row per skill; the description is one line until it is clicked. */
+.skill + .skill {
+	border-top: 1px solid var(--border);
+}
+.skill-row {
+	flex-wrap: wrap;
+}
+.skill-row .setting-text {
+	flex: 1 1 14em;
+}
+.skill-row .setting-control {
+	margin-left: auto;
+}
+.skill-name {
+	gap: 8px;
+	overflow-wrap: anywhere;
+}
+.skill-mark {
+	flex: none;
+	padding: 0 6px;
+	border: 1px solid var(--control-strong);
+	border-radius: var(--radius-s);
+	color: var(--warning);
+	font-size: var(--fs-s);
+	font-weight: 400;
+}
+.skill-description {
+	display: block;
+	min-width: 0;
+	padding: 0;
+	border: 0;
+	background: none;
+	font-family: inherit;
+	text-align: left;
+	cursor: pointer;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.skill-description.open {
+	white-space: normal;
+	overflow-wrap: anywhere;
+}
+.skill > .error-box {
+	margin: 0 14px 12px;
+}
+/* Data: where the folder is and what each kind takes, as rows with a thin bar each. */
+.data-row {
+	flex-wrap: wrap;
+}
+.data-row .setting-text {
+	flex: 1 1 16em;
+}
+.data-row .setting-control {
+	margin-left: auto;
+}
+@media (max-width: 480px) {
+	.data-row .setting-text {
+		flex: none;
+	}
+	.data-row .setting-control {
+		margin-left: 0;
+	}
+}
+.data-path {
+	font-family: var(--mono);
+	overflow-wrap: anywhere;
+	user-select: all;
+}
+.data-usage {
+	display: grid;
+	justify-content: stretch;
+	align-items: start;
+	gap: 12px;
+	padding-block: 14px;
+}
+.data-line {
+	display: flex;
+	justify-content: space-between;
+	align-items: baseline;
+	gap: 16px;
+}
+.data-total {
+	font-weight: 500;
+}
+.data-size {
+	flex: none;
+	font-variant-numeric: tabular-nums;
+}
+.data-part .data-size {
+	color: var(--text-2);
+}
+.data-parts {
+	display: grid;
+	gap: 10px;
+	margin: 0;
+	padding: 0;
+	list-style: none;
+}
+.data-part {
+	display: grid;
+	gap: 5px;
+}
+.data-bar {
+	height: 4px;
+	border-radius: 2px;
+	background: var(--hover);
+	overflow: hidden;
+}
+.data-bar > span {
+	display: block;
+	height: 100%;
+	border-radius: 2px;
+	background: var(--text-2);
+}
+.data-typed {
+	gap: 6px;
+}
+.data-result {
+	overflow-wrap: anywhere;
+}
+.setting-box > .error-box {
+	margin: 0 14px 12px;
+}
+/* Names with values (variables, headers): a line each, the value hidden as it is typed. */
+.pairs {
+	display: grid;
+	gap: 8px;
+	justify-items: start;
+}
+.pair-row {
+	display: grid;
+	grid-template-columns: minmax(0, 2fr) minmax(0, 3fr) auto;
+	gap: 8px;
+	width: 100%;
+}
+@media (max-width: 480px) {
+	.mcp-line {
+		grid-template-columns: minmax(0, 1fr);
+		gap: 2px;
+	}
+}

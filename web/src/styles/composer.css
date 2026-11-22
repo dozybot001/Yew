@@ -1,0 +1,227 @@
+/* The composer: a rounded box with the model choice and a round send button inside. */
+.composer {
+	padding: 0 20px 18px;
+	background: var(--bg);
+}
+.composer-inner {
+	max-width: 760px;
+	width: 100%;
+	margin: 0 auto;
+	display: grid;
+	gap: 8px;
+}
+.composer-box {
+	position: relative;
+	display: grid;
+	gap: 4px;
+	padding: 10px 10px 8px;
+	border: 1px solid var(--control);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	box-shadow: var(--lift);
+}
+.composer-box:focus-within {
+	border-color: var(--control-strong);
+}
+.composer-box textarea {
+	width: 100%;
+	min-height: 48px;
+	max-height: 40dvh;
+	padding: 4px 8px;
+	border: none;
+	outline: none;
+	resize: none;
+	background: transparent;
+	field-sizing: content;
+	line-height: 1.55;
+	overflow-y: auto;
+}
+.composer-box textarea::placeholder {
+	color: var(--text-3);
+}
+.composer-bar {
+	display: flex;
+	align-items: flex-end;
+	gap: 4px;
+	min-width: 0;
+}
+.composer-chips {
+	flex: 1;
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	min-width: 0;
+}
+.composer-chips .model-picker {
+	display: contents;
+}
+.composer-bar .select-trigger {
+	width: auto;
+	max-width: 200px;
+	min-height: 32px;
+	padding: 0 10px;
+	gap: 6px;
+	border-color: transparent;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text-2);
+}
+.composer-bar .model-trigger {
+	max-width: 260px;
+}
+:root {
+	--cell: 32px;
+}
+.composer-actions {
+	flex: none;
+	display: flex;
+	align-items: center;
+	gap: 2px;
+}
+.composer-actions > .btn,
+.context-pie {
+	width: var(--cell);
+	height: var(--cell);
+	min-height: var(--cell);
+}
+.context-pie {
+	flex: none;
+	display: inline-grid;
+	place-items: center;
+	padding: 0;
+	color: var(--text-2);
+}
+.context-pie-high {
+	color: var(--warning);
+}
+.context-popover {
+	position: fixed;
+	margin: 0;
+	width: min(304px, calc(100vw - 32px));
+	padding: 12px 14px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow);
+	font-size: var(--fs-s);
+}
+.context-popover-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+	margin-bottom: 8px;
+	font-size: var(--fs-m);
+}
+.context-popover-pct {
+	font-weight: 600;
+	font-variant-numeric: tabular-nums;
+	color: var(--text-2);
+}
+.context-popover-pct.high {
+	color: var(--warning);
+}
+.context-meter {
+	position: relative;
+	height: 6px;
+	margin-bottom: 10px;
+	border-radius: 999px;
+	background: var(--hover);
+}
+.context-meter-fill {
+	height: 100%;
+	border-radius: 999px;
+	background: var(--text);
+	transition: width 160ms ease;
+}
+.context-meter-fill.high {
+	background: var(--warning);
+}
+.context-stats {
+	margin: 0;
+	display: grid;
+	gap: 5px;
+}
+.context-stats > div {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+}
+.context-stats dt {
+	color: var(--text-3);
+}
+.context-stats dd {
+	margin: 0;
+	font-variant-numeric: tabular-nums;
+	color: var(--text);
+	text-align: right;
+}
+.context-popover-note {
+	margin: 10px 0 0;
+	padding-top: 8px;
+	border-top: 1px solid var(--divider);
+	line-height: 1.5;
+}
+.send-button {
+	flex: none;
+	width: 34px;
+	min-height: 34px;
+	height: 34px;
+	padding: 0;
+	border: none;
+	border-radius: var(--radius-s);
+	background: transparent;
+	color: var(--text);
+}
+.send-button:disabled {
+	background: transparent;
+	color: var(--text-3);
+	opacity: 1;
+}
+.send-button[aria-busy="true"] {
+	color: var(--text);
+}
+.send-button[aria-busy="true"] svg {
+	display: none;
+}
+@media (hover: hover) {
+	.send-button:not(:disabled):hover {
+		background: var(--hover);
+		color: var(--text);
+	}
+}
+.queued {
+	display: grid;
+	gap: 6px;
+}
+.queued-item {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	gap: 6px;
+	align-items: center;
+	padding: 6px 8px 6px 14px;
+	border: 1px dashed var(--control);
+	border-radius: var(--radius-l);
+	color: var(--text-2);
+	white-space: pre-wrap;
+}
+.error-box {
+	display: grid;
+	gap: 6px;
+	padding: 10px 12px;
+	border: 1px solid var(--danger);
+	border-radius: var(--radius);
+	color: var(--text);
+}
+.error-id {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 6px;
+}
+.error-code {
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+}

@@ -1,0 +1,400 @@
+/* --- controls: no browser default looks --- */
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 6px;
+	min-height: 32px;
+	padding: 0 12px;
+	border-radius: var(--radius-s);
+	border: 1px solid transparent;
+	background: transparent;
+	color: var(--text);
+	font-size: var(--fs-m);
+	cursor: pointer;
+	white-space: nowrap;
+	appearance: none;
+}
+/* A link that looks like a button, such as signing in to an MCP server in a new tab. */
+a.btn {
+	text-decoration: none;
+}
+.btn:disabled {
+	opacity: 0.45;
+	cursor: not-allowed;
+}
+.btn svg {
+	width: 16px;
+	height: 16px;
+	flex: none;
+}
+.btn-primary {
+	background: var(--primary);
+	border-color: var(--primary);
+	color: var(--on-primary);
+	font-weight: 600;
+}
+.btn-danger {
+	color: var(--danger);
+}
+.btn-ghost {
+	border-color: transparent;
+	background: transparent;
+}
+.btn-icon {
+	width: 32px;
+	padding: 0;
+	border-radius: var(--radius-s);
+	color: var(--text-2);
+}
+.btn[aria-busy="true"] {
+	cursor: progress;
+}
+.btn[aria-busy="true"]::before {
+	content: "";
+	width: 12px;
+	height: 12px;
+	border-radius: 50%;
+	border: 2px solid currentColor;
+	border-right-color: transparent;
+	animation: spin 0.8s linear infinite;
+}
+@media (hover: hover) {
+	.btn:not(:disabled):hover {
+		background: var(--hover);
+		color: var(--text);
+	}
+	.btn-primary:not(:disabled):hover {
+		background: var(--primary-hover);
+		border-color: var(--primary-hover);
+		color: var(--on-primary);
+	}
+}
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
+.input,
+.textarea {
+	width: 100%;
+	min-height: 36px;
+	padding: 7px 12px;
+	border: 1px solid var(--control);
+	border-radius: var(--radius);
+	background: var(--surface);
+	font-size: var(--fs-m);
+	appearance: none;
+}
+.input::placeholder,
+.textarea::placeholder {
+	color: var(--text-3);
+}
+/* A focused field shows a stronger border instead of the ring other controls get. */
+.input:focus-visible,
+.textarea:focus-visible {
+	outline: none;
+	border-color: var(--control-strong);
+}
+.textarea {
+	resize: none;
+	field-sizing: content;
+	min-height: 64px;
+	line-height: 1.55;
+}
+.textarea-large {
+	min-height: 96px;
+}
+.field-row {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 12px;
+}
+.input[aria-invalid="true"],
+.textarea[aria-invalid="true"] {
+	border-color: var(--danger);
+}
+.secret-input {
+	-webkit-text-security: disc;
+}
+
+.field {
+	display: grid;
+	gap: 6px;
+}
+.field-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	font-weight: 600;
+}
+.field-head {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 8px;
+}
+.folder-box {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	min-height: 52px;
+	padding: 0 14px;
+	border: 1px dashed var(--control-strong);
+	border-radius: var(--radius);
+	color: var(--text-3);
+}
+.folder-box:focus-within {
+	border-style: solid;
+}
+.folder-box input {
+	flex: 1;
+	min-width: 0;
+	border: none;
+	outline: none;
+	background: transparent;
+	color: var(--text);
+}
+.folder-box input::placeholder {
+	color: var(--text-3);
+}
+.field-error {
+	color: var(--danger);
+	font-size: var(--fs-s);
+}
+
+.switch {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	background: none;
+	border: none;
+	padding: 4px 0;
+	cursor: pointer;
+	text-align: left;
+	font-weight: 600;
+}
+.switch-track {
+	flex: none;
+	position: relative;
+	width: 36px;
+	height: 20px;
+	border-radius: 10px;
+	border: 1px solid var(--control);
+	background: var(--surface-3);
+	transition: background 0.15s;
+}
+.switch-thumb {
+	position: absolute;
+	top: 2px;
+	left: 2px;
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	background: var(--text-2);
+	transition: transform 0.15s;
+}
+.switch[aria-checked="true"] .switch-track {
+	background: var(--switch-on);
+	border-color: var(--switch-on);
+}
+.switch[aria-checked="true"] .switch-thumb {
+	transform: translateX(16px);
+	background: var(--on-accent);
+}
+
+/* A select looks like a field in forms; in the composer bar it is a quiet chip (below). */
+.select-trigger {
+	justify-content: space-between;
+	width: 100%;
+	min-width: 0;
+	min-height: 36px;
+	padding: 0 12px;
+	border-radius: var(--radius);
+	border-color: var(--control);
+}
+.select-trigger span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.select-trigger::after {
+	content: "";
+	flex: none;
+	width: 6px;
+	height: 6px;
+	border-right: 1.5px solid currentColor;
+	border-bottom: 1.5px solid currentColor;
+	transform: rotate(45deg) translateY(-2px);
+}
+
+.listbox,
+.menu {
+	position: fixed;
+	margin: 0;
+	padding: 5px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow);
+	min-width: 180px;
+}
+.listbox {
+	max-width: min(340px, calc(100vw - 32px));
+}
+.listbox,
+.menu {
+	max-height: min(400px, 64dvh);
+	overflow-y: auto;
+	overscroll-behavior: contain;
+}
+.listbox [role="option"],
+.menu [role^="menuitem"] {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 32px;
+	padding: 4px 10px;
+	/* Rows keep a gap so neighbouring highlights stay apart. */
+	margin: 2px 0;
+	border-radius: var(--radius-s);
+	cursor: pointer;
+	border: none;
+	background: none;
+	width: 100%;
+	text-align: left;
+	font-size: var(--fs-m);
+}
+.listbox [role="option"][aria-selected="true"] {
+	font-weight: 600;
+}
+.listbox [role="option"][aria-selected="true"]::after {
+	content: "✓";
+	flex: none;
+	margin-left: auto;
+}
+.listbox [role="option"].active,
+.menu [role^="menuitem"]:focus-visible {
+	background: var(--hover);
+	outline: none;
+}
+:root[data-input="pointer"] .menu [role^="menuitem"]:focus-visible:not(:hover) {
+	background: none;
+}
+.listbox .option-text {
+	display: flex;
+	flex: 1;
+	min-width: 0;
+	flex-direction: column;
+	gap: 1px;
+	padding: 3px 0;
+}
+.listbox .option-hint {
+	font-size: var(--fs-s);
+	font-weight: 400;
+	line-height: 1.45;
+	white-space: normal;
+	overflow-wrap: anywhere;
+	color: var(--text-3);
+}
+.listbox .group-label {
+	padding: 6px 10px 2px;
+	font-size: var(--fs-s);
+	color: var(--text-3);
+}
+.menu-danger {
+	color: var(--danger);
+}
+.menu-label {
+	flex: 1;
+	min-width: 0;
+}
+.menu-check {
+	color: var(--text-2);
+}
+.menu-detail {
+	flex: none;
+	max-width: 8em;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+}
+.menu-heading {
+	padding: 6px 10px 2px;
+	font-size: var(--fs-s);
+	color: var(--text-3);
+}
+.menu-separator {
+	height: 1px;
+	margin: 5px 6px;
+	border: none;
+	/* The divider colour is too close to the menu's own in the dark theme; the border colour shows. */
+	background: var(--border);
+}
+/* An item that opens a submenu: an arrow on the right, and it stays marked while the submenu is open. */
+.menu .menu-parent[aria-expanded="true"] {
+	background: var(--hover);
+}
+.menu .menu-selected {
+	font-weight: 600;
+}
+.menu .menu-selected .menu-detail {
+	font-weight: 400;
+	color: var(--text-2);
+}
+.menu .menu-arrow {
+	flex: none;
+	margin-left: auto;
+	color: var(--text-3);
+}
+@media (hover: hover) {
+	.listbox [role="option"]:hover,
+	.menu [role^="menuitem"]:hover {
+		background: var(--hover);
+	}
+}
+
+/* i toggletip: only the glyph changes, never a background */
+.info-button {
+	display: inline-grid;
+	place-items: center;
+	width: 24px;
+	height: 24px;
+	padding: 0;
+	border: none;
+	background: transparent;
+	color: var(--text-3);
+	cursor: pointer;
+	border-radius: var(--radius-s);
+}
+.info-button svg {
+	width: 15px;
+	height: 15px;
+}
+.info-button[aria-expanded="true"] {
+	color: var(--text);
+}
+@media (hover: hover) {
+	.info-button:hover {
+		color: var(--text);
+	}
+}
+.toggletip {
+	position: fixed;
+	margin: 0;
+	width: 260px;
+	max-width: calc(100vw - 32px);
+	padding: 12px 14px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	color: var(--text);
+	box-shadow: var(--shadow);
+	font-weight: 400;
+	font-size: var(--fs-s);
+	line-height: 1.6;
+}

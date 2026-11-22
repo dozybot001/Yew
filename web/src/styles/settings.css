@@ -1,0 +1,314 @@
+/* Settings now live in dialogs: sections take the dialog's full width. */
+.settings-section {
+	display: grid;
+	gap: 20px;
+}
+.settings-section > h2 {
+	font-size: var(--fs-l);
+	font-weight: 600;
+}
+.provider-group > h3 {
+	font-size: var(--fs-s);
+	font-weight: 600;
+	color: var(--text-3);
+	margin: 8px 0 4px;
+}
+.provider-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto;
+	gap: 8px;
+	align-items: center;
+	padding: 10px 0;
+	border-bottom: 1px solid var(--border);
+}
+.provider-key {
+	display: grid;
+	gap: 6px;
+	margin-top: 8px;
+}
+.provider-detail p {
+	margin: 4px 0 0;
+	overflow-wrap: anywhere;
+}
+.provider-failed {
+	color: var(--danger);
+}
+/*
+ * Settings dialogs: groups under a small title, each a rounded box of rows; a row has the name and a
+ * short explanation on the left and a control sized to its value on the right.
+ */
+.setting-group {
+	display: grid;
+	gap: 8px;
+}
+.setting-group-title {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	margin: 0;
+	font-size: var(--fs-s);
+	font-weight: 600;
+	color: var(--text-2);
+}
+.setting-box {
+	display: grid;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-l);
+	overflow: hidden;
+}
+.setting-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 16px;
+	min-height: 56px;
+	padding: 10px 14px;
+}
+.setting-row + .setting-row {
+	border-top: 1px solid var(--border);
+}
+.setting-text {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.setting-label {
+	display: inline-flex;
+	align-items: center;
+	gap: 2px;
+	font-weight: 500;
+}
+.setting-control {
+	display: flex;
+	flex: none;
+	align-items: center;
+	gap: 8px;
+}
+.setting-control .select-trigger {
+	width: 9em;
+}
+/* For options too long for the usual width, such as which browser the built-in one drives. */
+.setting-control .select-wide .select-trigger {
+	width: 12em;
+}
+.input-number {
+	width: 7em;
+	text-align: right;
+	font-variant-numeric: tabular-nums;
+}
+@media (max-width: 480px) {
+	.setting-row:not(:has(.switch)) {
+		flex-direction: column;
+		align-items: stretch;
+		gap: 8px;
+	}
+	.setting-control .select-trigger,
+	.setting-control .select-wide .select-trigger,
+	.input-number {
+		width: 100%;
+	}
+	.select-wide {
+		width: 100%;
+	}
+}
+.rules-empty {
+	margin: 0;
+	padding: 14px 16px;
+	color: var(--text-3);
+}
+/* One remembered approval per line: what it allows, and a button to stop allowing it. */
+.allowed-row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 44px;
+	padding: 6px 8px 6px 14px;
+	border-top: 1px solid var(--border);
+}
+.allowed-row:first-child {
+	border-top: none;
+}
+.allowed-text {
+	flex: 1 1 auto;
+	min-width: 0;
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	overflow-wrap: anywhere;
+}
+
+/* About: lockup and version, two short paragraphs, then one list of the publisher's details. */
+.about {
+	gap: 24px;
+}
+.about-head {
+	display: grid;
+	gap: 8px;
+}
+/*
+ * Versions and updates: one card under the lockup. An icon for how it
+ * stands, a title and a detail line, the one button there is something to do with on the right;
+ * the command or the failure's output, when there is one, on a row of its own below.
+ */
+.update-card {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: center;
+	gap: 12px 14px;
+	margin-top: 8px;
+	padding: 14px 16px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+}
+.update-icon {
+	display: grid;
+	place-items: center;
+	width: 36px;
+	height: 36px;
+	border-radius: 50%;
+	background: var(--hover);
+	color: var(--text-2);
+}
+.update-card[data-state="available"] .update-icon,
+.update-card[data-state="ready"] .update-icon {
+	background: var(--accent);
+	color: var(--on-accent);
+}
+.update-card[data-state="failed"] .update-icon {
+	color: var(--danger);
+}
+.update-spin {
+	animation: spin 1s linear infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+	.update-spin {
+		animation: none;
+	}
+}
+.update-text {
+	display: grid;
+	gap: 2px;
+	min-width: 0;
+}
+.update-title {
+	color: var(--text);
+	font-size: var(--fs-m);
+	font-weight: 600;
+}
+.update-card[data-state="failed"] .update-title {
+	color: var(--danger);
+}
+.update-detail {
+	color: var(--text-3);
+	font-size: var(--fs-s);
+	overflow-wrap: anywhere;
+}
+.update-detail a {
+	color: var(--text-2);
+}
+.update-action {
+	display: flex;
+	gap: 8px;
+}
+.update-below {
+	display: grid;
+	grid-column: 1 / -1;
+	gap: 10px;
+}
+@media (max-width: 480px) {
+	.update-card {
+		grid-template-columns: auto minmax(0, 1fr);
+	}
+	.update-action {
+		grid-column: 1 / -1;
+	}
+	.update-action .btn {
+		flex: 1;
+	}
+}
+.update-manual {
+	display: grid;
+	gap: 6px;
+}
+.update-command {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	padding: 4px 4px 4px 10px;
+	border-radius: var(--radius-s);
+	background: var(--code-bg);
+}
+.update-code {
+	flex: 1;
+	overflow-wrap: anywhere;
+	font-size: var(--fs-s);
+}
+.update-output summary {
+	color: var(--danger);
+	cursor: pointer;
+}
+.update-output pre {
+	max-height: 200px;
+	margin: 8px 0 0;
+	padding: 8px 10px;
+	overflow: auto;
+	border-radius: var(--radius-s);
+	background: var(--code-bg);
+	font-size: var(--fs-s);
+	white-space: pre-wrap;
+}
+.about-text {
+	display: grid;
+	gap: 12px;
+}
+.about-text p {
+	margin: 0;
+	line-height: 1.75;
+}
+.about-list {
+	display: grid;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-l);
+	overflow: hidden;
+}
+.about-row {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+	min-height: 48px;
+	padding: 0 16px;
+	border: none;
+	border-top: 1px solid var(--border);
+	background: none;
+	color: var(--text);
+	font-size: var(--fs-m);
+	text-align: left;
+}
+.about-row:first-child {
+	border-top: none;
+}
+button.about-row {
+	cursor: pointer;
+}
+@media (hover: hover) {
+	button.about-row:hover {
+		background: var(--hover);
+	}
+}
+.about-label {
+	color: var(--text-2);
+}
+/* The publisher mark: the T 18px, the name 0.75 of it in semibold, 0.3 of it apart. */
+.publisher-mark {
+	display: inline-flex;
+	align-items: center;
+	gap: calc(18px * 0.3);
+	color: var(--text);
+	font-size: calc(18px * 0.75);
+	font-weight: 600;
+}
+.publisher-mark img {
+	flex: none;
+}

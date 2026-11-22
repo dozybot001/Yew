@@ -273,7 +273,7 @@ export interface Size {
 export const EDGE = 8;
 /** The widest her bubble gets before a line wraps. */
 export const BUBBLE_WIDTH = 220;
-/** The composer's widest (`.composer-inner` in app.css); it stands in the middle of the page. */
+/** The composer's widest (`.composer-inner` in composer.css); it stands in the middle of the page. */
 const COMPOSER_WIDTH = 760;
 /** How far right of the sidebar she starts. */
 const START_GAP = 16;

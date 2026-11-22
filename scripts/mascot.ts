@@ -48,7 +48,7 @@ const FIT: Record<string, { anchor?: "left"; height?: number; marks?: boolean }>
 	peek: { anchor: "left" },
 };
 
-/** Yew's sidebar and page backgrounds, light and dark (web/src/styles/app.css). */
+/** Yew's sidebar and page backgrounds, light and dark (web/src/styles/base.css). */
 const BACKDROPS = ["#f9f9f9", "#ffffff", "#1f1f1f", "#181818"];
 
 interface CutOptions {

@@ -35,7 +35,7 @@ const SIZE: Size = { width: Math.round((HEIGHT * 373) / 400), height: HEIGHT };
 /** How far the pointer moves before a press becomes a drag instead of a click. */
 const DRAG_SLOP = 4;
 /**
- * The sidebar's width open and folded (`.app` in app.css), for where she stands until moved and how
+ * The sidebar's width open and folded (`.app` in layout.css), for where she stands until moved and how
  * wide the page beside it is.
  */
 const SIDEBAR_WIDTH = { open: 260, folded: 56 };

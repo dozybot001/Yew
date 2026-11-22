@@ -1,0 +1,604 @@
+/* --- main area --- */
+
+.main {
+	display: grid;
+	/* The column never grows with its content, so a long title cannot push the page sideways. */
+	grid-template-columns: minmax(0, 1fr);
+	grid-template-rows: auto minmax(0, 1fr) auto;
+	min-width: 0;
+	min-height: 0;
+	overflow-y: auto;
+	background: var(--bg);
+}
+/* Sessions and the home page carry the faint wordmark; it stays put while the conversation scrolls. */
+.main:not(.center-main) {
+	background-image: var(--watermark);
+	background-repeat: no-repeat;
+	background-position: right 4% bottom 26%;
+	background-size: min(44%, 560px) auto;
+}
+
+/* Home: one composer in the middle of the page, the one primary action. */
+.main-home {
+	position: relative;
+	grid-template-rows: minmax(0, 1fr);
+}
+.home-menu {
+	position: absolute;
+	top: 10px;
+	left: 8px;
+}
+.home {
+	align-self: center;
+	justify-self: center;
+	width: min(760px, 100%);
+	display: grid;
+	gap: 16px;
+	padding: 32px 20px 14dvh;
+}
+.home-intro {
+	display: grid;
+	justify-items: center;
+	gap: 14px;
+	text-align: center;
+}
+.home h1 {
+	font-size: var(--fs-xl);
+	font-weight: 600;
+}
+.suggestions {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
+	gap: 8px;
+}
+.suggestion {
+	color: var(--text-2);
+	background: transparent;
+}
+.suggestion svg {
+	color: var(--text-3);
+}
+.suggestion[aria-pressed="true"] {
+	background: var(--selected);
+	border-color: var(--control);
+	color: var(--text);
+	font-weight: 600;
+}
+.home-more {
+	justify-self: center;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
+
+.session-header {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	min-height: 52px;
+	padding: 8px 12px 8px 20px;
+}
+.session-title {
+	display: flex;
+	align-items: baseline;
+	gap: 10px;
+	min-width: 0;
+	flex: 1 1 auto;
+}
+.session-title h1 {
+	flex: 0 1 auto;
+	min-width: 0;
+	font-size: var(--fs-m);
+	font-weight: 600;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.session-meta {
+	flex: 0 1 auto;
+	min-width: 0;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+/* The right of a session's header: marks, then status and usage. It shrinks long before the title. */
+.session-aside {
+	display: flex;
+	align-items: center;
+	justify-content: flex-end;
+	gap: 8px;
+	flex: 0 100 auto;
+	min-width: 0;
+}
+.model-picker {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+.model-picker .select-trigger {
+	width: auto;
+	max-width: 220px;
+}
+.model-grid {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 10px;
+}
+.model-grid .field-label {
+	font-weight: 400;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
+.session-body {
+	position: relative;
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	min-height: 0;
+	overflow: hidden;
+}
+.transcript {
+	position: relative;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	padding: 8px 20px 24px;
+}
+.transcript-inner {
+	max-width: 760px;
+	margin: 0 auto;
+	display: grid;
+	/* One column that never grows past the transcript: long lines wrap or scroll in their own block. */
+	grid-template-columns: minmax(0, 1fr);
+	gap: 14px;
+}
+.new-messages {
+	position: sticky;
+	bottom: 8px;
+	margin: 0 auto;
+	border-color: var(--divider);
+	background: var(--surface);
+	box-shadow: var(--shadow);
+}
+
+.msg-user {
+	justify-self: end;
+	max-width: 80%;
+	padding: 9px 14px;
+	border-radius: var(--radius-l);
+	background: var(--user-bubble);
+	overflow-wrap: anywhere;
+}
+.msg-assistant {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 6px;
+	min-width: 0;
+}
+/* A message from the person with its actions underneath, both at the right. */
+.message-mine {
+	display: grid;
+	justify-items: end;
+	gap: 2px;
+}
+/*
+ * Time, copy, go back and fork under a message or a reply: shown on hover or focus so they do not
+ * crowd the conversation; always shown where there is no hover.
+ */
+.message-actions {
+	display: flex;
+	align-items: center;
+	gap: 2px;
+	min-height: 28px;
+	opacity: 0;
+	transition: opacity 120ms ease;
+}
+.message-actions time {
+	margin-right: 4px;
+	font-size: 12px;
+}
+.message-actions:not(.message-actions-mine) time {
+	order: 1;
+	margin-right: 0;
+	margin-left: 4px;
+}
+.message-mine:hover .message-actions,
+.msg-assistant:hover .message-actions,
+.message-actions:focus-within {
+	opacity: 1;
+}
+@media (hover: none) {
+	.message-actions {
+		opacity: 1;
+	}
+}
+.step-group {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+}
+/* The steps of an opened run, indented under its line. */
+.step-list {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 2px;
+	margin: 2px 0 4px 5px;
+	padding-left: 14px;
+	border-left: 2px solid var(--divider);
+}
+/* Consecutive steps sit close together, like one list of activity. */
+.msg-tool + .msg-tool {
+	margin-top: -10px;
+}
+.markdown {
+	line-height: 1.65;
+	overflow-wrap: anywhere;
+}
+.markdown > :first-child {
+	margin-top: 0;
+}
+.markdown > :last-child {
+	margin-bottom: 0;
+}
+.markdown h1,
+.markdown h2,
+.markdown h3 {
+	font-size: var(--fs-l);
+	margin: 18px 0 8px;
+}
+.file-link-wrap {
+	display: inline-flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 4px;
+	max-width: 100%;
+}
+.file-link {
+	display: inline-flex;
+	align-items: center;
+	gap: 4px;
+	max-width: 100%;
+	padding: 0 5px;
+	margin: 0 1px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-s);
+	background: var(--code-bg);
+	color: var(--text);
+	font: inherit;
+	font-size: 0.92em;
+	line-height: 1.45;
+	text-align: left;
+	vertical-align: baseline;
+	cursor: pointer;
+}
+.file-link > svg {
+	width: 13px;
+	height: 13px;
+	flex: none;
+	color: var(--text-3);
+}
+@media (hover: hover) {
+	.file-link:hover {
+		border-color: var(--control-strong);
+		background: var(--hover);
+	}
+}
+.file-link-error {
+	font-size: var(--fs-s);
+	color: var(--danger);
+}
+.markdown pre,
+.code {
+	margin: 0;
+	padding: 10px 12px;
+	border-radius: var(--radius);
+	background: var(--code-bg);
+	overflow-x: auto;
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	line-height: 1.55;
+}
+.markdown code {
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+}
+.markdown :not(pre) > code {
+	padding: 1px 5px;
+	border-radius: 5px;
+	background: var(--code-bg);
+}
+/* A path written as inline code: the button is the box, the code keeps its font. */
+.markdown .file-link code {
+	padding: 0;
+	background: none;
+	font-size: inherit;
+	overflow-wrap: anywhere;
+}
+.markdown table {
+	border-collapse: collapse;
+	display: block;
+	overflow-x: auto;
+}
+.markdown th,
+.markdown td {
+	border: 1px solid var(--divider);
+	padding: 4px 8px;
+}
+
+/* Tool calls, thinking and notes read as quiet activity lines; a click opens the detail. */
+.activity > summary {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	width: fit-content;
+	max-width: 100%;
+	min-height: 28px;
+	padding: 2px 6px 2px 0;
+	border-radius: var(--radius-s);
+	color: var(--text-2);
+	cursor: pointer;
+	list-style: none;
+}
+.activity > summary::-webkit-details-marker {
+	display: none;
+}
+.activity-verb {
+	flex: none;
+	font-weight: 600;
+}
+/* A run's counts can be long; they wrap instead of pushing the line wider than the transcript. */
+.activity-count {
+	flex: 0 1 auto;
+	min-width: 0;
+}
+.chevron {
+	flex: none;
+	width: 12px;
+	height: 12px;
+	color: var(--text-3);
+	transition: transform 0.15s;
+}
+/* The sidebar entry whose menu shows beside it has the arrow at its end, pointing at the menu. */
+.nav-row .chevron {
+	margin-left: auto;
+}
+/* An open sidebar list: the arrow points down. */
+.heading-toggle[aria-expanded="true"] .chevron {
+	transform: rotate(90deg);
+}
+.activity[open] > summary .chevron {
+	transform: rotate(90deg);
+}
+@media (hover: hover) {
+	.activity > summary:hover {
+		color: var(--text);
+	}
+}
+.tool-summary {
+	min-width: 0;
+	color: var(--text-3);
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.tool-stat {
+	flex: none;
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+}
+.stat-add {
+	color: var(--success);
+}
+.stat-del {
+	color: var(--danger);
+}
+.tool-state {
+	flex: none;
+	font-size: var(--fs-s);
+}
+.tool-state-error,
+.tool-state-denied {
+	color: var(--danger);
+}
+.tool-state-waiting,
+.tool-state-risk {
+	color: var(--warning);
+}
+.tool-state-reviewed {
+	color: var(--text-2);
+}
+.tool-state-needs_review {
+	color: var(--review);
+}
+/* Work in progress shimmers; reduced motion leaves it still. */
+.shimmer {
+	background:
+		linear-gradient(90deg, var(--text-3) 25%, var(--text) 50%, var(--text-3) 75%) 0 0 / 200% 100%;
+	-webkit-background-clip: text;
+	background-clip: text;
+	color: transparent;
+	animation: shimmer 1.8s linear infinite;
+}
+@keyframes shimmer {
+	to {
+		background-position: -200% 0;
+	}
+}
+.tool-detail {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 8px;
+	margin: 4px 0 6px;
+	padding: 10px 12px 12px;
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+}
+.tool-detail h2 {
+	margin-top: 2px;
+	font-size: var(--fs-s);
+	font-weight: 600;
+	color: var(--text-3);
+}
+.thinking-body {
+	margin: 4px 0 4px 5px;
+	padding-left: 12px;
+	border-left: 2px solid var(--divider);
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.note-body {
+	margin: 4px 0;
+}
+.output {
+	max-height: var(--cap);
+	overflow: auto;
+	overscroll-behavior: contain;
+	white-space: pre-wrap;
+}
+.diff {
+	margin: 0;
+	padding: 6px 0;
+	border-radius: var(--radius);
+	background: var(--code-bg);
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	max-height: 420px;
+	overflow: auto;
+	overscroll-behavior: contain;
+}
+.diff div {
+	padding: 0 12px;
+	white-space: pre;
+}
+.diff .add {
+	background: var(--diff-add);
+}
+.diff .del {
+	background: var(--diff-del);
+}
+.diff .hunk {
+	color: var(--text-3);
+}
+
+.card {
+	border: 1px solid var(--divider);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	min-width: 0;
+}
+.request-card {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr);
+	gap: 12px;
+	padding: 14px 16px 16px;
+	border-color: var(--border);
+}
+/*
+ * A card's top line: who is waiting, through whom and since when, with the tags that matter on the
+ * right. On a narrow card the tags move under the line.
+ */
+.request-card,
+.decision-card {
+	container-type: inline-size;
+}
+.card-head {
+	display: grid;
+	grid-template-columns: auto minmax(0, 1fr) auto;
+	align-items: start;
+	gap: 6px 8px;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	line-height: 18px;
+}
+.card-head > svg {
+	margin-top: 1px;
+	color: var(--text-3);
+}
+.card-head-parts {
+	display: flex;
+	flex-wrap: wrap;
+	min-width: 0;
+}
+.card-head-parts > span:not(:last-child)::after {
+	content: "·";
+	margin: 0 6px;
+	color: var(--text-3);
+}
+.card-head-tags {
+	display: flex;
+	flex-wrap: wrap;
+	justify-content: flex-end;
+	gap: 6px;
+}
+@container (max-width: 480px) {
+	.card-head-tags {
+		grid-row: 2;
+		grid-column: 2;
+		justify-content: flex-start;
+	}
+}
+.request-title {
+	margin: 0;
+	font-size: var(--fs-m);
+	font-weight: 600;
+	overflow-wrap: anywhere;
+}
+.request-question {
+	white-space: pre-wrap;
+}
+/* What the call is for, under the headline; a task's brief can be long and scrolls inside. */
+.request-description {
+	max-height: 7.5em;
+	margin-top: -6px;
+	overflow-y: auto;
+	overscroll-behavior: contain;
+	color: var(--text-2);
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+.request-list {
+	display: grid;
+	gap: 4px;
+	margin: 0;
+	padding-left: 18px;
+}
+.request-card .diff {
+	max-height: 260px;
+}
+.request-code {
+	max-height: 180px;
+	overflow: auto;
+	white-space: pre-wrap;
+	overflow-wrap: anywhere;
+}
+/* The model's suggested answers read as choices, not as plain text. */
+.question-option {
+	border-color: var(--control);
+}
+.request-always {
+	max-width: 320px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.request-actions {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+}
+.notice {
+	justify-self: center;
+	margin: 0;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+	text-align: center;
+	max-width: 90%;
+}
+.notice-error {
+	color: var(--danger);
+}

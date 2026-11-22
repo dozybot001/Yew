@@ -1,0 +1,410 @@
+/*
+ * --- the time a session's turn or wait has taken, in the middle of its header ---
+ * While it shows, the header becomes three columns with equal sides, so the time sits in the middle
+ * whatever the title and the usage take, with a wide gap so it does not read as part of them; a
+ * narrow header keeps it in line after the title.
+ */
+
+.session-clock {
+	flex: none;
+	min-width: 0;
+	color: var(--text-2);
+	font-size: var(--fs-s);
+	font-variant-numeric: tabular-nums;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+@media (min-width: 761px) {
+	.session-header-clock {
+		display: grid;
+		grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+		column-gap: 28px;
+	}
+}
+/* The steps for making a client of one's own (Google's MCP servers). */
+.preset-steps {
+	margin: 0;
+	padding-left: 20px;
+	display: grid;
+	gap: 6px;
+}
+.preset-redirect {
+	display: block;
+	margin-top: 4px;
+	overflow-wrap: anywhere;
+}
+
+/* --- message attachments --- */
+
+.composer-box-dragging {
+	border-style: dashed;
+	border-color: var(--control-strong);
+	background: var(--surface-2);
+}
+.composer-vision-hint {
+	margin: 2px 8px 0;
+}
+.staged-attachments {
+	list-style: none;
+	margin: 0;
+	padding: 2px 4px 4px;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.staged-chip,
+.msg-file-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 8px;
+	max-width: 260px;
+	padding: 4px 6px 4px 8px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface-2);
+	color: var(--text);
+}
+.staged-chip-error {
+	border-color: var(--danger);
+}
+.staged-chip-busy {
+	opacity: 0.72;
+}
+.staged-thumb {
+	width: 34px;
+	height: 34px;
+	flex: none;
+	border-radius: var(--radius-s);
+	object-fit: cover;
+	background: var(--surface-3);
+}
+.staged-icon {
+	width: 28px;
+	height: 28px;
+	flex: none;
+	display: inline-grid;
+	place-items: center;
+	border-radius: var(--radius-s);
+	background: var(--surface-3);
+	color: var(--text-2);
+}
+.staged-info {
+	min-width: 0;
+	display: grid;
+	gap: 1px;
+}
+.staged-name {
+	font-size: var(--fs-s);
+	line-height: 1.3;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.staged-meta {
+	font-size: var(--fs-s);
+	line-height: 1.25;
+	color: var(--text-2);
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.staged-chip-error .staged-meta {
+	color: var(--danger);
+}
+.staged-remove {
+	flex: none;
+	width: 26px;
+	height: 26px;
+	min-height: 26px;
+	padding: 0;
+}
+.queued-body {
+	display: grid;
+	gap: 4px;
+	min-width: 0;
+}
+.queued-attachments {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.queued-attachment-chip {
+	display: inline-flex;
+	align-items: center;
+	gap: 6px;
+	padding: 2px 8px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-s);
+	background: var(--surface);
+	font-size: var(--fs-s);
+	color: var(--text-2);
+}
+.queued-attachment-thumb {
+	width: 18px;
+	height: 18px;
+	border-radius: 3px;
+	object-fit: cover;
+}
+.msg-attachments {
+	display: grid;
+	gap: 8px;
+}
+.msg-attachments + .msg-user-text {
+	margin-top: 8px;
+}
+.msg-image-grid {
+	display: grid;
+	grid-template-columns: repeat(auto-fill, minmax(120px, 160px));
+	gap: 6px;
+}
+.msg-image-single {
+	grid-template-columns: minmax(0, 280px);
+}
+.msg-image-button {
+	padding: 0;
+	border: 1px solid var(--border);
+	border-radius: var(--radius);
+	background: var(--surface);
+	overflow: hidden;
+	cursor: pointer;
+	display: block;
+}
+.msg-image-button:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+.msg-image-thumb {
+	display: block;
+	width: 100%;
+	max-height: 220px;
+	object-fit: cover;
+}
+.msg-file-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+}
+.msg-file-chip {
+	background: var(--surface);
+}
+.lightbox-stage {
+	display: grid;
+	place-items: center;
+	min-height: 240px;
+}
+.lightbox-image {
+	max-width: 100%;
+	max-height: 68dvh;
+	object-fit: contain;
+	border-radius: var(--radius);
+	border: 1px solid var(--border);
+}
+.lightbox-footer {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 12px;
+	width: 100%;
+}
+
+/* --- multi-directory workspace settings --- */
+
+.extra-dir-list {
+	list-style: none;
+	margin: 0;
+	padding: 0;
+	display: grid;
+}
+.extra-dir-row {
+	display: grid;
+	grid-template-columns: minmax(0, 1fr) auto auto;
+	align-items: center;
+	gap: 8px;
+	min-height: 48px;
+	padding: 6px 8px 6px 14px;
+	border-bottom: 1px solid var(--border);
+}
+.extra-dir-path {
+	min-width: 0;
+	font-family: var(--mono);
+	font-size: var(--fs-s);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.setting-box .extra-dir-row .select-trigger {
+	width: 6.5em;
+}
+.extra-dir-add {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 14px;
+}
+.extra-dir-add .input {
+	flex: 1 1 200px;
+	min-width: 0;
+}
+.setting-box .extra-dir-add .select-trigger {
+	width: auto;
+	min-width: 5.5em;
+	flex: none;
+}
+.extra-dir-add > .btn {
+	flex: none;
+}
+
+/* --- composer quick-insert menu & context renew divider --- */
+
+.composer-menu {
+	position: absolute;
+	left: 0;
+	right: 0;
+	bottom: calc(100% + 6px);
+	z-index: 30;
+	max-height: 280px;
+	overflow-y: auto;
+	padding: 6px;
+	border: 1px solid var(--border);
+	border-radius: var(--radius-l);
+	background: var(--surface);
+	box-shadow: var(--lift);
+}
+.composer-menu-group + .composer-menu-group {
+	margin-top: 6px;
+	padding-top: 6px;
+	border-top: 1px solid var(--divider);
+}
+.composer-menu-heading {
+	padding: 2px 8px 4px;
+	font-size: var(--fs-xs);
+	font-weight: 500;
+	color: var(--text-3);
+}
+.composer-menu-item {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	width: 100%;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: var(--radius);
+	background: none;
+	color: var(--text);
+	font: inherit;
+	font-size: var(--fs-s);
+	text-align: left;
+	cursor: pointer;
+}
+.composer-menu-item-active,
+.composer-menu-item:hover {
+	background: var(--surface-2);
+}
+.composer-menu-icon {
+	display: inline-flex;
+	flex: none;
+	color: var(--text-3);
+}
+.composer-menu-label {
+	flex: none;
+	max-width: 60%;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	font-weight: 500;
+}
+.composer-menu-detail {
+	min-width: 0;
+	flex: 1;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	color: var(--text-3);
+	font-size: var(--fs-xs);
+}
+
+.renew-block {
+	display: grid;
+	gap: 8px;
+	margin: 12px 0;
+}
+.renew-divider {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	color: var(--text-3);
+	font-size: var(--fs-xs);
+}
+.renew-divider::before,
+.renew-divider::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: var(--border);
+}
+.renew-brief {
+	justify-self: center;
+	width: 100%;
+}
+.tool-substep {
+	display: flex;
+	align-items: baseline;
+	gap: 6px;
+	margin: 2px 0 0 18px;
+	color: var(--text-3);
+	font-size: var(--fs-xs);
+	font-family: var(--mono);
+	min-width: 0;
+}
+.tool-substep-count {
+	flex: none;
+	font-variant-numeric: tabular-nums;
+}
+.tool-substep-text {
+	min-width: 0;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.view-mode-toggle {
+	flex: none;
+	color: var(--text-3);
+}
+.view-mode-toggle.view-mode-detailed {
+	color: var(--text);
+	background: var(--selected);
+}
+.msg-user .markdown {
+	line-height: 1.55;
+}
+.msg-user .markdown p {
+	margin: 0.45em 0;
+}
+.msg-user .markdown ul,
+.msg-user .markdown ol {
+	margin: 0.4em 0;
+	padding-left: 1.4em;
+}
+.msg-user .markdown li + li {
+	margin-top: 0.2em;
+}
+.msg-user .markdown h1,
+.msg-user .markdown h2,
+.msg-user .markdown h3 {
+	font-size: var(--fs-m);
+	margin: 0.6em 0 0.3em;
+}
+.msg-user .markdown > :first-child {
+	margin-top: 0;
+}
+.msg-user .markdown > :last-child {
+	margin-bottom: 0;
+}

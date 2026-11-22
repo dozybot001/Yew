@@ -1,0 +1,209 @@
+/*
+ * Yew's design tokens: a black, white and grey interface. Primary buttons,
+ * focus rings and unread counts are near-black on light themes and near-white on dark ones; links
+ * are underlined. Yew's forest green is the mark's leaf and wordmark and a switch that is on; the
+ * red of the berry is only in the mark. Text contrast is at least 4.5:1. Borders are deliberately
+ * faint; fields are told apart by their fill, icon and placeholder, and a focused field gets a
+ * stronger border.
+ * Four type sizes only: 12 (meta), 14 (body), 16 (titles), 22 (page titles and wordmark).
+ */
+:root,
+:root[data-theme="light"] {
+	color-scheme: light;
+	--bg: #ffffff;
+	--bg-side: #f9f9f9;
+	--surface: #ffffff;
+	--surface-2: #f3f3f3;
+	--surface-3: #e8e8e8;
+	--hover: #efefef;
+	--selected: #e6e6e6;
+	--divider: #ececec;
+	--border: #e3e3e3;
+	--control: #dcdcdc;
+	--control-strong: #b5b5b5;
+	--text: #0d0d0d;
+	--text-2: #5d5d5d;
+	--text-3: #666666;
+	--primary: #e6e6e6;
+	--primary-hover: #dadada;
+	--on-primary: #0d0d0d;
+	--accent: #0d0d0d;
+	--on-accent: #ffffff;
+	--accent-soft: #e6e6e6;
+	--danger: #c0262d;
+	--warning: #9f4e08;
+	--review: #6b38cf;
+	--success: #23803a;
+	--user-bubble: #f1f1f1;
+	--code-bg: #f6f6f6;
+	--diff-add: #e3f5e8;
+	--diff-del: #fde8e8;
+	--shadow: 0 10px 30px #0000001a, 0 1px 4px #0000000f;
+	--lift: 0 2px 10px #0000000d;
+	--backdrop: #00000052;
+	--scroll-thumb: #00000030;
+	--mark-ink: #1f3a2e;
+	--switch-on: #2f7d4f;
+	/* The faint wordmark behind sessions and the home page. */
+	--watermark: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 -840 2091 1000%27%3E%3Cpath fill=%27%231f3a2e%27 fill-opacity=%270.04%27 d=%27M769 -750Q784 -750 784 -735V-705Q784 -690 769 -690Q736 -690 704.5 -667Q673 -644 644 -594L490 -333Q485 -326 485 -314V-155Q485 -115 499.5 -87.5Q514 -60 552 -60H559Q574 -60 574 -45V-15Q574 0 559 0H251Q236 0 236 -15V-45Q236 -60 251 -60H257Q295 -60 310 -87.5Q325 -115 325 -155V-309Q325 -318 319 -327L139 -594Q105 -644 81 -667Q57 -690 25 -690Q10 -690 10 -705V-735Q10 -750 25 -750H372Q387 -750 387 -735V-705Q387 -690 372 -690Q345 -690 323.5 -679.5Q302 -669 302 -643Q302 -622 319 -594L436 -407L544 -594Q566 -634 566 -657Q566 -690 520 -690Q505 -690 505 -705V-735Q505 -750 520 -750ZM829 -179Q846 -137 883.5 -104Q921 -71 979 -71Q1011 -71 1046 -89Q1081 -107 1107 -145Q1110 -150 1115 -150Q1120 -150 1125.5 -147Q1131 -144 1155 -130Q1159 -127 1159 -122Q1159 -115 1153 -105Q1125 -53 1077 -20Q1029 13 952 13Q869 13 809 -24Q749 -61 716.5 -122Q684 -183 684 -255Q684 -324 704.5 -373.5Q725 -423 759 -453.5Q793 -484 835.5 -498.5Q878 -513 922 -513Q972 -513 1010 -493.5Q1048 -474 1074.5 -444Q1101 -414 1114.5 -380.5Q1128 -347 1128 -318Q1128 -310 1119 -306ZM978 -322Q978 -370 955 -401Q932 -432 897 -432Q856 -432 832 -399.5Q808 -367 808 -318Q808 -303 809.5 -281Q811 -259 817 -241ZM2070 -500Q2085 -500 2085 -485V-455Q2085 -440 2070 -440H2055Q2039 -440 2026.5 -428Q2014 -416 1997 -378L1838 -11Q1834 0 1823 0H1766Q1755 0 1750 -11L1618 -317L1486 -11Q1482 0 1470 0H1414Q1403 0 1398 -11L1240 -377Q1224 -415 1213 -427.5Q1202 -440 1182 -440H1180Q1165 -440 1165 -455V-485Q1165 -500 1180 -500H1411Q1426 -500 1426 -485V-455Q1426 -440 1411 -440H1409Q1390 -440 1382.5 -432.5Q1375 -425 1375 -411Q1375 -398 1381.5 -381Q1388 -364 1396 -345L1476 -158L1562 -371Q1575 -401 1575 -419Q1575 -440 1554 -440H1532Q1519 -440 1519 -455V-485Q1519 -500 1533 -500H1773Q1788 -500 1788 -485V-455Q1788 -440 1773 -440H1761Q1742 -440 1734.5 -432.5Q1727 -425 1727 -411Q1727 -398 1733 -381Q1739 -364 1747 -345L1828 -158L1914 -371Q1927 -401 1927 -419Q1927 -440 1906 -440H1886Q1871 -440 1871 -455V-485Q1871 -500 1886 -500Z%27/%3E%3C/svg%3E");
+}
+
+:root[data-theme="dark"] {
+	color-scheme: dark;
+	--bg: #181818;
+	--bg-side: #1f1f1f;
+	--surface: #242424;
+	--surface-2: #2a2a2a;
+	--surface-3: #343434;
+	--hover: #2a2a2a;
+	--selected: #303030;
+	--divider: #262626;
+	--border: #323232;
+	--control: #363636;
+	--control-strong: #5c5c5c;
+	--text: #ececec;
+	--text-2: #b4b4b4;
+	--text-3: #9b9b9b;
+	--primary: #383838;
+	--primary-hover: #444444;
+	--on-primary: #f2f2f2;
+	--accent: #ececec;
+	--on-accent: #121212;
+	--accent-soft: #3a3a3a;
+	--danger: #ff8a85;
+	--warning: #f1ac5b;
+	--review: #c3a3ff;
+	--success: #7fd08d;
+	--user-bubble: #2a2a2a;
+	--code-bg: #1f1f1f;
+	--diff-add: #1a3323;
+	--diff-del: #3d1f22;
+	--shadow: 0 10px 30px #00000080, 0 1px 4px #00000066;
+	--lift: 0 2px 10px #00000040;
+	--backdrop: #00000099;
+	--scroll-thumb: #ffffff2e;
+	--mark-ink: #e3e8e4;
+	--switch-on: #3f9c66;
+	--watermark: url("data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 -840 2091 1000%27%3E%3Cpath fill=%27%23e3e8e4%27 fill-opacity=%270.04%27 d=%27M769 -750Q784 -750 784 -735V-705Q784 -690 769 -690Q736 -690 704.5 -667Q673 -644 644 -594L490 -333Q485 -326 485 -314V-155Q485 -115 499.5 -87.5Q514 -60 552 -60H559Q574 -60 574 -45V-15Q574 0 559 0H251Q236 0 236 -15V-45Q236 -60 251 -60H257Q295 -60 310 -87.5Q325 -115 325 -155V-309Q325 -318 319 -327L139 -594Q105 -644 81 -667Q57 -690 25 -690Q10 -690 10 -705V-735Q10 -750 25 -750H372Q387 -750 387 -735V-705Q387 -690 372 -690Q345 -690 323.5 -679.5Q302 -669 302 -643Q302 -622 319 -594L436 -407L544 -594Q566 -634 566 -657Q566 -690 520 -690Q505 -690 505 -705V-735Q505 -750 520 -750ZM829 -179Q846 -137 883.5 -104Q921 -71 979 -71Q1011 -71 1046 -89Q1081 -107 1107 -145Q1110 -150 1115 -150Q1120 -150 1125.5 -147Q1131 -144 1155 -130Q1159 -127 1159 -122Q1159 -115 1153 -105Q1125 -53 1077 -20Q1029 13 952 13Q869 13 809 -24Q749 -61 716.5 -122Q684 -183 684 -255Q684 -324 704.5 -373.5Q725 -423 759 -453.5Q793 -484 835.5 -498.5Q878 -513 922 -513Q972 -513 1010 -493.5Q1048 -474 1074.5 -444Q1101 -414 1114.5 -380.5Q1128 -347 1128 -318Q1128 -310 1119 -306ZM978 -322Q978 -370 955 -401Q932 -432 897 -432Q856 -432 832 -399.5Q808 -367 808 -318Q808 -303 809.5 -281Q811 -259 817 -241ZM2070 -500Q2085 -500 2085 -485V-455Q2085 -440 2070 -440H2055Q2039 -440 2026.5 -428Q2014 -416 1997 -378L1838 -11Q1834 0 1823 0H1766Q1755 0 1750 -11L1618 -317L1486 -11Q1482 0 1470 0H1414Q1403 0 1398 -11L1240 -377Q1224 -415 1213 -427.5Q1202 -440 1182 -440H1180Q1165 -440 1165 -455V-485Q1165 -500 1180 -500H1411Q1426 -500 1426 -485V-455Q1426 -440 1411 -440H1409Q1390 -440 1382.5 -432.5Q1375 -425 1375 -411Q1375 -398 1381.5 -381Q1388 -364 1396 -345L1476 -158L1562 -371Q1575 -401 1575 -419Q1575 -440 1554 -440H1532Q1519 -440 1519 -455V-485Q1519 -500 1533 -500H1773Q1788 -500 1788 -485V-455Q1788 -440 1773 -440H1761Q1742 -440 1734.5 -432.5Q1727 -425 1727 -411Q1727 -398 1733 -381Q1739 -364 1747 -345L1828 -158L1914 -371Q1927 -401 1927 -419Q1927 -440 1906 -440H1886Q1871 -440 1871 -455V-485Q1871 -500 1886 -500Z%27/%3E%3C/svg%3E");
+}
+
+:root {
+	--font:
+		-apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei",
+		"Segoe UI", sans-serif;
+	--mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+	--fs-s: 12px;
+	--fs-m: 14px;
+	--fs-l: 16px;
+	--fs-xl: 22px;
+	--radius-s: 8px;
+	--radius: 10px;
+	--radius-l: 16px;
+	/* Long content in the conversation keeps this height and scrolls inside. */
+	--cap: clamp(160px, 40dvh, 360px);
+	--cap-tall: clamp(240px, 60dvh, 600px);
+	/* Dialog size tiers: width × height. Dialogs use only these. */
+	--dialog-s-w: 440px;
+	--dialog-s-h: 320px;
+	--dialog-m-w: 640px;
+	--dialog-m-h: 620px;
+	--dialog-l-w: 860px;
+	--dialog-l-h: 680px;
+	font-family: var(--font);
+	font-size: var(--fs-m);
+	line-height: 1.55;
+	color: var(--text);
+	background: var(--bg);
+}
+
+* {
+	box-sizing: border-box;
+}
+
+body {
+	margin: 0;
+	background: var(--bg);
+	color: var(--text);
+	-webkit-font-smoothing: antialiased;
+}
+
+h1,
+h2,
+h3 {
+	color: var(--text);
+	margin: 0;
+	line-height: 1.3;
+}
+
+button,
+input,
+textarea {
+	font: inherit;
+	color: inherit;
+}
+
+a {
+	color: var(--text);
+	text-decoration: underline;
+	text-underline-offset: 2px;
+}
+
+:focus-visible {
+	outline: 2px solid var(--accent);
+	outline-offset: 2px;
+}
+/*
+ * After a click the ring waits for the keyboard: WebKit draws it on what a dialog or menu focuses as
+ * it opens, and on the button focus goes back to (web/src/input.ts).
+ */
+:root[data-input="pointer"] :focus-visible {
+	outline: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+	*,
+	*::before,
+	*::after {
+		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation */
+		animation: none !important;
+		/* biome-ignore lint/complexity/noImportantStyles: reduced motion must win over every component animation */
+		transition: none !important;
+	}
+}
+
+/* Scrollbars: thin, in the interface's greys, and shown only while the pointer is over the area. */
+* {
+	scrollbar-width: thin;
+	scrollbar-color: transparent transparent;
+}
+*:hover {
+	scrollbar-color: var(--scroll-thumb) transparent;
+}
+::-webkit-scrollbar {
+	width: 8px;
+	height: 8px;
+}
+::-webkit-scrollbar-track {
+	background: transparent;
+}
+::-webkit-scrollbar-thumb {
+	border-radius: 4px;
+	background: transparent;
+}
+:hover::-webkit-scrollbar-thumb {
+	background: var(--scroll-thumb);
+}
+
+.visually-hidden {
+	position: absolute;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+	clip-path: inset(50%);
+	white-space: nowrap;
+}
+
+.hint {
+	color: var(--text-2);
+	font-size: var(--fs-s);
+}
