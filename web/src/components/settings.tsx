@@ -124,6 +124,7 @@ import {
 	Switch,
 	Toggletip,
 	useAction,
+	useBackdropClose,
 	useNow,
 } from "./ui.tsx";
 
@@ -1074,6 +1075,7 @@ function SettingsWindow({ section }: { section: SettingsDialogName }) {
 	const narrow = useNarrow();
 	const [listing, setListing] = useState(narrow);
 	const close = () => setState({ settingsDialog: null });
+	const backdrop = useBackdropClose(close);
 	useEffect(() => {
 		const dialog = ref.current;
 		if (!dialog) return;
@@ -1104,6 +1106,7 @@ function SettingsWindow({ section }: { section: SettingsDialogName }) {
 				event.preventDefault();
 				close();
 			}}
+			{...backdrop}
 		>
 			<div className="settings-frame">
 				{showList && (

@@ -1015,9 +1015,55 @@ function DialogPanel({ title, onClose, children, footer, tabs }: DialogProps) {
 	);
 }
 
+/** A menu or a hint that is open over the page. */
+function popoverOpen(): boolean {
+	try {
+		return document.querySelector(":popover-open") !== null;
+	} catch {
+		// A browser without popovers does not know the selector.
+		return false;
+	}
+}
+
+/**
+ * Closes a dialog when the person clicks the dimmed page around it, as Escape does. The press and the
+ * release must both be outside the box: selecting text and letting go outside closes nothing, and
+ * neither does a press that puts away an open menu.
+ */
+export function useBackdropClose(onClose: () => void) {
+	const pressed = useRef(false);
+	const outside = (event: {
+		target: EventTarget;
+		currentTarget: HTMLDialogElement;
+		clientX: number;
+		clientY: number;
+	}) => {
+		// A click on the dimmed page arrives at the dialog itself, one inside the box at its content.
+		if (event.target !== event.currentTarget) return false;
+		const box = event.currentTarget.getBoundingClientRect();
+		return (
+			event.clientX < box.left ||
+			event.clientX > box.right ||
+			event.clientY < box.top ||
+			event.clientY > box.bottom
+		);
+	};
+	return {
+		onPointerDown: (event: Parameters<typeof outside>[0]) => {
+			pressed.current = outside(event) && !popoverOpen();
+		},
+		onClick: (event: Parameters<typeof outside>[0]) => {
+			const close = pressed.current && outside(event);
+			pressed.current = false;
+			if (close) onClose();
+		},
+	};
+}
+
 function ModalDialog({ title, size, onClose, children, footer, tabs }: DialogProps) {
 	const ref = useRef<HTMLDialogElement>(null);
 	const titleId = useId();
+	const backdrop = useBackdropClose(onClose);
 	useEffect(() => {
 		const dialog = ref.current;
 		if (!dialog) return;
@@ -1039,6 +1085,7 @@ function ModalDialog({ title, size, onClose, children, footer, tabs }: DialogPro
 				event.preventDefault();
 				onClose();
 			}}
+			{...backdrop}
 		>
 			<div
 				className="dialog-frame"
