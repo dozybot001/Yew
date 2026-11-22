@@ -34,24 +34,41 @@ export interface MapColumn {
 	width: number;
 }
 
-/** Letters from one session to another, drawn as one line. */
+/**
+ * The letters between two sessions, drawn as one line: `count` from `from` to `to`, and `back` the
+ * other way when the two write to each other. A pair of sessions is given once.
+ */
 export interface FlowLine {
 	from: string;
 	to: string;
 	count: number;
+	back?: number;
 }
+
+/** The letters a line carried the other way, and all it carried. */
+export const backOf = (flow: FlowLine) => flow.back ?? 0;
+export const totalOf = (flow: FlowLine) => flow.count + backOf(flow);
+/** A line says how many letters it carried when either way carried more than one. */
+export const counted = (flow: FlowLine) => flow.count > 1 || backOf(flow) > 1;
+/** An arrow stands at the end where letters arrived: at `to`, and at `from` when some came back. */
+export const arrowAt = (flow: FlowLine, which: "from" | "to") => which === "to" || backOf(flow) > 0;
 
 /** A letter line as the map draws it. */
 export interface FlowRoute extends FlowLine {
+	back: number;
 	/**
-	 * Its corners, from the edge of the sender to the edge of the receiver. Every stretch is level or
-	 * upright, and only the first and the last touch a session.
+	 * Its corners, from the edge of `from` to the edge of `to`. Every stretch is level or upright, and
+	 * only the first and the last touch a session.
 	 */
 	points: [number, number][];
 	/** The same line as an SVG path, its corners rounded. */
 	d: string;
-	/** The middle of the count, on a level stretch of the line; none for a single letter. */
-	label: { x: number; y: number } | null;
+	/**
+	 * The middle of the count, on a level stretch of the line; none when neither way carried more than
+	 * one letter. `forward` says the line runs left to right there on its way from `from` to `to`: the
+	 * letters to `to` went right, the ones back went left.
+	 */
+	label: { x: number; y: number; forward: boolean } | null;
 }
 
 export interface MapLayout {

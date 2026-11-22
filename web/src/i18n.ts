@@ -758,7 +758,7 @@ const zh = {
 	mapEmpty: "还没有会话。",
 	mapPicture: "会话关系图",
 	mapCaption:
-		"实线：上面的会话开了下面的会话。带箭头的细线：最近 24 小时的信，从寄信的会话指向收信的会话，多于一封时标出封数。指到或聚焦一个会话时，只突出它收发的信。",
+		"实线：上面的会话开了下面的会话。带箭头的细线：最近 24 小时的信，两个会话之间一条，箭头指向收信的会话，互相写信时两头都有箭头。多于一封时标出封数；两个方向都有信时标两个数，各带一个小三角，指向这些信去的方向。指到或聚焦一个会话时，只突出它收发的信。",
 	mapCapped: "信只画了往来最多的 {n} 对，其余 {m} 对在下面的列表里。",
 	mapColumn_main: "主对话开的会话",
 	mapColumn_none: "未分团队",
@@ -1984,7 +1984,7 @@ const en: Record<MessageKey, string> = {
 	mapEmpty: "No sessions yet.",
 	mapPicture: "Picture of the sessions map",
 	mapCaption:
-		"Solid lines: the session above opened the one below. Thin lines with an arrow: letters of the last 24 hours, from the sender to the receiver, with the count when there is more than one. Point at a session or focus it to bring out its own letters.",
+		"Solid lines: the session above opened the one below. Thin lines with an arrow: letters of the last 24 hours, one line for two sessions, with the arrow at the receiver and an arrow at both ends when they wrote to each other. A line shows the count when there is more than one letter; when letters went both ways it shows two counts, each with a small triangle that points the way those letters went. Point at a session or focus it to bring out its own letters.",
 	mapCapped:
 		"Letters are drawn for the {n} busiest pairs only; the other {m} are in the list below.",
 	mapColumn_main: "Opened by the main conversation",

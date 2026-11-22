@@ -83,10 +83,11 @@ describe("sessions map: letter lines", () => {
 		assert.ok(alongside > 200, `${alongside}`);
 	});
 
-	test("ends at one side of a session stand apart, and two that write to each other get two lines", () => {
+	test("ends at one side of a session stand apart, and two that write to each other share a line", () => {
 		const layout = busyMap();
+		// An arrow stands where letters arrived: at the far end, and at the near one when some came back.
 		const ends = layout.flows.flatMap((flow) => [
-			{ id: flow.from, at: flow.points[0] ?? [0, 0], arrow: false, line: name(flow) },
+			{ id: flow.from, at: flow.points[0] ?? [0, 0], arrow: flow.back > 0, line: name(flow) },
 			{
 				id: flow.to,
 				at: flow.points[flow.points.length - 1] ?? [0, 0],
@@ -102,19 +103,25 @@ describe("sessions map: letter lines", () => {
 				assert.ok(apart >= least, `${a.line} and ${b.line} meet at ${a.id}`);
 			}
 		}
-		const pairs: [string, string][] = [
-			["m0", "a1"],
-			["m0", "b1"],
-			["b2", "c1"],
+		const pairs: [string, string, number, number][] = [
+			["m0", "a1", 12, 9],
+			["m0", "b1", 7, 6],
+			["b2", "c1", 4, 3],
+			["a5", "b5", 1, 2],
+			["d2", "c3", 1, 1],
 		];
-		for (const [x, y] of pairs) {
-			const there = layout.flows.find((flow) => flow.from === x && flow.to === y);
-			const back = layout.flows.find((flow) => flow.from === y && flow.to === x);
-			assert.ok(there && back);
-			for (const p of there.points) {
-				assert.ok(!back.points.some((q) => q[0] === p[0] && q[1] === p[1]), `${x} and ${y}`);
-			}
+		for (const [x, y, count, back] of pairs) {
+			const between = layout.flows.filter(
+				(flow) => (flow.from === x && flow.to === y) || (flow.from === y && flow.to === x),
+			);
+			assert.deepEqual(
+				between.map((flow) => [flow.from, flow.to, flow.count, flow.back]),
+				[[x, y, count, back]],
+			);
 		}
+		// A line for letters one way has nothing coming back.
+		const oneWay = layout.flows.find((flow) => flow.from === "m0" && flow.to === "d1");
+		assert.equal(oneWay?.back, 0);
 	});
 
 	test("within one column a line goes round by the gap on the right", () => {
@@ -167,6 +174,8 @@ describe("sessions map: letter lines", () => {
 		for (const line of [
 			{ from: "m1", to: "c1", count: 200 },
 			{ from: "c1", to: "m1", count: 200 },
+			{ from: "m1", to: "c1", count: 200, back: 150 },
+			{ from: "c1", to: "m1", count: 1, back: 200 },
 		]) {
 			const layout = checkLayout(sessions, groups, "m1", [...others, line]);
 			checkStraight(layout);
@@ -192,7 +201,7 @@ describe("sessions map: letter lines", () => {
 		assert.deepEqual(layoutMap(sessions, groups, "m1", []), plain);
 		const few = layoutMap(sessions, groups, "m1", [
 			{ from: "m1", to: "t1", count: 5 },
-			{ from: "t1", to: "m1", count: 3 },
+			{ from: "t2", to: "m1", count: 1, back: 1 },
 			{ from: "m1", to: "c2", count: 3 },
 			{ from: "t2", to: "b1", count: 2 },
 			{ from: "e1", to: "b3", count: 1 },
@@ -208,7 +217,7 @@ describe("sessions map: letter lines", () => {
 		// Eight lines across the gap between the two teams, all of them along its middle.
 		const crossing = [1, 2, 3, 4].flatMap((i) => [
 			{ from: `b${i}`, to: `c${5 - i}`, count: 1 },
-			{ from: `c${i}`, to: `b${5 - i}`, count: 1 },
+			{ from: `c${i}`, to: `b${((i + 1) % 4) + 1}`, count: 1 },
 		]);
 		const many = checkLayout(sessions, groups, "m1", crossing);
 		const x = (layout: MapLayout, id: string) => boxOf(layout, id).x0;

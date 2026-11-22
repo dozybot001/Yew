@@ -5,13 +5,17 @@ import { t, useLang } from "../i18n.ts";
 import {
 	ARROW_LEN,
 	ARROW_W,
+	COUNT_H,
+	type FlowRoute,
 	HEAD_H,
 	layoutMap,
+	MARK_W,
 	NODE_H,
 	NODE_W,
 	type OutlineItem,
 	openedPath,
 	outline,
+	pairParts,
 	pickFlows,
 } from "../map-layout.ts";
 import { blockedSessions } from "../progress.ts";
@@ -21,7 +25,52 @@ import { SidebarToggle } from "./session.tsx";
 import { Button, ErrorBox } from "./ui.tsx";
 
 /** The picture draws letter lines for this many pairs; the list under it names them all. */
-const FLOW_LIMIT = 16;
+const FLOW_LIMIT = 10;
+
+/** Half the height of the mark beside a count that points the way its letters went. */
+const MARK_HALF = 3.5;
+
+/**
+ * The count on a letter line. Letters one way: the number. Both ways: two numbers side by side, the
+ * letters that went left on the left and the ones that went right on the right, each with a small
+ * mark on its outer side pointing that way.
+ */
+function FlowCount({ flow }: { flow: FlowRoute }) {
+	const { label } = flow;
+	if (!label) return null;
+	const y = label.y + 4;
+	if (flow.back === 0) {
+		return (
+			<text className="chart-tick map-flow-count" x={label.x} y={y} textAnchor="middle">
+				{flow.count}
+			</text>
+		);
+	}
+	const [left, right] = label.forward ? [flow.back, flow.count] : [flow.count, flow.back];
+	const at = pairParts(left, right, label.x);
+	/** A mark with its base at `base`, pointing left (-1) or right (1). */
+	const mark = (base: number, toward: 1 | -1) =>
+		`M${base + toward * MARK_W} ${label.y}L${base} ${label.y - MARK_HALF}V${label.y + MARK_HALF}Z`;
+	return (
+		<>
+			<rect
+				className="map-flow-ground"
+				x={at.x0}
+				y={label.y - COUNT_H / 2}
+				width={at.x1 - at.x0}
+				height={COUNT_H}
+			/>
+			<path className="map-flow-mark" d={mark(at.leftMark, -1)} />
+			<text className="chart-tick map-flow-count" x={at.leftEnd} y={y} textAnchor="end">
+				{left}
+			</text>
+			<text className="chart-tick map-flow-count" x={at.rightStart} y={y} textAnchor="start">
+				{right}
+			</text>
+			<path className="map-flow-mark" d={mark(at.rightMark, 1)} />
+		</>
+	);
+}
 
 /** The statuses a dot stands for, in the order the caption explains them. */
 const DOTS = ["working", "waiting", "error", "needs_review"] as const;
@@ -197,7 +246,7 @@ export function MapPage() {
 												markerHeight={ARROW_W}
 												refX={ARROW_LEN - 0.5}
 												refY={ARROW_W / 2}
-												orient="auto"
+												orient="auto-start-reverse"
 												markerUnits="userSpaceOnUse"
 											>
 												<path
@@ -219,17 +268,13 @@ export function MapPage() {
 													key={`${flow.from}>${flow.to}`}
 													className={faded ? "map-faded" : undefined}
 												>
-													<path className="map-flow" d={flow.d} markerEnd={`url(#${marker})`} />
-													{flow.label && (
-														<text
-															className="chart-tick map-flow-count"
-															x={flow.label.x}
-															y={flow.label.y + 4}
-															textAnchor="middle"
-														>
-															{flow.count}
-														</text>
-													)}
+													<path
+														className="map-flow"
+														d={flow.d}
+														markerStart={flow.back > 0 ? `url(#${marker})` : undefined}
+														markerEnd={`url(#${marker})`}
+													/>
+													<FlowCount flow={flow} />
 												</g>
 											);
 										})}

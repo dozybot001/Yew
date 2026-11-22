@@ -11,7 +11,7 @@ import {
 	outline,
 	pickFlows,
 } from "../web/src/map-layout.ts";
-import { checkLayout, session } from "./helpers/map.ts";
+import { checkCounts, checkLayout, session } from "./helpers/map.ts";
 import { newStore, sessionInput } from "./helpers/store.ts";
 
 const HOUR = 3600 * 1000;
@@ -229,43 +229,59 @@ describe("sessions map: layout", () => {
 		assert.equal(layout.nodes.length, 2);
 	});
 
-	test("letter lines: only between sessions on the map, the busiest first, capped", () => {
+	test("letter lines: one for two sessions on the map, the busiest pairs first, capped", () => {
 		const flows = [
 			{ from: "s1", to: "s2", count: 5 },
 			{ from: "s2", to: "gone", count: 4 },
+			{ from: "s3", to: "s2", count: 3 },
 			{ from: "s2", to: "s1", count: 2 },
 			{ from: "s3", to: "s1", count: 1 },
 		];
-		const picked = pickFlows(flows, new Set(["s1", "s2", "s3"]), 2);
-		assert.deepEqual(picked.drawn, [flows[0], flows[2]]);
+		const onMap = new Set(["s1", "s2", "s3"]);
+		// The two ways between s1 and s2 are one line, from the one that sent more.
+		const picked = pickFlows(flows, onMap, 2);
+		assert.deepEqual(picked.drawn, [
+			{ from: "s1", to: "s2", count: 5, back: 2 },
+			{ from: "s3", to: "s2", count: 3 },
+		]);
 		assert.equal(picked.hidden, 1);
-		assert.equal(pickFlows(flows, new Set(["s1", "s2", "s3"]), 24).hidden, 0);
+		assert.equal(pickFlows(flows, onMap, 24).hidden, 0);
+		// What was counted each way is left as it was.
+		assert.deepEqual(flows[0], { from: "s1", to: "s2", count: 5 });
+		// A pair comes before another by its letters in all, whichever way they went.
+		const even = [
+			{ from: "s1", to: "s3", count: 4 },
+			{ from: "s2", to: "s3", count: 3 },
+			{ from: "s3", to: "s2", count: 3 },
+		];
+		assert.deepEqual(pickFlows(even, onMap, 1), {
+			drawn: [{ from: "s2", to: "s3", count: 3, back: 3 }],
+			hidden: 1,
+		});
 
 		const sessions = [session("s1"), session("s2"), session("s3", { groupId: "g1" })];
-		const lines = [flows[0], flows[2], flows[3], flows[1]].filter((flow) => flow !== undefined);
+		const lines = [
+			{ from: "s1", to: "s2", count: 5, back: 2 },
+			{ from: "s3", to: "s1", count: 1 },
+			{ from: "s2", to: "gone", count: 4 },
+		];
 		const layout = layoutMap(sessions, teams, null, lines);
 		// A line to a session that is not on the map is left out; the others keep the order given.
 		assert.deepEqual(
-			layout.flows.map((flow) => [flow.from, flow.to, flow.count]),
+			layout.flows.map((flow) => [flow.from, flow.to, flow.count, flow.back]),
 			[
-				["s1", "s2", 5],
-				["s2", "s1", 2],
-				["s3", "s1", 1],
+				["s1", "s2", 5, 2],
+				["s3", "s1", 1, 0],
 			],
 		);
-		const [there, back, single] = layout.flows;
-		assert.ok(there && back && single);
-		// The two directions of a pair are two lines that do not touch.
-		for (const point of there.points) {
-			assert.ok(!back.points.some((other) => other[0] === point[0] && other[1] === point[1]));
-		}
+		const [pair, single] = layout.flows;
+		assert.ok(pair && single);
 		// Straight stretches and rounded corners, no curves.
 		for (const flow of layout.flows) assert.match(flow.d, /^M[\d.]+ [\d.]+( [LQ][\d. ]+)+$/);
-		// A count where more than one letter went, inside the picture.
+		// A count where more than one letter went, inside the picture; one letter has none.
 		assert.equal(single.label, null);
-		for (const { label } of [there, back]) {
-			assert.ok(label && label.x > 0 && label.x < layout.width && label.y < layout.height);
-		}
-		assert.notDeepEqual(there.label, back.label);
+		const { label } = pair;
+		assert.ok(label && label.x > 0 && label.x < layout.width && label.y < layout.height);
+		checkCounts(layout);
 	});
 });

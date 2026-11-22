@@ -14,9 +14,11 @@ import {
 } from "./grid.ts";
 import {
 	ARROW_ROOM,
+	arrowAt,
 	CORNER,
 	COUNT_HALF,
 	COUNT_ROOM,
+	counted,
 	type FlowLine,
 	LINE_HALF,
 	LOW_EDGE,
@@ -26,6 +28,7 @@ import {
 	NODE_W,
 	SIDE_EDGE,
 	START_ROOM,
+	totalOf,
 } from "./model.ts";
 
 /** A side holds this many ends before the router turns to another. */
@@ -213,12 +216,12 @@ export function assignLanes(runs: Run[]): {
 }
 
 /**
- * Picks the way of every line, busiest first, each the cheapest given the ones before it: shortest,
- * fewest corners, least crowding. Between two columns a line leaves the sender's side and enters the
- * receiver's through the gaps next to them, crossing the columns between in a level gap; within one
- * column it goes round by the gap on the right. The main conversation's lines run right of it and
- * then down the gap next to the other session; the ones that do not fit at its right side leave from
- * its lower edge through the band under it.
+ * Picks the way of every line, the ones with most letters first, each the cheapest given the ones
+ * before it: shortest, fewest corners, least crowding. Between two columns a line leaves the side of
+ * one session and enters the side of the other through the gaps next to them, crossing the columns
+ * between in a level gap; within one column it goes round by the gap on the right. The main
+ * conversation's lines run right of it and then down the gap next to the other session; the ones that
+ * do not fit at its right side leave from its lower edge through the band under it.
  */
 export function route(a: Arrangement, f: Frame, flows: FlowLine[]): Plan[] {
 	const mainId = a.main?.id ?? null;
@@ -306,7 +309,7 @@ export function route(a: Arrangement, f: Frame, flows: FlowLine[]): Plan[] {
 		.filter(({ flow }) => flow.from !== flow.to && f.at.has(flow.from) && f.at.has(flow.to))
 		.sort(
 			(x, y) =>
-				y.flow.count - x.flow.count ||
+				totalOf(y.flow) - totalOf(x.flow) ||
 				compare(x.flow.from, y.flow.from) ||
 				compare(x.flow.to, y.flow.to) ||
 				x.order - y.order,
@@ -347,7 +350,11 @@ export function route(a: Arrangement, f: Frame, flows: FlowLine[]): Plan[] {
 		let full = false;
 		for (const plan of touching) {
 			const which: Which = plan.from.id === mainId ? "from" : "to";
-			const room = plan.flow.count > 1 ? COUNT_ROOM : which === "to" ? ARROW_ROOM : START_ROOM;
+			const room = counted(plan.flow)
+				? COUNT_ROOM
+				: arrowAt(plan.flow, which)
+					? ARROW_ROOM
+					: START_ROOM;
 			const next = span < 0 ? 0 : span + previous + room;
 			if (!full && next <= NODE_H - 2 * SIDE_EDGE) {
 				span = next;
@@ -363,7 +370,7 @@ export function route(a: Arrangement, f: Frame, flows: FlowLine[]): Plan[] {
 	// A count goes on its line's level stretch across a gap. A line without one has its count on the
 	// stub at one of its ends, which `layoutMap` picks once the lanes are known.
 	for (const plan of plans) {
-		if (plan.flow.count < 2) continue;
+		if (!counted(plan.flow)) continue;
 		const level = plan.gaps.find((gap) => !upright(gap));
 		plan.host = level ? { gap: level } : { end: "from" };
 	}

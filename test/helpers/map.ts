@@ -11,6 +11,7 @@ import {
 	type MapSession,
 	NODE_H,
 	NODE_W,
+	pairParts,
 } from "../../web/src/map-layout.ts";
 
 export const session = (
@@ -198,29 +199,37 @@ export function checkLanes(layout: MapLayout, apart: number): number {
 }
 
 /**
- * A line with more than one letter has its count on one of its level stretches, all of it there, on no
- * session and on no other count; a line with one letter has none.
+ * A line that carried more than one letter either way has its count on one of its level stretches, all
+ * of it there, on no session and on no other count, and the count knows which way the line runs
+ * there; a line with one letter each way, or one in all, has none.
  */
 export function checkCounts(layout: MapLayout) {
 	const boxes: Box[] = [];
 	for (const flow of layout.flows) {
-		if (flow.count < 2) {
+		if (flow.count < 2 && flow.back < 2) {
 			assert.equal(flow.label, null);
 			continue;
 		}
 		const { label } = flow;
 		assert.ok(label, `${name(flow)} has a count`);
-		// About as large as the digits are drawn, with their margin of page colour.
+		// As large as it is drawn: the digits with their margin of page colour, or the ground of the
+		// two counts of a line that carried letters both ways.
 		const half = (String(flow.count).length * 7 + 3) / 2;
-		const box = { x0: label.x - half, y0: label.y - 5.5, x1: label.x + half, y1: label.y + 5.5 };
-		const level = stretches(flow).some(
+		const { x0, x1 } =
+			flow.back > 0
+				? pairParts(flow.back, flow.count, label.x)
+				: { x0: label.x - half, x1: label.x + half };
+		const box = { x0, y0: label.y - 5.5, x1, y1: label.y + 5.5 };
+		const under = stretches(flow).find(
 			([p, q]) =>
 				p[1] === q[1] &&
 				p[1] === label.y &&
 				box.x0 >= Math.min(p[0], q[0]) &&
 				box.x1 <= Math.max(p[0], q[0]),
 		);
-		assert.ok(level, `${name(flow)}: the count is not on a level stretch`);
+		assert.ok(under, `${name(flow)}: the count is not on a level stretch`);
+		// The corners run from the session named first to the other one.
+		assert.equal(label.forward, under[0][0] < under[1][0], `${name(flow)}: which way it runs`);
 		assert.ok(box.x0 >= 0 && box.x1 <= layout.width && box.y0 >= 0 && box.y1 <= layout.height);
 		for (const node of layout.nodes) {
 			const on = boxOf(layout, node.id);
@@ -238,7 +247,8 @@ export function checkCounts(layout: MapLayout) {
 
 /**
  * A map made up from a seed: up to thirty sessions, some opened by others, in up to three teams, with
- * or without a main conversation, and up to sixteen lines between them.
+ * or without a main conversation, and up to sixteen lines between them, half of them for letters
+ * both ways.
  */
 export function madeUp(seed: number) {
 	let state = seed;
@@ -267,8 +277,13 @@ export function madeUp(seed: number) {
 	for (let tries = 0; tries < 3 * lines && flows.length < lines; tries++) {
 		const from = mainId && next() < 0.35 ? mainId : `s${Math.floor(next() * size)}`;
 		const to = mainId && next() < 0.3 ? mainId : `s${Math.floor(next() * size)}`;
-		if (from === to || flows.some((flow) => flow.from === from && flow.to === to)) continue;
-		flows.push({ from, to, count: next() < 0.5 ? 1 : 2 + Math.floor(next() * 120) });
+		const given = flows.some(
+			(flow) => (flow.from === from && flow.to === to) || (flow.from === to && flow.to === from),
+		);
+		if (from === to || given) continue;
+		const letters = () => (next() < 0.5 ? 1 : 2 + Math.floor(next() * 120));
+		const count = letters();
+		flows.push(next() < 0.5 ? { from, to, count } : { from, to, count, back: letters() });
 	}
 	const groups = Array.from({ length: teams }, (_, i) => ({ id: `g${i}`, position: i }));
 	return { sessions, groups, mainId, flows };
@@ -277,8 +292,8 @@ export function madeUp(seed: number) {
 /**
  * A busy map: the main conversation, the sessions it opened with one tree three deep, three teams with
  * sessions under sessions, two sessions without a team, and sixteen lines: between neighbouring
- * columns and columns farther apart, within one column, to and from the main conversation, and three
- * pairs that write to each other.
+ * columns and columns farther apart, within one column, to and from the main conversation, and five
+ * for pairs that wrote to each other.
  */
 export const busy = {
 	sessions: (
@@ -309,18 +324,18 @@ export const busy = {
 		{ id: "g3", position: 2 },
 	],
 	flows: [
-		{ from: "m0", to: "a1", count: 12 },
-		{ from: "a1", to: "m0", count: 9 },
-		{ from: "m0", to: "b1", count: 7 },
-		{ from: "b1", to: "m0", count: 6 },
+		{ from: "m0", to: "a1", count: 12, back: 9 },
+		{ from: "m0", to: "b1", count: 7, back: 6 },
+		{ from: "b2", to: "c1", count: 4, back: 3 },
 		{ from: "m0", to: "d1", count: 5 },
 		{ from: "e1", to: "m0", count: 4 },
-		{ from: "b2", to: "c1", count: 4 },
-		{ from: "c1", to: "b2", count: 3 },
 		{ from: "b1", to: "d2", count: 3 },
+		{ from: "e2", to: "d1", count: 3 },
+		{ from: "a5", to: "b5", count: 1, back: 2 },
 		{ from: "e2", to: "b3", count: 2 },
 		{ from: "b3", to: "b5", count: 2 },
 		{ from: "c2", to: "c3", count: 2 },
+		{ from: "d2", to: "c3", count: 1, back: 1 },
 		{ from: "a3", to: "c2", count: 1 },
 		{ from: "d1", to: "c1", count: 1 },
 		{ from: "a2", to: "a5", count: 1 },

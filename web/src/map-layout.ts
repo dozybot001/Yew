@@ -12,10 +12,12 @@
  * Letter lines run like the wires of a circuit diagram: level and upright only, upright in the gaps
  * between columns and level in the gaps between rows, or in the band right of and under the main
  * conversation, which has no other session in its row. So a line never passes under a session; only
- * its two ends, at the edges of the sessions it joins, touch one. Each line keeps a lane of its own:
- * lines along the same stretch of a gap run side by side, and a gap that needs more lanes than it has
- * room for grows, as does one where a count needs more room on a short stretch of line. That is why
- * the layout is worked out together with the lines.
+ * its two ends, at the edges of the sessions it joins, touch one. Two sessions share one line however
+ * the letters went between them: an arrow stands at each end where letters arrived, and the count
+ * says how many went each way. Each line keeps a lane of its own: lines along the same stretch of a
+ * gap run side by side, and a gap that needs more lanes than it has room for grows, as does one where
+ * a count needs more room on a short stretch of line. That is why the layout is worked out together
+ * with the lines.
  *
  * This file puts the map together; its parts are in `map/`: the sizes, where the sessions stand, the
  * way of each line, where its ends stand, and where its count goes.
@@ -41,7 +43,9 @@ import {
 import {
 	ARROW_LEN,
 	ARROW_ROOM,
+	arrowAt,
 	BAND_EDGE,
+	backOf,
 	COLUMN_GAP,
 	COUNT_ROOM,
 	type FlowLine,
@@ -57,6 +61,7 @@ import {
 	NODE_W,
 	ROW_GAP,
 	START_ROOM,
+	totalOf,
 } from "./map/model.ts";
 import {
 	assignLanes,
@@ -73,6 +78,7 @@ import {
 	type Which,
 } from "./map/route.ts";
 
+export { COUNT_H, MARK_W, pairParts } from "./map/counts.ts";
 export { outline } from "./map/grid.ts";
 export type {
 	FlowLine,
@@ -193,7 +199,7 @@ export function layoutMap(
 			}
 		}
 		const slack = left ? gapStart(a, plain, gap) - (at.x + NODE_W) : 0;
-		const need = stubNeed(plan.flow.count, which);
+		const need = stubNeed(plan.flow, which);
 		const stack = numberOf(gap);
 		const short = need - slack - clear * LANE;
 		const margin = (left ? marginLeft : marginRight)[stack] ?? LANE_EDGE;
@@ -203,7 +209,8 @@ export function layoutMap(
 		if (plan.host === null || !("end" in plan.host)) continue;
 		if (plan.straight) {
 			const stack = numberOf(plan.gaps[0] ?? "v0");
-			const width = countWidth(plan.flow.count) + ARROW_LEN + 6;
+			const arrows = arrowAt(plan.flow, "from") ? 2 : 1;
+			const width = countWidth(plan.flow) + arrows * ARROW_LEN + 6;
 			across[stack] = Math.max(across[stack] ?? 0, width);
 			continue;
 		}
@@ -232,6 +239,7 @@ export function layoutMap(
 				dir: 0,
 				reach: 0,
 				room: counted("from") || counted("to") ? COUNT_ROOM : ARROW_ROOM,
+				arrow: true,
 				right: true,
 			});
 			continue;
@@ -240,9 +248,10 @@ export function layoutMap(
 			const end = plan[which];
 			const gap = (which === "from" ? plan.gaps[0] : plan.gaps[plan.gaps.length - 1]) ?? "v0";
 			const lane = laneIndex(gap, plan);
-			const room = counted(which) ? COUNT_ROOM : which === "to" ? ARROW_ROOM : START_ROOM;
+			const arrow = arrowAt(plan.flow, which);
+			const room = counted(which) ? COUNT_ROOM : arrow ? ARROW_ROOM : START_ROOM;
 			if (end.side === "bottom") {
-				join(end.port, { plan, which: [which], dir: 0, reach: lane, room, right: false });
+				join(end.port, { plan, which: [which], dir: 0, reach: lane, room, arrow, right: false });
 				continue;
 			}
 			const [at, next] =
@@ -262,6 +271,7 @@ export function layoutMap(
 				dir: Math.sign(next[1] - at[1]),
 				reach,
 				room,
+				arrow,
 				right: end.side === "left",
 			});
 		}
@@ -388,7 +398,7 @@ export function layoutMap(
 				const gap = plan.gaps[plan.gaps.indexOf("m") + (plan.from.side === "bottom" ? 1 : -1)];
 				if (plan.host.gap !== "m" || index < 1 || gap === undefined) continue;
 				const [p, q] = [pointAt(points, index - 1), pointAt(points, index)];
-				const short = stretchNeed(plan.flow.count) - Math.abs(q[0] - p[0]);
+				const short = stretchNeed(plan.flow) - Math.abs(q[0] - p[0]);
 				if (short <= 0) continue;
 				// From the gap's left edge to its first lane, as drawn, and as much more as is missing.
 				const first =
@@ -402,7 +412,7 @@ export function layoutMap(
 			const gap = (which === "from" ? plan.gaps[0] : plan.gaps[plan.gaps.length - 1]) ?? "v0";
 			if (!upright(gap)) continue;
 			const stack = numberOf(gap);
-			const more = countWidth(plan.flow.count) + 2;
+			const more = countWidth(plan.flow) + 2;
 			if (plan.straight) {
 				across[stack] = (drawn.f.sizes.after[stack] ?? COLUMN_GAP) + more;
 			} else {
@@ -427,6 +437,7 @@ export function layoutMap(
 					from: plan.flow.from,
 					to: plan.flow.to,
 					count: plan.flow.count,
+					back: backOf(plan.flow),
 					points,
 					d: pathOf(points),
 					label: spots.get(plan) ?? null,
@@ -438,16 +449,38 @@ export function layoutMap(
 }
 
 /**
- * The letter lines the picture draws: at most `limit`, the busiest pairs first (the order they arrive
- * in), and only between sessions that are on the map. `hidden` is how many were left out.
+ * The letter lines the picture draws, from the letters counted each way. Two sessions that write to
+ * each other share one line: it starts at the one named first, which is the one that sent more when
+ * the busiest way comes first, and `back` is what came the other way. Only sessions on the map count;
+ * the pairs with the most letters come first, at most `limit` of them. `hidden` is how many pairs
+ * were left out.
  */
-export function pickFlows<T extends FlowLine>(
-	flows: T[],
+export function pickFlows(
+	flows: FlowLine[],
 	onMap: ReadonlySet<string>,
 	limit: number,
-): { drawn: T[]; hidden: number } {
-	const known = flows.filter((flow) => onMap.has(flow.from) && onMap.has(flow.to));
-	return { drawn: known.slice(0, limit), hidden: Math.max(0, known.length - limit) };
+): { drawn: FlowLine[]; hidden: number } {
+	const pairs = new Map<string, Map<string, FlowLine>>();
+	const lines: FlowLine[] = [];
+	for (const { from, to, count } of flows) {
+		if (from === to || !onMap.has(from) || !onMap.has(to)) continue;
+		const other = pairs.get(to)?.get(from);
+		if (other) {
+			other.back = backOf(other) + count;
+			continue;
+		}
+		const same = pairs.get(from)?.get(to);
+		if (same) {
+			same.count += count;
+			continue;
+		}
+		const line: FlowLine = { from, to, count };
+		pairs.set(from, (pairs.get(from) ?? new Map()).set(to, line));
+		lines.push(line);
+	}
+	// A stable sort: pairs with as many letters keep the order they came in.
+	lines.sort((p, q) => totalOf(q) - totalOf(p));
+	return { drawn: lines.slice(0, limit), hidden: Math.max(0, lines.length - limit) };
 }
 
 /** The line from a session down to one it opened: down from under its left end, then across. */

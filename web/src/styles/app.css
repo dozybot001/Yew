@@ -4445,10 +4445,19 @@ button.about-row {
 .map-flow-count {
 	fill: var(--text);
 	font-weight: 600;
+	font-variant-numeric: tabular-nums;
 	paint-order: stroke;
 	stroke: var(--bg);
 	stroke-width: 4px;
 	stroke-linejoin: round;
+}
+/* Two counts on one line, for letters both ways: a ground of page colour, and a mark beside each
+   that points the way its letters went. */
+.map-flow-ground {
+	fill: var(--bg);
+}
+.map-flow-mark {
+	fill: var(--text);
 }
 /* While one session is pointed at or focused, the letters of the others step back. */
 .map-faded {

@@ -13,6 +13,8 @@ export interface Member {
 	/** How far across the gap its lane is, counted from this side. */
 	reach: number;
 	room: number;
+	/** An arrow stands at it: letters arrived there. */
+	arrow: boolean;
 	/** It enters the session right of the gap, at its left side. */
 	right: boolean;
 }
@@ -80,7 +82,7 @@ function shareWithin(low: number, high: number, room: number): number {
 export function sideSlots(members: Member[], top: number, pinned: boolean): number[] {
 	const marks: Mark[] = members.map((member) => ({
 		room: member.room,
-		arrow: member.which.includes("to"),
+		arrow: member.arrow,
 		at: member.which.length > 1 ? "both" : member.right ? "far" : "near",
 		tree: false,
 	}));
