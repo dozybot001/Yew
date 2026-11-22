@@ -1,7 +1,7 @@
 import assert from "node:assert/strict";
 import { existsSync } from "node:fs";
 import { describe, test } from "node:test";
-import type { Session, ToolCallView } from "../src/shared/types.ts";
+import type { Approval, ConfirmReason, Session, ToolCallView } from "../src/shared/types.ts";
 import {
 	activeToolPose,
 	boxAt,
@@ -19,6 +19,7 @@ import {
 	poseForTool,
 	roomBesideComposer,
 	spotOf,
+	workingPose,
 } from "../web/src/companion.ts";
 import { MASCOT_POSES } from "../web/src/poses.ts";
 
@@ -119,6 +120,16 @@ describe("what the floating Yew says", () => {
 		assert.ok(POSES.working.includes(busy.pose));
 	});
 
+	test("she shows an empty wallet while a request to raise a spending limit waits", () => {
+		const input = { ...base, sessions: [], waiting: 2, permission: true, budget: true };
+		for (let turn = 0; turn < 5; turn++) {
+			assert.equal(companionMood({ ...input, turn }).pose, "wallet");
+		}
+		assert.deepEqual(companionMood(input).line, { kind: "waiting", count: 2 });
+		// In the first minute she still greets.
+		assert.equal(companionMood({ ...input, now: 1000 }).pose, "greeting");
+	});
+
 	test("she keeps a pose for a minute, then takes another; a click moves her on at once", () => {
 		const at = (now: number, turn = 0) =>
 			companionMood({ ...base, now, turn, sessions: [session("w", "working")], waiting: 0 }).pose;
@@ -158,7 +169,13 @@ describe("what the floating Yew says", () => {
 		assert.equal(poseForTool("read"), "reading");
 		assert.equal(poseForTool("edit"), "writing");
 		assert.equal(poseForTool("shell"), "typing");
-		assert.equal(poseForTool("delegate"), "books");
+		assert.equal(poseForTool("delegate"), "handover");
+		assert.equal(poseForTool("open_session"), "handover");
+		assert.equal(poseForTool("ask_user"), "pointing");
+		// The browser and the computer control that come with Yew Harness; other servers' tools do not.
+		assert.equal(poseForTool("mcp__browser__browser_click"), "mouse");
+		assert.equal(poseForTool("mcp__computer__computer"), "mouse");
+		assert.equal(poseForTool("mcp__notion__search"), "thinking");
 		const calls: Record<string, ToolCallView> = {
 			a: { tool: "read", status: "done", startedAt: 100, createdAt: 100 } as ToolCallView,
 			b: { tool: "grep", status: "running", startedAt: 200, createdAt: 200 } as ToolCallView,
@@ -166,6 +183,33 @@ describe("what the floating Yew says", () => {
 		};
 		assert.equal(activeToolPose(calls), "typing");
 		assert.equal(activeToolPose({ a: calls.a as ToolCallView }), null);
+	});
+
+	test("a push or a release she was asked about gets the rocket", () => {
+		const call = { id: "c", tool: "shell", status: "running", createdAt: 1 } as ToolCallView;
+		const asked = (toolCallId: string, reasons: ConfirmReason[]) =>
+			({
+				a: { id: "a", toolCallId, kind: "permission", request: { reasons } },
+			}) as unknown as Record<string, Approval>;
+		for (const reason of ["push", "publish-package", "publish-image"] as const) {
+			assert.equal(activeToolPose({ c: call }, asked("c", [reason])), "launch");
+		}
+		// Asked about for another reason, or about another call: she types as for any command.
+		assert.equal(activeToolPose({ c: call }, asked("c", ["delete-files"])), "typing");
+		assert.equal(activeToolPose({ c: call }, asked("other", ["push"])), "typing");
+		assert.equal(activeToolPose({ c: call }), "typing");
+	});
+
+	test("while a failed request waits to be sent again she carries a wrench", () => {
+		const calls = {
+			c: { id: "c", tool: "read", status: "running", createdAt: 1 } as ToolCallView,
+		};
+		const retry = { attempt: 1, of: 3, seconds: 4, text: "overloaded" };
+		assert.equal(workingPose({ toolCalls: calls, retry }), "wrench");
+		assert.equal(workingPose({ toolCalls: {}, retry }), "wrench");
+		assert.equal(workingPose({ toolCalls: calls, retry: null }), "reading");
+		assert.equal(workingPose({ toolCalls: {}, retry: null }), null);
+		assert.equal(workingPose(null), null);
 	});
 });
 

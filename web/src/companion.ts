@@ -3,13 +3,21 @@
  * this order: things waiting for the person, a session that failed, a session that finished and waits
  * for review, sessions at work, a new version; otherwise that nothing waits. In the first minute after
  * the interface opens she greets first. Her pose follows what she says, taken from a list for each
- * thing she can say: holding a card or asking you to look when a permission waits, and keeping watch
- * when nothing does but scheduled tasks are on. She takes another pose from
- * the list every minute, and at once when clicked.
+ * thing she can say: holding a card or asking you to look when a permission waits, showing an empty
+ * wallet when it is a request to raise a spending limit, and keeping watch when nothing waits but
+ * scheduled tasks are on. She takes another pose from the list every minute, and at once when
+ * clicked. While the session open on screen works she does what it does: the pose of the tool running
+ * now, a rocket for a push or a release, a wrench while a request that failed waits to be sent again.
  * She can be dragged anywhere in the window; where she stands, and whether a window has room for her,
  * is worked out at the end of this file.
  */
-import type { Session, ToolCallView } from "../../src/shared/types.ts";
+import type {
+	Approval,
+	ConfirmReason,
+	PermissionRequest,
+	Session,
+	ToolCallView,
+} from "../../src/shared/types.ts";
 import type { MascotPose } from "./poses.ts";
 
 export type Greeting = "morning" | "afternoon" | "evening";
@@ -85,6 +93,10 @@ export function isNight(hour: number): boolean {
 
 /** Maps a live tool name to Yew's matching work pose so her actions track what the agent is doing. */
 export function poseForTool(toolName: string): MascotPose {
+	// The browser and the control of this computer that Yew Harness sets up by itself.
+	if (toolName.startsWith("mcp__browser__") || toolName.startsWith("mcp__computer__")) {
+		return "mouse";
+	}
 	switch (toolName) {
 		case "grep":
 		case "glob":
@@ -107,17 +119,25 @@ export function poseForTool(toolName: string): MascotPose {
 		case "post_card":
 			return "clipboard";
 		case "delegate":
-			return "books";
-		case "ask":
+		case "open_session":
+			return "handover";
+		case "ask_user":
 			return "pointing";
 		default:
 			return "thinking";
 	}
 }
 
-/** Picks the most recent running tool's pose in the open transcript, if any. */
+/** What a permission is asked for when the call sends work out: a push, or a package or image released. */
+const SHIPPING: readonly ConfirmReason[] = ["push", "publish-package", "publish-image"];
+
+/**
+ * The pose of the tool running now in the open transcript, the latest when several run; null when
+ * none does. A call the person was asked about because it pushes or publishes gets the rocket.
+ */
 export function activeToolPose(
 	toolCalls: Record<string, ToolCallView> | undefined,
+	approvals: Record<string, Approval> = {},
 ): MascotPose | null {
 	if (!toolCalls) return null;
 	let latest: ToolCallView | null = null;
@@ -127,7 +147,33 @@ export function activeToolPose(
 		const latestTime = latest ? (latest.startedAt ?? latest.createdAt) : -1;
 		if (!latest || time >= latestTime) latest = call;
 	}
-	return latest ? poseForTool(latest.tool) : null;
+	if (!latest) return null;
+	const id = latest.id;
+	const ships = Object.values(approvals).some(
+		(approval) =>
+			approval.toolCallId === id &&
+			approval.kind === "permission" &&
+			(approval.request as PermissionRequest).reasons?.some((reason) => SHIPPING.includes(reason)),
+	);
+	return ships ? "launch" : poseForTool(latest.tool);
+}
+
+/**
+ * Her pose while the session open on screen works: the wrench while a request that failed waits to be
+ * sent again, else what the running tool does; null when neither.
+ */
+export function workingPose(
+	work:
+		| {
+				toolCalls?: Record<string, ToolCallView>;
+				approvals?: Record<string, Approval>;
+				retry?: object | null;
+		  }
+		| null
+		| undefined,
+): MascotPose | null {
+	if (!work) return null;
+	return work.retry ? "wrench" : activeToolPose(work.toolCalls, work.approvals);
 }
 
 export function companionMood(input: {
@@ -136,6 +182,8 @@ export function companionMood(input: {
 	waiting: number;
 	/** Whether a permission request is among what waits. */
 	permission?: boolean;
+	/** Whether a request to raise a spending limit is among what waits. */
+	budget?: boolean;
 	/** Whether a scheduled task is on, so something is still watched when nothing else goes on. */
 	onDuty?: boolean;
 	now: number;
@@ -155,7 +203,9 @@ export function companionMood(input: {
 		return {
 			pose: greeting
 				? "greeting"
-				: pick(input.permission ? POSES.permission : POSES.waiting, now, turn),
+				: input.budget
+					? "wallet"
+					: pick(input.permission ? POSES.permission : POSES.waiting, now, turn),
 			greeting,
 			line: { kind: "waiting", count: input.waiting },
 			target: { kind: "center" },

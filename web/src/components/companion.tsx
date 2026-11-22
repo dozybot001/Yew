@@ -1,7 +1,7 @@
 import { type CSSProperties, type PointerEvent, useEffect, useRef, useState } from "react";
+import type { PermissionRequest } from "../../../src/shared/types.ts";
 import { openCenter, openSettings, selectSession } from "../actions.ts";
 import {
-	activeToolPose,
 	type Box,
 	BUBBLE_WIDTH,
 	boxAt,
@@ -19,6 +19,7 @@ import {
 	type Size,
 	type Spot,
 	spotOf,
+	workingPose,
 } from "../companion.ts";
 import { t, useLang } from "../i18n.ts";
 import { centerCount, setState, triggerReaction, useAppState } from "../state.ts";
@@ -145,10 +146,16 @@ export function Companion() {
 	if (!enabled || fit === "none") return null;
 	const waiting = centerCount(center);
 	const liveSessions = Object.values(sessions);
+	const asked = Object.values(center.approvals).filter(
+		(approval) => approval.kind === "permission",
+	);
 	const moodInput = {
 		sessions: liveSessions,
 		waiting,
-		permission: Object.values(center.approvals).some((approval) => approval.kind === "permission"),
+		permission: asked.length > 0,
+		budget: asked.some((approval) =>
+			(approval.request as PermissionRequest).reasons?.includes("raise-budget"),
+		),
 		onDuty: schedules?.some((schedule) => schedule.enabled) ?? false,
 		now,
 		hour: new Date(now).getHours(),
@@ -171,7 +178,7 @@ export function Companion() {
 	const target = activeReaction || here ? null : mood.target;
 	const openWorking =
 		page === null && selectedId !== null && sessions[selectedId]?.status === "working";
-	const liveTool = openWorking ? activeToolPose(transcript?.toolCalls) : null;
+	const liveTool = openWorking ? workingPose(transcript) : null;
 	// The home page already waves at you from the middle.
 	const basePose =
 		mood.line.kind === "working" && liveTool

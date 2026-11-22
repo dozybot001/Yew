@@ -1027,7 +1027,7 @@ export const continueSession = (sessionId: string) =>
 	api("POST", `/api/sessions/${sessionId}/continue`);
 export async function compactSession(sessionId: string) {
 	const res = await api("POST", `/api/sessions/${sessionId}/compact`);
-	triggerReaction("books", "companion_react_renewed");
+	triggerReaction("tidy", "companion_react_renewed");
 	return res;
 }
 
@@ -1037,7 +1037,7 @@ export async function renewSession(sessionId: string, summarize = true) {
 		`/api/sessions/${sessionId}/renew`,
 		{ summarize },
 	);
-	if (res.status === "done") triggerReaction("books", "companion_react_renewed");
+	if (res.status === "done") triggerReaction("tidy", "companion_react_renewed");
 	return res;
 }
 
