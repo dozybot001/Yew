@@ -132,3 +132,4 @@ JSON。时间都用 ISO 8601，带时区。会话、团队、工作区都用名�
 `PROTOCOL_VERSION` 在 `src/shared/version.ts`，`/api/health` 的 `protocol` 字段能读到，也写进运行记录的第一行。信件、决定卡、授权请求、finish_task 的字段一改就升版本。
 
 - 第 1 版：finish_task 有可选的 `next`，写还剩什么、下一步谁做。
+- 第 2 版：信件有可选的 `quotes`，是会话转达的用户原话，发信前由 Yew Harness 对着自己的记录核对过；send_letter 和 open_session 相应接受 `quotes`。授权请求的 `reasons` 多了 `system-services`（用系统服务的命令）；`matter`（只有用户能答）不再包括点名 Yew Harness 的数据目录和「会话读不到的目录」的命令，跳过方式下只剩提高花费上限。

@@ -15,6 +15,6 @@ export const VERSION: string = pkg.version;
  * requests and finish_task. It goes up whenever one of them changes, so an evaluation can tell which
  * protocol a run used.
  */
-export const PROTOCOL_VERSION = 1;
+export const PROTOCOL_VERSION = 2;
 export const PUBLISHER = "Tenon AI";
 export const WEBSITE = "https://tenonai.cn/";
