@@ -1317,6 +1317,8 @@ body.scroll-locked {
 	justify-items: center;
 	gap: 8px;
 	margin: clamp(32px, 12dvh, 108px) auto 0;
+	/* A width of its own: sized by its words, the hint's share of that width breaks its one line. */
+	width: 100%;
 	max-width: 520px;
 	text-align: center;
 }
