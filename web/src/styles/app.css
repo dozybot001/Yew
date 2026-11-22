@@ -4382,16 +4382,20 @@ button.about-row {
 
 /* --- the sessions map: who opened whom, where letters went, each session's status --- */
 
+/* The words stand in the same column as on the other pages; the picture is in the middle of the
+   page and may be wider than that column. */
 .map-page {
 	display: grid;
 	grid-template-columns: minmax(0, 1fr);
 	align-content: start;
 	gap: 12px;
 }
+.map-page > .center-inner {
+	width: 100%;
+}
 .map-caption {
 	display: grid;
 	gap: 6px;
-	max-width: 760px;
 }
 .map-caption p {
 	margin: 0;
@@ -4411,10 +4415,10 @@ button.about-row {
 .map-legend .row-dot {
 	margin-left: 0;
 }
-/* The box is as large as the picture; where the window has less room, the picture keeps its size and
-   scrolls both ways inside it. */
+/* The box is as large as the picture, which is drawn larger where the window has the room. Where it
+   has less than the picture's own size, the picture keeps that size and scrolls both ways inside. */
 .map-scroll {
-	justify-self: start;
+	justify-self: center;
 	max-width: 100%;
 	overflow: auto;
 	scrollbar-gutter: stable;
@@ -4422,9 +4426,14 @@ button.about-row {
 	max-height: max(240px, calc(100dvh - 230px));
 	border: 1px solid var(--border);
 	border-radius: var(--radius);
+	/* The page's own colour, so the figure behind the page does not show between the lines. */
+	background: var(--bg);
 }
-.map-canvas {
+/* The sheet is laid out at the picture's own size and drawn larger from its top left corner; the
+   canvas around it has the size it is drawn at, which is what the box and its scrolling go by. */
+.map-sheet {
 	position: relative;
+	transform-origin: 0 0;
 }
 .map-lines {
 	position: absolute;

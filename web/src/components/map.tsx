@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import type { Group, LetterFlow, Session } from "../../../src/shared/types.ts";
 import { loadMap, selectSession } from "../actions.ts";
 import { t, useLang } from "../i18n.ts";
@@ -68,6 +68,63 @@ function FlowCount({ flow }: { flow: FlowRoute }) {
 			<path className="map-flow-mark" d={mark(at.rightMark, 1)} />
 		</>
 	);
+}
+
+/** Where the window has the room, the picture is drawn larger, up to this many times its size. */
+const MAX_SCALE = 1.5;
+
+/** The picture's box is never lower than this; a lower window scrolls the page instead. */
+const MIN_BOX = 240;
+
+interface Room {
+	/** The most the picture's box can take: the page's width, and down to the end of the window. */
+	width: number;
+	height: number;
+	/** What the box's own borders take of that. */
+	edgeX: number;
+	edgeY: number;
+}
+
+/**
+ * The room the picture's box has, measured again whenever the page, the window or the caption above
+ * the box changes size. `shown` says the box is on the page.
+ */
+function useRoom(shown: boolean) {
+	const box = useRef<HTMLDivElement>(null);
+	const [room, setRoom] = useState<Room | null>(null);
+	useLayoutEffect(() => {
+		const frame = box.current;
+		const page = frame?.parentElement;
+		const body = page?.parentElement;
+		if (!shown || !frame || !page || !body) return;
+		const measure = () => {
+			// From the top of the scrolled page to the top of the box, wherever the page is scrolled to.
+			const top =
+				frame.getBoundingClientRect().top - body.getBoundingClientRect().top + body.scrollTop;
+			const next: Room = {
+				width: page.clientWidth,
+				height: body.clientHeight - top - Number.parseFloat(getComputedStyle(body).paddingBottom),
+				edgeX: frame.offsetWidth - frame.clientWidth,
+				edgeY: frame.offsetHeight - frame.clientHeight,
+			};
+			setRoom((before) =>
+				before &&
+				before.width === next.width &&
+				before.height === next.height &&
+				before.edgeX === next.edgeX &&
+				before.edgeY === next.edgeY
+					? before
+					: next,
+			);
+		};
+		measure();
+		const observer = new ResizeObserver(measure);
+		for (const element of [body, page, ...page.children]) {
+			if (element !== frame) observer.observe(element);
+		}
+		return () => observer.disconnect();
+	}, [shown]);
+	return { box, room };
 }
 
 /** The statuses a dot stands for, in the order the caption explains them. */
@@ -141,6 +198,13 @@ export function MapPage() {
 	// The lines are laid out with the sessions: a gap that carries many of them grows wider.
 	const layout = layoutMap(live, groups, mainId, drawn);
 	const at = new Map(layout.nodes.map((node) => [node.id, node]));
+	// The whole picture stays in view: it grows to fill the room it has and never shrinks below its
+	// own size, where it scrolls inside its box instead.
+	const { box, room } = useRoom(live.length > 0);
+	const fit = room
+		? Math.min((room.width - room.edgeX) / layout.width, (room.height - room.edgeY) / layout.height)
+		: 1;
+	const scale = Math.max(1, Math.min(MAX_SCALE, Math.floor(fit * 100) / 100));
 	return (
 		<main className="main center-main">
 			<header className="session-header">
@@ -155,20 +219,20 @@ export function MapPage() {
 				tabIndex={0}
 			>
 				<div className="map-page">
-					{error ? (
-						<>
-							<ErrorBox error={error} />
-							<div>
-								<Button onClick={() => setTries((n) => n + 1)}>
-									<RetryIcon /> {t("retry")}
-								</Button>
-							</div>
-						</>
-					) : null}
-					{live.length === 0 ? (
-						<p className="empty-box">{t("mapEmpty")}</p>
-					) : (
-						<>
+					<div className="center-inner">
+						{error ? (
+							<>
+								<ErrorBox error={error} />
+								<div>
+									<Button onClick={() => setTries((n) => n + 1)}>
+										<RetryIcon /> {t("retry")}
+									</Button>
+								</div>
+							</>
+						) : null}
+						{live.length === 0 ? (
+							<p className="empty-box">{t("mapEmpty")}</p>
+						) : (
 							<div className="map-caption">
 								<p className="hint">
 									{t("mapCaption")}
@@ -183,110 +247,128 @@ export function MapPage() {
 									))}
 								</ul>
 							</div>
+						)}
+					</div>
+					{live.length > 0 && (
+						<>
 							{/* biome-ignore lint/a11y/useSemanticElements: a fieldset would add a border and a legend; the group only names the scroll area */}
 							<div
+								ref={box}
 								className="map-scroll"
+								style={room ? { maxHeight: Math.max(MIN_BOX, room.height) } : undefined}
 								role="group"
 								aria-label={t("mapPicture")}
 								// biome-ignore lint/a11y/noNoninteractiveTabindex: a scroll area must be reachable by keyboard
 								tabIndex={0}
 							>
-								<div className="map-canvas" style={{ width: layout.width, height: layout.height }}>
-									<svg
-										className="map-lines"
-										width={layout.width}
-										height={layout.height}
-										aria-hidden="true"
+								<div
+									className="map-canvas"
+									style={{ width: layout.width * scale, height: layout.height * scale }}
+								>
+									<div
+										className="map-sheet"
+										style={{
+											width: layout.width,
+											height: layout.height,
+											transform: scale === 1 ? undefined : `scale(${scale})`,
+										}}
 									>
-										<defs>
-											<marker
-												id={marker}
-												markerWidth={ARROW_LEN}
-												markerHeight={ARROW_W}
-												refX={ARROW_LEN - 0.5}
-												refY={ARROW_W / 2}
-												orient="auto-start-reverse"
-												markerUnits="userSpaceOnUse"
-											>
-												<path
-													className="map-arrow"
-													d={`M0 0L${ARROW_LEN} ${ARROW_W / 2}L0 ${ARROW_W}Z`}
-												/>
-											</marker>
-										</defs>
-										{layout.nodes.map((node) => {
-											const parent = node.parentId ? at.get(node.parentId) : undefined;
-											return parent ? (
-												<path key={node.id} className="map-opened" d={openedPath(parent, node)} />
-											) : null;
-										})}
-										{layout.flows.map((flow) => {
-											const faded = active !== null && flow.from !== active && flow.to !== active;
-											return (
-												<g
-													key={`${flow.from}>${flow.to}`}
-													className={faded ? "map-faded" : undefined}
+										<svg
+											className="map-lines"
+											width={layout.width}
+											height={layout.height}
+											aria-hidden="true"
+										>
+											<defs>
+												<marker
+													id={marker}
+													markerWidth={ARROW_LEN}
+													markerHeight={ARROW_W}
+													refX={ARROW_LEN - 0.5}
+													refY={ARROW_W / 2}
+													orient="auto-start-reverse"
+													markerUnits="userSpaceOnUse"
 												>
 													<path
-														className="map-flow"
-														d={flow.d}
-														markerStart={flow.back > 0 ? `url(#${marker})` : undefined}
-														markerEnd={`url(#${marker})`}
+														className="map-arrow"
+														d={`M0 0L${ARROW_LEN} ${ARROW_W / 2}L0 ${ARROW_W}Z`}
 													/>
-													<FlowCount flow={flow} />
-												</g>
+												</marker>
+											</defs>
+											{layout.nodes.map((node) => {
+												const parent = node.parentId ? at.get(node.parentId) : undefined;
+												return parent ? (
+													<path key={node.id} className="map-opened" d={openedPath(parent, node)} />
+												) : null;
+											})}
+											{layout.flows.map((flow) => {
+												const faded = active !== null && flow.from !== active && flow.to !== active;
+												return (
+													<g
+														key={`${flow.from}>${flow.to}`}
+														className={faded ? "map-faded" : undefined}
+													>
+														<path
+															className="map-flow"
+															d={flow.d}
+															markerStart={flow.back > 0 ? `url(#${marker})` : undefined}
+															markerEnd={`url(#${marker})`}
+														/>
+														<FlowCount flow={flow} />
+													</g>
+												);
+											})}
+										</svg>
+										{layout.headings.map((heading) => (
+											<span
+												// A group that continues in the other bank has its heading in both.
+												key={`${heading.kind}:${heading.groupId ?? ""}:${heading.x}`}
+												className="map-head"
+												style={{
+													left: heading.x,
+													top: heading.y,
+													width: heading.width,
+													height: HEAD_H,
+												}}
+											>
+												{heading.kind === "team"
+													? (groups.find((group) => group.id === heading.groupId)?.name ?? "")
+													: t(`mapHeading_${heading.kind}`)}
+											</span>
+										))}
+										{layout.nodes.map((node) => {
+											const session = all[node.id];
+											if (!session) return null;
+											const status = shownStatus(session, waiting);
+											const words = [session.name, ...facts(session)].join(t("hintSeparator"));
+											return (
+												<button
+													key={node.id}
+													type="button"
+													className="map-node"
+													data-main={session.id === mainId ? "true" : undefined}
+													// The main conversation lies across the top, its name in the middle.
+													data-bar={node.width > NODE_W ? "true" : undefined}
+													style={{ left: node.x, top: node.y, width: node.width, height: NODE_H }}
+													aria-label={words}
+													title={words}
+													onClick={() => void selectSession(session.id)}
+													onPointerEnter={() => setActive(session.id)}
+													onPointerLeave={() => setActive(null)}
+													onFocus={() => setActive(session.id)}
+													onBlur={() => setActive(null)}
+												>
+													<span className="session-icon" aria-hidden="true">
+														{session.cwd ? <CodeIcon /> : <ChatIcon />}
+													</span>
+													<span className="map-node-name">{session.name}</span>
+													{status !== "idle" && (
+														<span className={`dot row-dot dot-${status}`} aria-hidden="true" />
+													)}
+												</button>
 											);
 										})}
-									</svg>
-									{layout.headings.map((heading) => (
-										<span
-											// A group that continues in the other bank has its heading in both.
-											key={`${heading.kind}:${heading.groupId ?? ""}:${heading.x}`}
-											className="map-head"
-											style={{
-												left: heading.x,
-												top: heading.y,
-												width: heading.width,
-												height: HEAD_H,
-											}}
-										>
-											{heading.kind === "team"
-												? (groups.find((group) => group.id === heading.groupId)?.name ?? "")
-												: t(`mapHeading_${heading.kind}`)}
-										</span>
-									))}
-									{layout.nodes.map((node) => {
-										const session = all[node.id];
-										if (!session) return null;
-										const status = shownStatus(session, waiting);
-										const words = [session.name, ...facts(session)].join(t("hintSeparator"));
-										return (
-											<button
-												key={node.id}
-												type="button"
-												className="map-node"
-												data-main={session.id === mainId ? "true" : undefined}
-												// The main conversation lies across the top, its name in the middle.
-												data-bar={node.width > NODE_W ? "true" : undefined}
-												style={{ left: node.x, top: node.y, width: node.width, height: NODE_H }}
-												aria-label={words}
-												title={words}
-												onClick={() => void selectSession(session.id)}
-												onPointerEnter={() => setActive(session.id)}
-												onPointerLeave={() => setActive(null)}
-												onFocus={() => setActive(session.id)}
-												onBlur={() => setActive(null)}
-											>
-												<span className="session-icon" aria-hidden="true">
-													{session.cwd ? <CodeIcon /> : <ChatIcon />}
-												</span>
-												<span className="map-node-name">{session.name}</span>
-												{status !== "idle" && (
-													<span className={`dot row-dot dot-${status}`} aria-hidden="true" />
-												)}
-											</button>
-										);
-									})}
+									</div>
 								</div>
 							</div>
 							{listed.length > 0 && (
