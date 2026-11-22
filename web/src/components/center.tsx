@@ -22,9 +22,11 @@ import {
 	RefuseIcon,
 	SendIcon,
 } from "./icons.tsx";
+import { PersonQuotes } from "./letter-entry.tsx";
 import { Mascot } from "./mascot.tsx";
+import { PermissionCard } from "./permission-card.tsx";
+import { QuestionCard } from "./question-card.tsx";
 import { SidebarToggle } from "./session.tsx";
-import { PermissionCard, PersonQuotes, QuestionCard } from "./transcript.tsx";
 import { Button, CardHead, ErrorBox, useAction, useNow } from "./ui.tsx";
 
 /** A session's current name; letters and cards keep ids, so a renamed session shows its new name. */
