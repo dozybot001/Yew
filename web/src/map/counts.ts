@@ -11,9 +11,8 @@ import {
 	CORNER,
 	counted,
 	type FlowLine,
-	type MapColumn,
+	type MapHeading,
 	NODE_H,
-	NODE_W,
 } from "./model.ts";
 import { type Plan, type Point, pointAt, type Which } from "./route.ts";
 
@@ -60,15 +59,53 @@ export function pairParts(left: number, right: number, x: number) {
 	};
 }
 
-/**
- * The room a count takes on a stub, from the session's edge (or arrow) to the first lane, and a pixel
- * more, as the lane is moved to the middle of a pixel.
- */
-export const stubNeed = (flow: FlowLine, which: Which) =>
-	countWidth(flow) + (arrowAt(flow, which) ? ARROW_LEN + 2 : 2) + CORNER + 3;
+/** A count keeps this far from the end of the stretch it stands on: a session's edge, an arrow, a corner. */
+const END_CLEAR = 2;
+/** Beside a session a count stands a pixel farther out than it has to. */
+const BESIDE = END_CLEAR + 1;
 
-/** How long a level stretch between two corners has to be for a count to stand on it. */
-export const stretchNeed = (flow: FlowLine) => countWidth(flow) + 2 * (CORNER + 2);
+/** How far the arrow at an end of a line reaches along it; nothing where no arrow stands. */
+const arrowRoom = (flow: FlowLine, which: Which) => (arrowAt(flow, which) ? ARROW_LEN : 0);
+
+/**
+ * The room a count takes on the stub at an end of its line, from the session's edge to the first
+ * lane: an arrow's length, whether one stands there or not, so the counts beside the sessions of a
+ * bank line up; the count; the corner into the lane; and a pixel more, as the lane is moved to the
+ * middle of a pixel. `inset` is for a session that stands in from the left of its bank: its count
+ * stands left of the bank, away from the arrow.
+ */
+export const stubNeed = (flow: FlowLine, inset: boolean) =>
+	(inset ? 0 : ARROW_LEN) + BESIDE + countWidth(flow) + CORNER + END_CLEAR + 1;
+
+/** How wide the rail has to be for the count of a line straight across it, with its arrows. */
+export const acrossNeed = (flow: FlowLine) =>
+	countWidth(flow) + arrowRoom(flow, "from") + ARROW_LEN + 2 * BESIDE;
+
+/**
+ * Where a count stands first on the stub at an end of its line: its middle `start` beside the session,
+ * and from there step by step `away` (-1 left, 1 right) while something is in its way.
+ */
+export interface Home {
+	/** The stretch of the line, counted from 1. */
+	index: number;
+	start: number;
+	away: number;
+}
+
+/**
+ * The home of a count at the end `which` of a line with these corners. `bank` is the left edge of the
+ * bank, for a session that stands in from it: the count then stands left of the bank, clear of the
+ * tree lines that come down there.
+ */
+export function homeOf(flow: FlowLine, which: Which, points: Point[], bank: number | null): Home {
+	const [index, tip, next] =
+		which === "from"
+			? [1, pointAt(points, 0), pointAt(points, 1)]
+			: [points.length - 1, pointAt(points, points.length - 1), pointAt(points, points.length - 2)];
+	const away = Math.sign(next[0] - tip[0]);
+	const edge = bank ?? tip[0] + away * ARROW_LEN;
+	return { index, start: edge + away * (BESIDE + countWidth(flow) / 2), away };
+}
 
 interface Box {
 	x0: number;
@@ -100,16 +137,22 @@ export interface Spot {
 	forward: boolean;
 }
 
-/** Places along a line's level stretches where its count may stand, the best first. */
-function countSpots(points: Point[], flow: FlowLine, host: number): Spot[] {
+/** How far apart the places tried for a count are. */
+const STEP = 3;
+
+/**
+ * Places along a line's level stretches where its count may stand, the best first: from its home
+ * outward when it has one, then along the other stretches from their middle.
+ */
+function countSpots(points: Point[], flow: FlowLine, home: Home | undefined): Spot[] {
 	const width = countWidth(flow);
 	const stretches: { index: number; from: number; to: number; y: number; forward: boolean }[] = [];
 	for (let i = 1; i < points.length; i++) {
 		const [p, q] = [pointAt(points, i - 1), pointAt(points, i)];
 		if (p[1] !== q[1]) continue;
 		// Clear of the corners, of the edges of the two sessions, and of the arrows there.
-		const atP = i === 1 ? (arrowAt(flow, "from") ? ARROW_LEN + 2 : 2) : CORNER + 2;
-		const atQ = i === points.length - 1 ? ARROW_LEN + 2 : CORNER + 2;
+		const atP = (i === 1 ? arrowRoom(flow, "from") : CORNER) + END_CLEAR;
+		const atQ = (i === points.length - 1 ? ARROW_LEN : CORNER) + END_CLEAR;
 		const forward = p[0] < q[0];
 		const [from, to] = forward
 			? [p[0] + atP + width / 2, q[0] - atQ - width / 2]
@@ -118,15 +161,21 @@ function countSpots(points: Point[], flow: FlowLine, host: number): Spot[] {
 	}
 	stretches.sort(
 		(s, t) =>
-			Number(t.index === host) - Number(s.index === host) ||
+			Number(t.index === home?.index) - Number(s.index === home?.index) ||
 			t.to - t.from - (s.to - s.from) ||
 			s.index - t.index,
 	);
 	const spots: Spot[] = [];
-	for (const { from, to, y, forward } of stretches) {
+	for (const { index, from, to, y, forward } of stretches) {
+		if (home && index === home.index && home.start >= from && home.start <= to) {
+			for (let x = home.start; x >= from && x <= to; x += home.away * STEP) {
+				spots.push({ x, y, forward });
+			}
+			continue;
+		}
 		const middle = Math.round(from + to) / 2;
 		spots.push({ x: middle, y, forward });
-		for (let step = 3; middle - step >= from || middle + step <= to; step += 3) {
+		for (let step = STEP; middle - step >= from || middle + step <= to; step += STEP) {
 			if (middle - step >= from) spots.push({ x: middle - step, y, forward });
 			if (middle + step <= to) spots.push({ x: middle + step, y, forward });
 		}
@@ -142,16 +191,16 @@ function countSpots(points: Point[], flow: FlowLine, host: number): Spot[] {
 export function placeCounts(
 	plans: Plan[],
 	pointsOf: Map<Plan, Point[]>,
-	hostOf: Map<Plan, number>,
+	homes: Map<Plan, Home>,
 	f: Frame,
-	columns: MapColumn[],
+	headings: MapHeading[],
 ): { spots: Map<Plan, Spot>; crowded: Plan[] } {
 	// What may be covered, if nothing better is free: 0 never, 1 a line crossing, 2 a line alongside or
 	// an arrow, 3 a tree line or a heading.
 	const blocks: { box: Box; kind: number; plan: Plan | null }[] = [];
 	for (const node of f.nodes) {
 		blocks.push({
-			box: { x0: node.x, y0: node.y, x1: node.x + NODE_W, y1: node.y + NODE_H },
+			box: { x0: node.x, y0: node.y, x1: node.x + node.width, y1: node.y + NODE_H },
 			kind: 0,
 			plan: null,
 		});
@@ -163,9 +212,9 @@ export function placeCounts(
 			blocks.push({ box: lineBox([x, y], [node.x, y], 1.5), kind: 3, plan: null });
 		}
 	}
-	for (const column of columns) {
+	for (const heading of headings) {
 		blocks.push({
-			box: { x0: column.x, y0: column.y, x1: column.x + column.width, y1: column.y + 20 },
+			box: { x0: heading.x, y0: heading.y, x1: heading.x + heading.width, y1: heading.y + 20 },
 			kind: 3,
 			plan: null,
 		});
@@ -189,7 +238,7 @@ export function placeCounts(
 		if (!counted(plan.flow)) continue;
 		const width = countWidth(plan.flow);
 		const points = pointsOf.get(plan) ?? [];
-		const candidates = countSpots(points, plan.flow, hostOf.get(plan) ?? 1);
+		const candidates = countSpots(points, plan.flow, homes.get(plan));
 		const free = (spot: Spot, allow: number) => {
 			const box = countBox(spot, width);
 			return (

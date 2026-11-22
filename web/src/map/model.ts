@@ -19,14 +19,22 @@ export interface MapNode {
 	id: string;
 	x: number;
 	y: number;
+	/** NODE_W, but for the main conversation, which lies across the top as a bar. */
+	width: number;
 	/** How many sessions stand between this one and the top of its tree. */
 	depth: number;
-	/** The session that opened it, when that one is on the map. */
+	/**
+	 * The session above it that opened it. What the main conversation opened stands under a heading
+	 * that says so, with no line up to the bar, and has none.
+	 */
 	parentId: string | null;
 }
 
-/** A column's heading: a team, the sessions without one, or what the main conversation opened. */
-export interface MapColumn {
+/**
+ * The heading over a group of sessions: a team, the sessions without one, or what the main
+ * conversation opened. A group that continues in the other bank has its heading there again.
+ */
+export interface MapHeading {
 	kind: "main" | "team" | "none";
 	groupId: string | null;
 	x: number;
@@ -73,27 +81,27 @@ export interface FlowRoute extends FlowLine {
 
 export interface MapLayout {
 	nodes: MapNode[];
-	columns: MapColumn[];
+	headings: MapHeading[];
 	/** The letter lines asked for, in the order given. */
 	flows: FlowRoute[];
 	width: number;
 	height: number;
 }
 
-/** One session and the sessions it opened, for the list that says the same as the picture. */
-export interface OutlineItem {
-	id: string;
-	children: OutlineItem[];
-}
-
 export const NODE_W = 184;
 export const NODE_H = 36;
 export const ROW_GAP = 10;
 export const INDENT = 22;
+/** A gap beside a bank before any line needs more: left of the left bank, between the two, right of the right. */
 export const COLUMN_GAP = 36;
 export const HEAD_H = 26;
 export const PAD = 16;
-/** A column holds this many rows before it continues beside itself. */
+/** The band between the main conversation's bar and the first headings. */
+export const BAND = 2 * ROW_GAP;
+/**
+ * A bank this many rows tall is long: a group is then split between the two banks if that makes the
+ * taller one much shorter.
+ */
 export const MAX_ROWS = 12;
 /** The radius of a letter line's corners. */
 export const CORNER = 4;
@@ -101,22 +109,15 @@ export const CORNER = 4;
 export const ARROW_LEN = 6;
 export const ARROW_W = 5;
 
-/** Upright lanes in a gap between columns: this far apart, and this far from the sessions beside it. */
+/** Upright lanes in a gap: this far apart, and this far from the sessions beside it. */
 export const LANE = 6;
 export const LANE_EDGE = 10;
-/** The room a level lane takes above and below itself, and how far it keeps from the rows. */
+/** Lines that leave the main conversation's bar keep this far from its ends. */
+export const BAR_EDGE = 11;
+/** The room a tree line takes among the ends at a session's side. */
 export const LINE_HALF = 3;
-export const LINE_EDGE = 5;
-/** The same for a level lane that carries a count, so the count clears its neighbours and their counts. */
-export const COUNT_HALF = 6;
-export const COUNT_EDGE = 6;
-/** Under the main conversation the first lane keeps this far down, so an arrow and a corner fit. */
-export const BAND_EDGE = 12;
 /** Ends at a session's side keep this far from its corners, and take this much room each. */
 export const SIDE_EDGE = 6;
 export const START_ROOM = 2;
 export const ARROW_ROOM = 3;
 export const COUNT_ROOM = 6;
-/** Ends on the lower edge of the main conversation: the first this far from its right end, then apart. */
-export const LOW_EDGE = 14;
-export const LOW_STEP = 8;

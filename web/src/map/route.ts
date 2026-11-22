@@ -1,195 +1,117 @@
 /**
- * The way of each letter line through the gaps of the map: which sides of its two sessions it leaves
- * and enters, which gaps it runs along, and which lane it keeps in each.
+ * The way of each letter line: which gap beside the banks it runs in, which sides of its two sessions
+ * it leaves and enters, and which lane of the gap it keeps.
  */
 
-import {
-	type Arrangement,
-	compare,
-	type Frame,
-	gapMiddle,
-	lanesBefore,
-	numberOf,
-	upright,
-} from "./grid.ts";
-import {
-	ARROW_ROOM,
-	arrowAt,
-	CORNER,
-	COUNT_HALF,
-	COUNT_ROOM,
-	counted,
-	type FlowLine,
-	LINE_HALF,
-	LOW_EDGE,
-	LOW_STEP,
-	type MapNode,
-	NODE_H,
-	NODE_W,
-	SIDE_EDGE,
-	START_ROOM,
-	totalOf,
-} from "./model.ts";
+import { type Arrangement, type Cell, compare, type Gap, rowTop } from "./grid.ts";
+import { CORNER, type FlowLine, NODE_H, PAD, totalOf } from "./model.ts";
 
-/** A side holds this many ends before the router turns to another. */
-const SIDE_ENDS = 5;
-/**
- * What a way costs, a pixel of length counting 1: a corner, a tree line crossed, another line along
- * the same stretch of a gap, a gap made wider, an end at a side that is already full.
- */
-const BEND = 20;
-const TREE = 10;
-const CROWD = 3;
-const WIDEN = 24;
-const FULL = 200;
 /** Two stretches of line this close along a gap may not share a lane. */
 const NEAR = 24;
 
-type Side = "left" | "right" | "bottom";
 export type Which = "from" | "to";
 
-/** One end of a line: the session, its side, and the stretch of side it shares with other ends. */
+/** One end of a line: a session and its side, or the lower edge of the main conversation's bar. */
 export interface End {
 	id: string;
-	side: Side;
-	port: string;
+	side: "left" | "right" | "bar";
 }
 
-/** A line's way through the gaps. */
+/** A line's way. */
 export interface Plan {
 	flow: FlowLine;
 	/** Its place among the lines given. */
 	order: number;
-	/** Its place in the order the lines were routed: the busiest first. */
+	/** Its place among the lines drawn, the busiest first. */
 	rank: number;
 	from: End;
 	to: End;
-	/** The gaps it runs along between its ends; upright and level ones take turns. */
-	gaps: string[];
-	/** Straight across one gap, between two sessions that face each other. */
+	gap: Gap;
+	/** Straight across the rail, between two sessions that face each other. */
 	straight: boolean;
-	/** Where its count goes: on its lane in a level gap, or on the stub at one end. */
-	host: { gap: string } | { end: Which } | null;
-}
-
-/** The stretch a line runs along one gap, and where it goes on at each end. */
-export interface Run {
-	plan: Plan;
-	gap: string;
-	lo: number;
-	hi: number;
-	/** Where the line turns at the low and the high end: -1 toward left or up, 1 toward right or down. */
-	turnLo: number;
-	turnHi: number;
-	counted: boolean;
+	/** The end its count stands beside. A straight line has its count along itself. */
+	host: Which | null;
 }
 
 export type Point = [number, number];
 
 export const pointAt = (points: Point[], i: number): Point => points[i] ?? [0, 0];
 
+/** The end of a line that is at the bar, if one is. */
+export const barEnd = (plan: Plan): Which | null =>
+	plan.from.side === "bar" ? "from" : plan.to.side === "bar" ? "to" : null;
+
+/** The lower edge of the main conversation's bar, where its lines leave it. */
+export const BAR_LOW = PAD + NODE_H;
+
 /**
- * The corners of a plan, given where its lanes and its ends are. Each gap adds the point where the
- * line enters it and the one where it leaves, so a corner shared by two gaps comes twice.
+ * The way of every line, by where its two sessions stand. A line of the main conversation drops from
+ * the bar down the outer side of the bank its session is in: left of the left bank, right of the right
+ * one. A line between two sessions runs in the rail between the banks. The one exception is two
+ * sessions of the right bank of which one was opened by another session: the tree line comes in at
+ * that one's left side, so their line goes round the right of the bank.
  */
-export function corners(
-	plan: Plan,
-	node: (id: string) => MapNode,
-	lane: (gap: string) => number,
-	slot: (which: Which) => number,
-): Point[] {
-	const end = (which: Which): Point => {
-		const { id, side } = plan[which];
-		const at = node(id);
-		if (side === "left") return [at.x, slot(which)];
-		if (side === "right") return [at.x + NODE_W, slot(which)];
-		return [slot(which), at.y + NODE_H];
-	};
-	const start = end("from");
-	const finish = end("to");
-	const out: Point[] = [start];
-	let [x, y] = start;
-	for (const [i, gap] of plan.gaps.entries()) {
-		const next = plan.gaps[i + 1];
-		if (upright(gap)) {
-			const at = lane(gap);
-			const to = next === undefined ? finish[1] : lane(next);
-			out.push([at, y], [at, to]);
-			x = at;
-			y = to;
-		} else {
-			const at = lane(gap);
-			const to = next === undefined ? finish[0] : lane(next);
-			out.push([x, at], [to, at]);
-			x = to;
-			y = at;
-		}
-	}
-	out.push(finish);
-	return out;
+export function route(a: Arrangement, flows: FlowLine[]): Plan[] {
+	const mainId = a.main?.id ?? null;
+	const known = (id: string) => a.cells.has(id) || id === mainId;
+	return flows
+		.map((flow, order) => ({ flow, order }))
+		.filter(({ flow }) => flow.from !== flow.to && known(flow.from) && known(flow.to))
+		.sort(
+			(x, y) =>
+				totalOf(y.flow) - totalOf(x.flow) ||
+				compare(x.flow.from, y.flow.from) ||
+				compare(x.flow.to, y.flow.to) ||
+				x.order - y.order,
+		)
+		.map(({ flow, order }, rank): Plan => {
+			const p = a.cells.get(flow.from);
+			const q = a.cells.get(flow.to);
+			const plan = { flow, order, rank, straight: false, host: null };
+			if (!p || !q) {
+				const bank = (p ?? q)?.bank ?? 0;
+				const gap: Gap = bank === 0 ? "left" : "right";
+				const end = (id: string): End =>
+					id === mainId ? { id, side: "bar" } : { id, side: bank === 0 ? "left" : "right" };
+				return { ...plan, from: end(flow.from), to: end(flow.to), gap };
+			}
+			const round = p.bank === 1 && q.bank === 1 && (p.depth > 0 || q.depth > 0);
+			const gap: Gap = round ? "right" : "rail";
+			// The rail is right of the left bank and left of the right one.
+			const end = (cell: Cell): End => ({
+				id: cell.session.id,
+				side: (gap === "rail") === (cell.bank === 0) ? "right" : "left",
+			});
+			return {
+				...plan,
+				from: end(p),
+				to: end(q),
+				gap,
+				straight: p.bank !== q.bank && p.row === q.row,
+			};
+		});
 }
 
-/** The corners without repeats and without points in the middle of a straight stretch. */
-export function simplify(points: Point[]): Point[] {
-	const out: Point[] = [];
-	for (const point of points) {
-		const last = out[out.length - 1];
-		if (last && last[0] === point[0] && last[1] === point[1]) continue;
-		const before = out[out.length - 2];
-		if (
-			before &&
-			last &&
-			((before[0] === last[0] && last[0] === point[0]) ||
-				(before[1] === last[1] && last[1] === point[1]))
-		) {
-			out.pop();
-		}
-		out.push(point);
-	}
-	return out;
-}
-
-/** The stretches a plan runs along its gaps, from its corners as `corners` gives them. */
-export function runsOf(plan: Plan, raw: Point[]): Run[] {
-	if (plan.straight) return [];
-	const last = plan.gaps.length - 1;
-	return plan.gaps.map((gap, i) => {
-		// Along an upright gap the line moves in y and turns off in x; along a level one the other way.
-		const along = (point: Point) => (upright(gap) ? point[1] : point[0]);
-		const across = (point: Point) => (upright(gap) ? point[0] : point[1]);
-		const before = pointAt(raw, i === 0 ? 0 : 2 * i - 1);
-		const enter = pointAt(raw, 2 * i + 1);
-		const leave = pointAt(raw, 2 * i + 2);
-		const after = pointAt(raw, i === last ? 2 * i + 3 : 2 * i + 4);
-		const turnIn = Math.sign(across(before) - across(enter));
-		const turnOut = Math.sign(across(after) - across(leave));
-		const forward = along(enter) <= along(leave);
-		return {
-			plan,
-			gap,
-			lo: Math.min(along(enter), along(leave)),
-			hi: Math.max(along(enter), along(leave)),
-			turnLo: forward ? turnIn : turnOut,
-			turnHi: forward ? turnOut : turnIn,
-			counted: plan.host !== null && "gap" in plan.host && plan.host.gap === gap,
-		};
-	});
+/** The stretch a line runs along its gap, and where it goes on at each end. */
+interface Run {
+	plan: Plan;
+	lo: number;
+	hi: number;
+	/** Where the line turns at the upper and the lower end: -1 toward the left, 1 toward the right, 0 not at all. */
+	turnLo: number;
+	turnHi: number;
 }
 
 const close = (a: Run, b: Run) => a.lo <= b.hi + NEAR && b.lo <= a.hi + NEAR;
 
 /**
- * Lanes across a gap, numbered from its left or top. The order keeps crossings few: a line that turns
- * back to the same side at both ends runs nearest that side, the shorter of two such lines nearer
- * still; one that comes in from one side and leaves to the other runs in the middle, in the order
- * that lets the two pass without crossing. A line takes the first lane past every line already given
- * a lane that runs along the same stretch.
+ * Lanes across a gap, numbered from its left. The order keeps crossings few: a line that turns back to
+ * the same side at both ends runs nearest that side, the shorter of two such lines nearer still; one
+ * that comes in from one side and leaves to the other runs in the middle, in the order that lets the
+ * two pass without crossing. A line takes the first lane past every line already given a lane that
+ * runs along the same stretch.
  */
-export function assignLanes(runs: Run[]): {
-	lane: Map<Plan, number>;
-	count: number;
-	halves: number[];
-} {
+function assignLanes(runs: Run[]): Lanes {
 	const key = (run: Run): [number, number] => {
 		const length = run.hi - run.lo;
 		const middle = (run.lo + run.hi) / 2;
@@ -204,177 +126,54 @@ export function assignLanes(runs: Run[]): {
 	});
 	const placed: { run: Run; lane: number }[] = [];
 	const lane = new Map<Plan, number>();
-	const halves: number[] = [];
+	let count = 0;
 	for (const run of sorted) {
 		let index = 0;
 		for (const other of placed) if (close(run, other.run)) index = Math.max(index, other.lane + 1);
 		placed.push({ run, lane: index });
 		lane.set(run.plan, index);
-		halves[index] = Math.max(halves[index] ?? 0, run.counted ? COUNT_HALF : LINE_HALF);
+		count = Math.max(count, index + 1);
 	}
-	return { lane, count: halves.length, halves };
+	return { lane, count };
+}
+
+/** The lanes of one gap: each line's, and how many there are. */
+export interface Lanes {
+	lane: Map<Plan, number>;
+	count: number;
 }
 
 /**
- * Picks the way of every line, the ones with most letters first, each the cheapest given the ones
- * before it: shortest, fewest corners, least crowding. Between two columns a line leaves the side of
- * one session and enters the side of the other through the gaps next to them, crossing the columns
- * between in a level gap; within one column it goes round by the gap on the right. The main
- * conversation's lines run right of it and then down the gap next to the other session; the ones that
- * do not fit at its right side leave from its lower edge through the band under it.
+ * The lanes of every gap. A line of the main conversation runs from the bar down to its session and
+ * turns once, toward the bank: the farther down it goes, the farther out its lane, so these lines
+ * never cross each other.
  */
-export function route(a: Arrangement, f: Frame, flows: FlowLine[]): Plan[] {
-	const mainId = a.main?.id ?? null;
-	const none: MapNode = { id: "", x: 0, y: 0, depth: 0, parentId: null };
-	const node = (id: string) => f.at.get(id) ?? none;
-	const lane = (gap: string) => gapMiddle(a, f, gap);
-	const slot = (end: End) => {
-		const at = node(end.id);
-		return end.side === "bottom" ? at.x + NODE_W - LOW_EDGE - LOW_STEP : at.y + NODE_H / 2;
-	};
-	const rough = (plan: Plan) => corners(plan, node, lane, (which) => slot(plan[which]));
-	const levels = [
-		...Array.from({ length: a.rows }, (_, row) => `h${row}`),
-		...(a.main ? ["m"] : []),
-	];
-
-	const sides = (id: string): End[] => {
-		const cell = a.cells.get(id);
-		if (!cell) return [];
-		const right: End = { id, side: "right", port: `v${cell.stack}:${cell.row}` };
-		return cell.stack === 0
-			? [right]
-			: [right, { id, side: "left", port: `v${cell.stack - 1}:${cell.row}` }];
-	};
-	const gapOf = (end: End) => (a.cells.get(end.id)?.stack ?? 0) - (end.side === "left" ? 1 : 0);
-
-	type Option = Omit<Plan, "order" | "rank" | "host">;
-	const options = (flow: FlowLine): Option[] => {
-		const out: Option[] = [];
-		if (mainId !== null && (flow.from === mainId || flow.to === mainId)) {
-			const main: End = { id: mainId, side: "right", port: "main:right" };
-			for (const end of sides(flow.from === mainId ? flow.to : flow.from)) {
-				const gaps = [`v${gapOf(end)}`];
-				out.push(
-					flow.from === mainId
-						? { flow, from: main, to: end, gaps, straight: false }
-						: { flow, from: end, to: main, gaps, straight: false },
-				);
-			}
-			return out;
-		}
-		const p = a.cells.get(flow.from);
-		const q = a.cells.get(flow.to);
-		if (!p || !q) return out;
-		for (const from of sides(flow.from)) {
-			for (const to of sides(flow.to)) {
-				// Two sessions of one column: round by the gap on its right.
-				if (p.stack === q.stack && (from.side !== "right" || to.side !== "right")) continue;
-				const [g, h] = [gapOf(from), gapOf(to)];
-				if (g === h) out.push({ flow, from, to, gaps: [`v${g}`], straight: p.row === q.row });
-				else {
-					for (const level of levels) {
-						out.push({ flow, from, to, gaps: [`v${g}`, level, `v${h}`], straight: false });
-					}
-				}
-			}
-		}
-		return out;
-	};
-
-	const taken = new Map<string, Run[]>();
-	const ends = new Map<string, number>();
-	const cost = (option: Option): number => {
-		const plan: Plan = { ...option, order: 0, rank: 0, host: null };
-		const raw = rough(plan);
-		const line = simplify(raw);
-		let total = BEND * (line.length - 2);
-		for (let i = 1; i < line.length; i++) {
-			const [p, q] = [pointAt(line, i - 1), pointAt(line, i)];
-			total += Math.abs(q[0] - p[0]) + Math.abs(q[1] - p[1]);
-		}
-		for (const end of [plan.from, plan.to]) {
-			if (end.side === "left") total += TREE * (a.cells.get(end.id)?.depth ?? 0);
-			if (end.id !== mainId) total += FULL * Math.max(0, (ends.get(end.port) ?? 0) + 1 - SIDE_ENDS);
-		}
-		for (const run of runsOf(plan, raw)) {
-			const crowd = (taken.get(run.gap) ?? []).filter((other) => close(run, other)).length;
-			total += CROWD * crowd + WIDEN * Math.max(0, crowd + 1 - lanesBefore(a, run.gap));
-		}
-		return total;
-	};
-
-	const queue = flows
-		.map((flow, order) => ({ flow, order }))
-		.filter(({ flow }) => flow.from !== flow.to && f.at.has(flow.from) && f.at.has(flow.to))
-		.sort(
-			(x, y) =>
-				totalOf(y.flow) - totalOf(x.flow) ||
-				compare(x.flow.from, y.flow.from) ||
-				compare(x.flow.to, y.flow.to) ||
-				x.order - y.order,
-		);
-	const plans: Plan[] = [];
-	for (const { flow, order } of queue) {
-		let best: Option | null = null;
-		let lowest = Number.POSITIVE_INFINITY;
-		for (const option of options(flow)) {
-			const value = cost(option);
-			if (value < lowest) {
-				best = option;
-				lowest = value;
-			}
-		}
-		if (!best) continue;
-		const plan: Plan = { ...best, order, rank: plans.length, host: null };
-		plans.push(plan);
-		for (const run of runsOf(plan, rough(plan))) {
-			taken.set(run.gap, [...(taken.get(run.gap) ?? []), run]);
-		}
-		for (const port of new Set([plan.from.port, plan.to.port])) {
-			ends.set(port, (ends.get(port) ?? 0) + 1);
-		}
-	}
-
-	// The main conversation's right side takes the lines that go farthest, as many as fit; the rest
-	// leave from its lower edge. Lines from the right side then drop down past the band, never across
-	// a line of the band.
-	if (mainId !== null) {
-		const mainGap = (plan: Plan) =>
-			numberOf((plan.from.id === mainId ? plan.gaps[0] : plan.gaps[plan.gaps.length - 1]) ?? "v0");
-		const touching = plans
-			.filter((plan) => plan.from.id === mainId || plan.to.id === mainId)
-			.sort((x, y) => mainGap(y) - mainGap(x) || x.rank - y.rank);
-		let span = -1;
-		let previous = 0;
-		let full = false;
-		for (const plan of touching) {
-			const which: Which = plan.from.id === mainId ? "from" : "to";
-			const room = counted(plan.flow)
-				? COUNT_ROOM
-				: arrowAt(plan.flow, which)
-					? ARROW_ROOM
-					: START_ROOM;
-			const next = span < 0 ? 0 : span + previous + room;
-			if (!full && next <= NODE_H - 2 * SIDE_EDGE) {
-				span = next;
-				previous = room;
-				continue;
-			}
-			full = true;
-			plan[which] = { id: mainId, side: "bottom", port: "main:bottom" };
-			plan.gaps = which === "from" ? ["m", ...plan.gaps] : [...plan.gaps, "m"];
-		}
-	}
-
-	// A count goes on its line's level stretch across a gap. A line without one has its count on the
-	// stub at one of its ends, which `layoutMap` picks once the lanes are known.
+export function lanesOf(a: Arrangement, plans: Plan[]): Map<Gap, Lanes> {
+	const middle = (end: End) => rowTop(a, a.cells.get(end.id)?.row ?? 0) + NODE_H / 2;
+	const runs = new Map<Gap, Run[]>();
 	for (const plan of plans) {
-		if (!counted(plan.flow)) continue;
-		const level = plan.gaps.find((gap) => !upright(gap));
-		plan.host = level ? { gap: level } : { end: "from" };
+		if (plan.straight) continue;
+		// Toward the bank the end is on.
+		const turn = (which: Which) => (plan[which].side === "right" ? -1 : 1);
+		const bar = barEnd(plan);
+		let run: Run;
+		if (bar) {
+			const other: Which = bar === "from" ? "to" : "from";
+			run = { plan, lo: BAR_LOW, hi: middle(plan[other]), turnLo: 0, turnHi: turn(other) };
+		} else {
+			const [from, to] = [middle(plan.from), middle(plan.to)];
+			const down = from <= to;
+			run = {
+				plan,
+				lo: Math.min(from, to),
+				hi: Math.max(from, to),
+				turnLo: turn(down ? "from" : "to"),
+				turnHi: turn(down ? "to" : "from"),
+			};
+		}
+		runs.set(plan.gap, [...(runs.get(plan.gap) ?? []), run]);
 	}
-	return plans;
+	return new Map([...runs].map(([gap, list]) => [gap, assignLanes(list)]));
 }
 
 /** An SVG path through the corners, each corner rounded. */

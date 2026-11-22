@@ -5,12 +5,14 @@ import {
 	CORNER,
 	type FlowLine,
 	type FlowRoute,
+	INDENT,
 	layoutMap,
 	type MapGroup,
 	type MapLayout,
 	type MapSession,
 	NODE_H,
 	NODE_W,
+	PAD,
 	pairParts,
 } from "../../web/src/map-layout.ts";
 
@@ -20,7 +22,17 @@ export const session = (
 	createdAt = Number(id.replace(/\D/g, "")) || 0,
 ): MapSession => ({ id, groupId: null, parentId: null, createdAt, ...extra });
 
-/** Every pair of nodes stands apart, and every session stands below the one that opened it. */
+/** The sessions under the main conversation's bar: every one but the bar itself. */
+export const inBanks = (layout: MapLayout) => layout.nodes.filter((node) => node.width === NODE_W);
+
+/** The left edges of the banks, from the left: where a session that nobody above it opened stands. */
+export const bankEdges = (layout: MapLayout) =>
+	[...new Set(inBanks(layout).map((node) => node.x - node.depth * INDENT))].sort((a, b) => a - b);
+
+/**
+ * Every pair of nodes stands apart, every session stands below the one that opened it, and the
+ * sessions stand in two banks at most, under the main conversation's bar when there is one.
+ */
 export function checkLayout(
 	sessions: MapSession[],
 	groups: MapGroup[],
@@ -33,9 +45,9 @@ export function checkLayout(
 	const at = new Map(layout.nodes.map((node) => [node.id, node]));
 	for (const [i, a] of layout.nodes.entries()) {
 		assert.ok(a.x >= 0 && a.y >= 0);
-		assert.ok(a.x + NODE_W <= layout.width && a.y + NODE_H <= layout.height);
+		assert.ok(a.x + a.width <= layout.width && a.y + NODE_H <= layout.height);
 		for (const b of layout.nodes.slice(i + 1)) {
-			const apart = Math.abs(a.x - b.x) >= NODE_W || Math.abs(a.y - b.y) >= NODE_H;
+			const apart = a.x + a.width <= b.x || b.x + b.width <= a.x || Math.abs(a.y - b.y) >= NODE_H;
 			assert.ok(apart, `${a.id} and ${b.id} overlap`);
 		}
 		if (a.parentId) {
@@ -44,11 +56,21 @@ export function checkLayout(
 			assert.ok(parent && parent.x < a.x, `${a.id} is not indented under ${a.parentId}`);
 		}
 	}
-	// A column's heading does not lie on a session.
-	for (const column of layout.columns) {
+	assert.ok(bankEdges(layout).length <= 2, "more than two banks");
+	// The bar lies across the whole picture, over every other session.
+	for (const bar of layout.nodes.filter((node) => node.width !== NODE_W)) {
+		assert.equal(bar.id, mainId);
+		assert.deepEqual([bar.x, bar.y, bar.x + bar.width], [PAD, PAD, layout.width - PAD]);
+		for (const node of inBanks(layout)) {
+			assert.ok(node.y >= bar.y + NODE_H && node.x >= bar.x, `${node.id} is not under the bar`);
+			assert.ok(node.x + node.width <= bar.x + bar.width, `${node.id} is not under the bar`);
+		}
+	}
+	// A heading does not lie on a session.
+	for (const heading of layout.headings) {
 		for (const node of layout.nodes) {
-			const beside = node.x >= column.x + column.width || node.x + NODE_W <= column.x;
-			assert.ok(beside || node.y >= column.y + 20 || node.y + NODE_H <= column.y);
+			const beside = node.x >= heading.x + heading.width || node.x + node.width <= heading.x;
+			assert.ok(beside || node.y >= heading.y + 20 || node.y + NODE_H <= heading.y);
 		}
 	}
 	return layout;
@@ -68,7 +90,7 @@ export const name = (flow: FlowLine) => `${flow.from}>${flow.to}`;
 export function boxOf(layout: MapLayout, id: string): Box {
 	const node = layout.nodes.find((item) => item.id === id);
 	assert.ok(node, `${id} is on the map`);
-	return { x0: node.x, y0: node.y, x1: node.x + NODE_W, y1: node.y + NODE_H };
+	return { x0: node.x, y0: node.y, x1: node.x + node.width, y1: node.y + NODE_H };
 }
 
 /** Whether a level or upright stretch from p to q meets a box, its edges included. */
@@ -291,9 +313,10 @@ export function madeUp(seed: number) {
 
 /**
  * A busy map: the main conversation, the sessions it opened with one tree three deep, three teams with
- * sessions under sessions, two sessions without a team, and sixteen lines: between neighbouring
- * columns and columns farther apart, within one column, to and from the main conversation, and five
- * for pairs that wrote to each other.
+ * sessions under sessions, two sessions without a team, and sixteen lines: to and from the main
+ * conversation on both sides, from one bank to the other, within each bank, and five for pairs that
+ * wrote to each other. What the main conversation opened and the first team stand in the left bank,
+ * the other teams and the sessions without one in the right.
  */
 export const busy = {
 	sessions: (

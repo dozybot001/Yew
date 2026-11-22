@@ -1,7 +1,21 @@
 import assert from "node:assert/strict";
 import { describe, test } from "node:test";
-import { ARROW_W, COLUMN_GAP, layoutMap, type MapLayout } from "../web/src/map-layout.ts";
 import {
+	ARROW_LEN,
+	ARROW_W,
+	BAR_EDGE,
+	COLUMN_GAP,
+	type FlowRoute,
+	LANE,
+	layoutMap,
+	type MapLayout,
+	NODE_H,
+	NODE_W,
+	PAD,
+	pairParts,
+} from "../web/src/map-layout.ts";
+import {
+	bankEdges,
 	boxOf,
 	busy,
 	busyMap,
@@ -10,25 +24,52 @@ import {
 	checkLanes,
 	checkLayout,
 	checkStraight,
+	inBanks,
 	madeUp,
 	name,
 	session,
 } from "./helpers/map.ts";
+
+const lineOf = (layout: MapLayout, from: string, to: string): FlowRoute => {
+	const flow = layout.flows.find((item) => item.from === from && item.to === to);
+	assert.ok(flow, `${from}>${to} is drawn`);
+	return flow;
+};
+
+/** Where a line runs upright: the x of each upright stretch. */
+const uprights = (flow: FlowRoute) =>
+	flow.points.slice(1).flatMap((q, i) => (flow.points[i]?.[0] === q[0] ? [q[0]] : []));
+
+/** The gaps of the busy map, by where its banks stand: left of the left, between, right of the right. */
+function gapsOf(layout: MapLayout) {
+	const [left = 0, right = 0] = bankEdges(layout);
+	const ends = (edge: number) =>
+		inBanks(layout)
+			.filter((node) => node.x >= edge && node.x < edge + NODE_W)
+			.map((node) => node.x + node.width);
+	return {
+		leftBank: left,
+		rail: [Math.max(...ends(left)), right] as const,
+		rightBank: Math.max(...ends(right)),
+	};
+}
+
+/** The count's two edges, as large as it is drawn. */
+function countEdges(flow: FlowRoute) {
+	assert.ok(flow.label, `${name(flow)} has a count`);
+	const half = (String(flow.count).length * 7 + 3) / 2;
+	return flow.back > 0
+		? pairParts(flow.back, flow.count, flow.label.x)
+		: { x0: flow.label.x - half, x1: flow.label.x + half };
+}
 
 describe("sessions map: letter lines", () => {
 	test("the busy map has every kind of line, all of them drawn", () => {
 		const layout = checkLayout(busy.sessions, busy.groups, "m0", busy.flows);
 		assert.equal(layout.flows.length, 16);
 		assert.deepEqual(layout.flows.map(name), busy.flows.map(name));
-		const at = new Map(layout.nodes.map((node) => [node.id, node]));
-		const columnOf = (id: string) =>
-			layout.columns.findLastIndex((column) => column.x <= (at.get(id)?.x ?? 0));
-		const apart = busy.flows
-			.filter((flow) => flow.from !== "m0" && flow.to !== "m0")
-			.map((flow) => Math.abs(columnOf(flow.from) - columnOf(flow.to)));
-		// Within a column, next to each other, and two or three columns apart.
-		for (const distance of [0, 1, 2, 3]) assert.ok(apart.includes(distance), `${distance}`);
-		assert.ok(layout.nodes.some((node) => node.depth >= 3));
+		assert.equal(bankEdges(layout).length, 2);
+		assert.ok(layout.nodes.some((node) => node.depth >= 2));
 	});
 
 	test("every line is level and upright stretches, its corners slightly rounded", () => {
@@ -120,67 +161,168 @@ describe("sessions map: letter lines", () => {
 			);
 		}
 		// A line for letters one way has nothing coming back.
-		const oneWay = layout.flows.find((flow) => flow.from === "m0" && flow.to === "d1");
-		assert.equal(oneWay?.back, 0);
+		assert.equal(lineOf(layout, "m0", "d1").back, 0);
 	});
 
-	test("within one column a line goes round by the gap on the right", () => {
+	test("a line of the main conversation drops from the bar down the outer side of a bank", () => {
 		const layout = busyMap();
-		const within: [string, string][] = [
-			["b3", "b5"],
-			["c2", "c3"],
-			["a2", "a5"],
+		const bar = boxOf(layout, "m0");
+		const { leftBank, rightBank } = gapsOf(layout);
+		// To the left bank: left of it, into the session's left side. To the right bank: the mirror.
+		const lines: [string, string, string, "left" | "right"][] = [
+			["m0", "a1", "a1", "left"],
+			["m0", "b1", "b1", "left"],
+			["m0", "d1", "d1", "right"],
+			["e1", "m0", "e1", "right"],
 		];
-		for (const [from, to] of within) {
-			const flow = layout.flows.find((item) => item.from === from && item.to === to);
-			assert.ok(flow);
-			const right = Math.max(boxOf(layout, from).x1, boxOf(layout, to).x1);
-			const first = flow.points[0];
-			const last = flow.points[flow.points.length - 1];
-			assert.equal(first?.[0], boxOf(layout, from).x1);
-			assert.equal(last?.[0], boxOf(layout, to).x1);
-			const lane = Math.max(...flow.points.map((point) => point[0]));
-			assert.ok(lane > right, `${from}>${to}`);
-			// One way out and one way back, two corners each.
-			assert.equal(flow.points.length, 4, `${from}>${to}`);
+		const lanes = new Map<string, number>();
+		for (const [from, to, other, side] of lines) {
+			const flow = lineOf(layout, from, to);
+			// Straight down from the bar's lower edge, then one corner into the session.
+			assert.equal(flow.points.length, 3, name(flow));
+			const [x = 0] = uprights(flow);
+			const atBar = from === "m0" ? flow.points[0] : flow.points[2];
+			const atSession = from === "m0" ? flow.points[2] : flow.points[0];
+			assert.deepEqual(atBar, [x, bar.y1]);
+			assert.equal(
+				atSession?.[0],
+				side === "left" ? boxOf(layout, other).x0 : boxOf(layout, other).x1,
+			);
+			assert.ok(side === "left" ? x < leftBank : x > rightBank, name(flow));
+			// Clear of the rounded ends of the bar.
+			assert.ok(x >= bar.x0 + BAR_EDGE && x <= bar.x1 - BAR_EDGE, name(flow));
+			lanes.set(other, x);
+		}
+		// The line that goes farther down keeps the outer lane, so the two never cross.
+		assert.equal((lanes.get("a1") ?? 0) - (lanes.get("b1") ?? 0), LANE);
+		assert.equal((lanes.get("e1") ?? 0) - (lanes.get("d1") ?? 0), LANE);
+	});
+
+	test("a line between two sessions runs in the rail between the banks", () => {
+		const layout = busyMap();
+		const { rail } = gapsOf(layout);
+		const inRail = (flow: FlowRoute) => {
+			const [x = 0] = uprights(flow);
+			assert.equal(flow.points.length, 4, name(flow));
+			assert.ok(x > rail[0] && x < rail[1], name(flow));
+		};
+		// From one bank to the other: out of the right side of one session, into the left of the other.
+		for (const [from, to] of [
+			["b2", "c1"],
+			["b1", "d2"],
+			["a3", "c2"],
+			["b4", "e1"],
+		] as const) {
+			const flow = lineOf(layout, from, to);
+			inRail(flow);
+			assert.equal(flow.points[0]?.[0], boxOf(layout, from).x1);
+			assert.equal(flow.points[3]?.[0], boxOf(layout, to).x0);
+		}
+		// Two sessions of the left bank: round by its right. Two of the right bank: round by its left.
+		for (const [from, to, side] of [
+			["a5", "b5", "x1"],
+			["b3", "b5", "x1"],
+			["a2", "a5", "x1"],
+			["d1", "c1", "x0"],
+		] as const) {
+			const flow = lineOf(layout, from, to);
+			inRail(flow);
+			assert.equal(flow.points[0]?.[0], boxOf(layout, from)[side]);
+			assert.equal(flow.points[3]?.[0], boxOf(layout, to)[side]);
 		}
 	});
 
-	test("a count stands on a level stretch of its line, clear of the sessions and other counts", () => {
-		checkCounts(busyMap());
+	test("two sessions of the right bank go round its right when another session opened one of them", () => {
+		const layout = busyMap();
+		const { rightBank } = gapsOf(layout);
+		// c3 and e2 stand under the sessions that opened them: the tree line comes in at their left.
+		for (const [from, to] of [
+			["e2", "d1"],
+			["c2", "c3"],
+			["d2", "c3"],
+		] as const) {
+			const flow = lineOf(layout, from, to);
+			const [x = 0] = uprights(flow);
+			assert.equal(flow.points.length, 4, name(flow));
+			assert.ok(x > rightBank, name(flow));
+			assert.equal(flow.points[0]?.[0], boxOf(layout, from).x1);
+			assert.equal(flow.points[3]?.[0], boxOf(layout, to).x1);
+		}
 	});
 
-	test("a count under the main conversation gets a level stretch long enough to stand on", () => {
-		// The main conversation's right side is full, so its line to the next column leaves from its
-		// lower edge and turns down the first gap: a short level stretch, unless that gap grows.
+	test("two sessions that face each other across the rail are joined straight", () => {
+		const layout = busyMap();
+		// e2 and b3 stand in the same row.
+		assert.equal(boxOf(layout, "e2").y0, boxOf(layout, "b3").y0);
+		const flow = lineOf(layout, "e2", "b3");
+		assert.equal(flow.points.length, 2);
+		assert.deepEqual(
+			flow.points.map((point) => point[0]),
+			[boxOf(layout, "e2").x0, boxOf(layout, "b3").x1],
+		);
+	});
+
+	test("a count stands beside one of its line's two sessions, clear of the sessions and other counts", () => {
+		const layout = busyMap();
+		checkCounts(layout);
+		for (const flow of layout.flows) {
+			if (!flow.label || flow.points.length === 2) continue;
+			const { x0, x1 } = countEdges(flow);
+			// On the stub at one end of the line, an arrow's length and a little more from the session,
+			// whether an arrow stands there or not: the counts beside the sessions of a bank line up.
+			const near = [
+				[flow.from, flow.points[0]] as const,
+				[flow.to, flow.points[flow.points.length - 1]] as const,
+			].filter(([id, point]) => id !== "m0" && point?.[1] === flow.label?.y);
+			assert.equal(near.length, 1, name(flow));
+			const edge = near[0]?.[1]?.[0] ?? 0;
+			assert.equal(Math.min(Math.abs(x0 - edge), Math.abs(x1 - edge)), ARROW_LEN + 3, name(flow));
+		}
+		// Of a line's two ends the count takes the one where fewer lines end: two end at c1's left.
+		const pair = lineOf(layout, "b2", "c1");
+		assert.equal(pair.label?.y, pair.points[0]?.[1]);
+		// The count of a line straight across the rail stands on the line.
+		const across = lineOf(layout, "e2", "b3");
+		assert.equal(across.label?.y, across.points[0]?.[1]);
+	});
+
+	test("a large count of the main conversation's line gets the room it needs beside its session", () => {
 		const sessions = [
 			session("m1"),
 			session("b1", { groupId: "g1" }),
+			session("b2", { groupId: "g1", parentId: "b1" }),
 			session("c1", { groupId: "g2" }),
-			session("d1", { groupId: "g3" }),
-			session("d2", { groupId: "g3" }),
-			session("e1"),
+			session("c2", { groupId: "g2" }),
 		];
 		const groups = [
 			{ id: "g1", position: 0 },
 			{ id: "g2", position: 1 },
-			{ id: "g3", position: 2 },
 		];
-		const others = [
-			{ from: "d1", to: "m1", count: 300 },
-			{ from: "e1", to: "m1", count: 1 },
-			{ from: "m1", to: "d2", count: 1 },
-		];
-		for (const line of [
-			{ from: "m1", to: "c1", count: 200 },
-			{ from: "c1", to: "m1", count: 200 },
-			{ from: "m1", to: "c1", count: 200, back: 150 },
-			{ from: "c1", to: "m1", count: 1, back: 200 },
+		const plain = layoutMap(sessions, groups, "m1");
+		for (const lines of [
+			[{ from: "m1", to: "b1", count: 300 }],
+			[{ from: "b2", to: "m1", count: 200, back: 150 }],
+			[{ from: "m1", to: "c2", count: 200, back: 150 }],
+			[
+				{ from: "c1", to: "m1", count: 1, back: 200 },
+				{ from: "m1", to: "c2", count: 300 },
+			],
 		]) {
-			const layout = checkLayout(sessions, groups, "m1", [...others, line]);
+			const layout = checkLayout(sessions, groups, "m1", lines);
 			checkStraight(layout);
 			checkClear(layout);
 			checkCounts(layout);
+			// The count stands in its line's own gap, which grew for it: outside the banks.
+			const { leftBank, rightBank } = gapsOf(layout);
+			for (const flow of layout.flows) {
+				const { x0, x1 } = countEdges(flow);
+				assert.ok(x1 < leftBank || x0 > rightBank, name(flow));
+				// At the left of a session that stands in from its bank the count keeps left of the bank,
+				// clear of the tree line that comes down there.
+				if (flow.from === "b2") assert.equal(x1, leftBank - 3);
+			}
+			assert.ok(layout.width > plain.width);
+			assert.equal(layout.height, plain.height);
 		}
 	});
 
@@ -199,37 +341,48 @@ describe("sessions map: letter lines", () => {
 		];
 		const plain = layoutMap(sessions, groups, "m1");
 		assert.deepEqual(layoutMap(sessions, groups, "m1", []), plain);
+		// The bar reaches past the banks by a gap at each end, and the rail is as wide.
+		const { leftBank, rail, rightBank } = gapsOf(plain);
+		assert.deepEqual(
+			[leftBank - PAD, rail[1] - rail[0], plain.width - PAD - rightBank],
+			[COLUMN_GAP, COLUMN_GAP, COLUMN_GAP],
+		);
+		// One letter each: no counts, and a lane or two in each gap.
 		const few = layoutMap(sessions, groups, "m1", [
-			{ from: "m1", to: "t1", count: 5 },
+			{ from: "m1", to: "t1", count: 1 },
 			{ from: "t2", to: "m1", count: 1, back: 1 },
-			{ from: "m1", to: "c2", count: 3 },
-			{ from: "t2", to: "b1", count: 2 },
+			{ from: "m1", to: "c2", count: 1 },
+			{ from: "t2", to: "b1", count: 1 },
 			{ from: "e1", to: "b3", count: 1 },
 		]);
 		const fixed = (layout: MapLayout) => [
 			layout.nodes,
-			layout.columns,
+			layout.headings,
 			layout.width,
 			layout.height,
 		];
 		assert.deepEqual(fixed(few), fixed(plain));
 
-		// Eight lines across the gap between the two teams, all of them along its middle.
+		// Eight lines across the rail, all of them along its middle.
 		const crossing = [1, 2, 3, 4].flatMap((i) => [
 			{ from: `b${i}`, to: `c${5 - i}`, count: 1 },
 			{ from: `c${i}`, to: `b${((i + 1) % 4) + 1}`, count: 1 },
 		]);
 		const many = checkLayout(sessions, groups, "m1", crossing);
 		const x = (layout: MapLayout, id: string) => boxOf(layout, id).x0;
-		const wider = x(many, "c1") - x(plain, "c1");
-		assert.ok(wider > 0, "the gap between the teams grows");
-		// By what its lanes need, not by a column; the rest stays where it was.
+		const wider = gapsOf(many).rail[1] - gapsOf(many).rail[0] - COLUMN_GAP;
+		assert.ok(wider > 0, "the rail grows");
+		// By what its lanes need, not by a gap; the left bank stays, the right one moves with the rail.
 		assert.ok(wider < COLUMN_GAP, `${wider}`);
 		assert.equal(x(many, "b1"), x(plain, "b1"));
+		assert.equal(x(many, "c1") - x(plain, "c1"), wider);
 		assert.equal(many.width - plain.width, wider);
 		assert.deepEqual(
 			many.nodes.map((node) => node.y),
 			plain.nodes.map((node) => node.y),
 		);
+		// The bar grows with the picture.
+		assert.equal(boxOf(many, "m1").x1 - boxOf(plain, "m1").x1, wider);
+		assert.equal(boxOf(many, "m1").y1 - boxOf(many, "m1").y0, NODE_H);
 	});
 });

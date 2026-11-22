@@ -12,9 +12,7 @@ import {
 	MARK_W,
 	NODE_H,
 	NODE_W,
-	type OutlineItem,
 	openedPath,
-	outline,
 	pairParts,
 	pickFlows,
 } from "../map-layout.ts";
@@ -24,7 +22,7 @@ import { ChatIcon, CodeIcon, RetryIcon } from "./icons.tsx";
 import { SidebarToggle } from "./session.tsx";
 import { Button, ErrorBox } from "./ui.tsx";
 
-/** The picture draws letter lines for this many pairs; the list under it names them all. */
+/** The picture draws letter lines for this many pairs, the busiest ones. */
 const FLOW_LIMIT = 10;
 
 /** Half the height of the mark beside a count that points the way its letters went. */
@@ -89,7 +87,7 @@ function useDescribe(sessions: Record<string, Session>, groups: Group[], mainId:
 		const opener = session.parentId ? sessions[session.parentId] : undefined;
 		return [
 			...(session.id === mainId ? [t("mainConversation")] : []),
-			team ?? t("mapColumn_none"),
+			team ?? t("mapHeading_none"),
 			session.cwd ? t("mode_code") : t("mode_chat"),
 			t(`status_${shownStatus(session, waiting)}`),
 			...(opener && opener.archivedAt === null ? [t("openedBy", { name: opener.name })] : []),
@@ -98,49 +96,11 @@ function useDescribe(sessions: Record<string, Session>, groups: Group[], mainId:
 	return { facts, waiting };
 }
 
-function OutlineList({
-	items,
-	sessions,
-	facts,
-	label,
-}: {
-	items: OutlineItem[];
-	sessions: Record<string, Session>;
-	facts: (session: Session) => string[];
-	label?: string;
-}) {
-	return (
-		<ul className="map-list" aria-label={label}>
-			{items.map((item) => {
-				const session = sessions[item.id];
-				if (!session) return null;
-				return (
-					<li key={item.id}>
-						<button
-							type="button"
-							className="link-button"
-							onClick={() => void selectSession(session.id)}
-						>
-							{session.name}
-						</button>
-						<span className="hint">
-							{t("hintSeparator")}
-							{facts(session).join(t("hintSeparator"))}
-						</span>
-						{item.children.length > 0 && (
-							<OutlineList items={item.children} sessions={sessions} facts={facts} />
-						)}
-					</li>
-				);
-			})}
-		</ul>
-	);
-}
-
 /**
  * All sessions in one picture: who opened whom, where the letters of the last 24 hours went, and what
- * each session is doing. A page of its own, like usage. The lines are a picture; every session on it
- * is a button, and the list under it says the same in words.
+ * each session is doing. A page of its own, like usage. The lines are a picture: every session on it
+ * is a button whose name says its team, its status and who opened it, and the letters are listed in
+ * words for a screen reader.
  */
 export function MapPage() {
 	useLang();
@@ -155,7 +115,6 @@ export function MapPage() {
 	// The session under the pointer or with the focus: its letter lines stay, the others fade.
 	const [active, setActive] = useState<string | null>(null);
 	const marker = useId();
-	const lettersHeading = useId();
 	const { facts, waiting } = useDescribe(all, groups, mainId);
 	const live = Object.values(all).filter((session) => session.archivedAt === null);
 	// A session that is archived or restored takes its letters off the map or brings them back.
@@ -279,15 +238,21 @@ export function MapPage() {
 											);
 										})}
 									</svg>
-									{layout.columns.map((column) => (
+									{layout.headings.map((heading) => (
 										<span
-											key={`${column.kind}:${column.groupId ?? ""}`}
+											// A group that continues in the other bank has its heading in both.
+											key={`${heading.kind}:${heading.groupId ?? ""}:${heading.x}`}
 											className="map-head"
-											style={{ left: column.x, top: column.y, width: column.width, height: HEAD_H }}
+											style={{
+												left: heading.x,
+												top: heading.y,
+												width: heading.width,
+												height: HEAD_H,
+											}}
 										>
-											{column.kind === "team"
-												? (groups.find((group) => group.id === column.groupId)?.name ?? "")
-												: t(`mapColumn_${column.kind}`)}
+											{heading.kind === "team"
+												? (groups.find((group) => group.id === heading.groupId)?.name ?? "")
+												: t(`mapHeading_${heading.kind}`)}
 										</span>
 									))}
 									{layout.nodes.map((node) => {
@@ -301,7 +266,9 @@ export function MapPage() {
 												type="button"
 												className="map-node"
 												data-main={session.id === mainId ? "true" : undefined}
-												style={{ left: node.x, top: node.y, width: NODE_W, height: NODE_H }}
+												// The main conversation lies across the top, its name in the middle.
+												data-bar={node.width > NODE_W ? "true" : undefined}
+												style={{ left: node.x, top: node.y, width: node.width, height: NODE_H }}
 												aria-label={words}
 												title={words}
 												onClick={() => void selectSession(session.id)}
@@ -322,32 +289,19 @@ export function MapPage() {
 									})}
 								</div>
 							</div>
-							<details className="map-outline">
-								<summary>{t("mapOutline")}</summary>
-								<h2>{t("mapOutlineSessions")}</h2>
-								<OutlineList
-									items={outline(live, mainId)}
-									sessions={all}
-									facts={facts}
-									label={t("mapOutlineSessions")}
-								/>
-								<h2 id={lettersHeading}>{t("mapOutlineLetters")}</h2>
-								{listed.length === 0 ? (
-									<p className="hint">{flows ? t("mapNoLetters") : t("loading")}</p>
-								) : (
-									<ul className="map-list" aria-labelledby={lettersHeading}>
-										{listed.map((flow) => (
-											<li key={`${flow.from}>${flow.to}`}>
-												{t("mapFlow", {
-													from: all[flow.from]?.name ?? "",
-													to: all[flow.to]?.name ?? "",
-													n: flow.count,
-												})}
-											</li>
-										))}
-									</ul>
-								)}
-							</details>
+							{listed.length > 0 && (
+								<ul className="visually-hidden" aria-label={t("mapLetters")}>
+									{listed.map((flow) => (
+										<li key={`${flow.from}>${flow.to}`}>
+											{t("mapFlow", {
+												from: all[flow.from]?.name ?? "",
+												to: all[flow.to]?.name ?? "",
+												n: flow.count,
+											})}
+										</li>
+									))}
+								</ul>
+							)}
 						</>
 					)}
 				</div>

@@ -8,10 +8,11 @@ import {
 	type MapGroup,
 	type MapSession,
 	NODE_H,
-	outline,
+	NODE_W,
+	PAD,
 	pickFlows,
 } from "../web/src/map-layout.ts";
-import { checkCounts, checkLayout, session } from "./helpers/map.ts";
+import { bankEdges, checkCounts, checkLayout, inBanks, session } from "./helpers/map.ts";
 import { newStore, sessionInput } from "./helpers/store.ts";
 
 const HOUR = 3600 * 1000;
@@ -125,21 +126,22 @@ describe("sessions map: layout", () => {
 	test("one session", () => {
 		const layout = checkLayout([session("s1")], [], null);
 		assert.deepEqual(
-			layout.columns.map((c) => c.kind),
+			layout.headings.map((heading) => heading.kind),
 			["none"],
 		);
+		// The main conversation with no other session to lie over is as wide as any session.
 		const alone = checkLayout([session("s1")], [], "s1");
-		assert.deepEqual(alone.columns, []);
-		assert.equal(alone.nodes[0]?.depth, 0);
+		assert.deepEqual(alone.headings, []);
+		assert.deepEqual([alone.nodes[0]?.depth, alone.nodes[0]?.width], [0, NODE_W]);
 	});
 
 	test("no sessions", () => {
 		const layout = layoutMap([], teams, null);
-		assert.deepEqual([layout.nodes, layout.columns], [[], []]);
+		assert.deepEqual([layout.nodes, layout.headings], [[], []]);
 		assert.ok(layout.width > 0 && layout.height > 0);
 	});
 
-	test("the main conversation on top, teams in their order, tasks under their opener", () => {
+	test("the main conversation across the top, the groups in two banks, tasks under their opener", () => {
 		const sessions = [
 			session("s1"),
 			session("s2", { groupId: "g1" }),
@@ -154,13 +156,12 @@ describe("sessions map: layout", () => {
 			// A team that no longer exists counts as no team.
 			session("s10", { groupId: "deleted" }),
 		];
+		// checkLayout sees to it that the main conversation is a bar over all the others.
 		const layout = checkLayout(sessions, teams, "s1");
 		const at = new Map(layout.nodes.map((node) => [node.id, node]));
-		const main = at.get("s1");
-		assert.ok(main);
-		for (const node of layout.nodes) if (node.id !== "s1") assert.ok(node.y > main.y);
+		// What the main conversation opened, the teams in their order, then the sessions without one.
 		assert.deepEqual(
-			layout.columns.map((column) => [column.kind, column.groupId]),
+			layout.headings.map((heading) => [heading.kind, heading.groupId]),
 			[
 				["main", null],
 				["team", "g1"],
@@ -168,23 +169,34 @@ describe("sessions map: layout", () => {
 				["none", null],
 			],
 		);
-		for (let i = 1; i < layout.columns.length; i++) {
-			const [left, right] = [layout.columns[i - 1], layout.columns[i]];
-			assert.ok(left && right && left.x + left.width <= right.x);
-		}
-		assert.equal(at.get("s7")?.parentId, "s1");
+		// The first groups in the left bank, one under the other; the rest in the right bank. The two
+		// banks come out as alike in height as whole groups allow.
+		const [left = 0, right = 0] = bankEdges(layout);
+		const [opened, g1, g2, none] = layout.headings;
+		assert.ok(opened && g1 && g2 && none && left < right);
+		assert.deepEqual([opened.x, g1.x, g2.x, none.x], [left, left, right, right]);
+		assert.ok(opened.y < g1.y && g2.y < none.y);
+		assert.equal(opened.y, g2.y);
+		// A session stands under its group's heading, in rows the two banks share.
+		const under = (id: string) =>
+			layout.headings.findLast((heading) => {
+				const node = at.get(id);
+				return node && heading.x <= node.x && node.x < heading.x + NODE_W && heading.y < node.y;
+			});
+		assert.deepEqual(
+			["s7", "s2", "s6", "s4", "s3", "s8", "s9", "s10"].map((id) => under(id)?.kind),
+			["main", "team", "team", "team", "team", "none", "none", "none"],
+		);
+		assert.equal(under("s6")?.groupId, "g1");
+		assert.equal(at.get("s7")?.y, at.get("s3")?.y);
+		// What the main conversation opened stands under a heading that says so, with no line up to
+		// the bar.
+		assert.deepEqual([at.get("s7")?.parentId, at.get("s7")?.depth], [null, 0]);
 		assert.equal(at.get("s5")?.parentId, "s2");
 		assert.equal(at.get("s6")?.depth, 2);
 		assert.equal(at.get("s9")?.parentId, null);
-		// s2's tree comes before s4 in the team's column.
+		// s2's tree comes before s4 in the team's group.
 		assert.ok((at.get("s6")?.y ?? 0) < (at.get("s4")?.y ?? 0));
-		assert.deepEqual(
-			outline(sessions, "s1").map((item) => item.id),
-			["s1", "s2", "s3", "s4", "s8", "s9", "s10"],
-		);
-		assert.deepEqual(outline(sessions, "s1")[1]?.children[0]?.children, [
-			{ id: "s6", children: [] },
-		]);
 	});
 
 	test("the same sessions in any order give the same picture", () => {
@@ -203,7 +215,7 @@ describe("sessions map: layout", () => {
 		assert.equal(layoutMap(twins, [], null).nodes[0]?.id, "a");
 	});
 
-	test("forty sessions stay apart, and a long column continues beside itself", () => {
+	test("forty sessions stay apart, and a long group continues in the other bank", () => {
 		const sessions: MapSession[] = [session("s1")];
 		for (let i = 2; i <= 40; i++) {
 			sessions.push(
@@ -214,13 +226,58 @@ describe("sessions map: layout", () => {
 			);
 		}
 		const layout = checkLayout(sessions, teams, "s1");
-		const rows = Math.round((layout.height - 32) / (NODE_H + 10));
-		assert.ok(rows <= MAX_ROWS + 6, `the map is ${rows} rows tall`);
-		checkLayout(
+		// The first team has twenty-nine sessions. Kept whole it would make one bank thirty-five rows
+		// tall; divided between two of its trees, the banks are twenty-two and twenty-one.
+		const [left = 0, right = 0] = bankEdges(layout);
+		const rows = (edge: number) =>
+			layout.headings.filter((heading) => heading.x === edge).length +
+			inBanks(layout).filter((node) => node.x >= edge && node.x < edge + NODE_W).length;
+		assert.deepEqual([rows(left), rows(right)], [22, 21]);
+		assert.ok(rows(left) > MAX_ROWS);
+		// The picture ends a margin under the last session of the taller bank.
+		assert.equal(layout.height, Math.max(...layout.nodes.map((node) => node.y)) + NODE_H + PAD);
+		// Its heading stands over both parts.
+		assert.deepEqual(
+			layout.headings.map((heading) => [heading.groupId, heading.x]),
+			[
+				[null, left],
+				["g1", left],
+				["g1", right],
+				["g2", right],
+			],
+		);
+		// A session stays with the one that opened it: a tree is never divided.
+		const at = new Map(layout.nodes.map((node) => [node.id, node]));
+		for (const node of layout.nodes) {
+			const parent = node.parentId ? at.get(node.parentId) : undefined;
+			if (parent) assert.equal(node.x - parent.x, 22, `${node.id} left its opener's bank`);
+		}
+		// A group that fits keeps to one bank: one tree of eight cannot be divided at all.
+		const tree = checkLayout(
 			Array.from({ length: 8 }, (_, i) => session(`s${i + 1}`, { parentId: i ? "s1" : null })),
 			[],
 			null,
 		);
+		assert.equal(bankEdges(tree).length, 1);
+		// Fourteen sessions without a team make one bank fifteen rows tall with the heading: divided in
+		// the middle, the two are eight rows each.
+		const halved = checkLayout(
+			Array.from({ length: 14 }, (_, i) => session(`s${i + 1}`)),
+			[],
+			null,
+		);
+		assert.equal(bankEdges(halved).length, 2);
+		assert.equal(halved.nodes.filter((node) => node.x === bankEdges(halved)[0]).length, 7);
+		// A tree of twelve and three sessions on their own: divided after the tree, the taller bank
+		// would be thirteen rows instead of sixteen, not a third shorter, so the group stays whole.
+		const lumpy = checkLayout(
+			Array.from({ length: 15 }, (_, i) =>
+				session(`s${i + 1}`, { parentId: i > 0 && i < 12 ? "s1" : null }),
+			),
+			[],
+			null,
+		);
+		assert.equal(bankEdges(lumpy).length, 1);
 	});
 
 	test("sessions that opened each other in a loop are still placed once", () => {

@@ -4411,9 +4411,13 @@ button.about-row {
 .map-legend .row-dot {
 	margin-left: 0;
 }
-/* The picture keeps its size and scrolls both ways inside this box when it is larger. */
+/* The box is as large as the picture; where the window has less room, the picture keeps its size and
+   scrolls both ways inside it. */
 .map-scroll {
+	justify-self: start;
+	max-width: 100%;
 	overflow: auto;
+	scrollbar-gutter: stable;
 	overscroll-behavior: contain;
 	max-height: max(240px, calc(100dvh - 230px));
 	border: 1px solid var(--border);
@@ -4490,6 +4494,11 @@ button.about-row {
 	border-color: var(--control-strong);
 	font-weight: 600;
 }
+/* The main conversation lies across the top as a bar, its name in the middle. */
+.map-node[data-bar] {
+	grid-template-columns: 16px minmax(0, max-content) auto;
+	justify-content: center;
+}
 .map-node .row-dot {
 	margin: 0 2px;
 }
@@ -4502,30 +4511,6 @@ button.about-row {
 	.map-node:hover {
 		background: var(--hover);
 	}
-}
-.map-outline {
-	max-width: 760px;
-}
-.map-outline summary {
-	width: max-content;
-	color: var(--text-2);
-	font-size: var(--fs-s);
-	cursor: pointer;
-}
-.map-outline h2 {
-	margin: 12px 0 4px;
-	font-size: var(--fs-m);
-	font-weight: 600;
-}
-.map-list {
-	margin: 0;
-	padding-left: 18px;
-}
-.map-list li {
-	margin: 2px 0;
-}
-.map-list .link-button {
-	text-align: left;
 }
 
 /*
