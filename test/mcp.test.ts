@@ -5,14 +5,7 @@ import { describe, test } from "node:test";
 import { fileURLToPath } from "node:url";
 import { YewError } from "../src/server/errors.ts";
 import { decisionFromPhone } from "../src/server/http/agents.ts";
-import {
-	McpHub,
-	namesHarness,
-	outward,
-	ownBrowser,
-	readMcpConfig,
-	special as specialFor,
-} from "../src/server/mcp.ts";
+import { McpHub, namesHarness, readMcpConfig } from "../src/server/mcp.ts";
 import {
 	builtinInstaller,
 	builtinMcp,
@@ -26,6 +19,7 @@ import {
 	patchMcpEntry,
 	removeMcpEntry,
 } from "../src/server/mcp-config.ts";
+import { outward, ownBrowser, special as specialFor } from "../src/server/mcp-special.ts";
 import { inheritableRules, PermissionEngine } from "../src/server/permissions/engine.ts";
 import type { ToolContext, ToolDefinition } from "../src/server/tools/types.ts";
 import { MCP_PRESETS, presetEntry } from "../src/shared/mcp-presets.ts";
