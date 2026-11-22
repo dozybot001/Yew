@@ -250,6 +250,43 @@ describe("api: groups, settings, search", () => {
 	});
 });
 
+describe("api: text typed and not sent", () => {
+	test("is kept for each session and for the home page until the box is emptied", async () => {
+		const { call } = setup();
+		const session = await (await call("POST", "/api/sessions", { name: "草稿" })).json();
+		const path = `/api/unsent/${session.id}`;
+		assert.deepEqual(await (await call("GET", path)).json(), { text: "" });
+		assert.equal((await call("PUT", path, { text: "写到一半\n第二行" })).status, 204);
+		assert.equal((await call("PUT", "/api/unsent/home", { text: "首页的" })).status, 204);
+		assert.deepEqual(await (await call("GET", path)).json(), { text: "写到一半\n第二行" });
+		assert.deepEqual(await (await call("GET", "/api/unsent/home")).json(), { text: "首页的" });
+		// The newer text replaces the older; an emptied box keeps nothing.
+		await call("PUT", path, { text: "改过了" });
+		assert.deepEqual(await (await call("GET", path)).json(), { text: "改过了" });
+		await call("PUT", path, { text: "" });
+		assert.deepEqual(await (await call("GET", path)).json(), { text: "" });
+		assert.deepEqual(await (await call("GET", "/api/unsent/home")).json(), { text: "首页的" });
+	});
+
+	test("is checked: a session that exists, text, no longer than a message", async () => {
+		const { call } = setup();
+		assert.equal((await call("GET", "/api/unsent/no-such-session")).status, 404);
+		assert.equal((await call("PUT", "/api/unsent/no-such-session", { text: "x" })).status, 404);
+		assert.equal((await call("PUT", "/api/unsent/home", {})).status, 400);
+		const long = await call("PUT", "/api/unsent/home", { text: "x".repeat(100_001) });
+		assert.equal(long.status, 400);
+	});
+
+	test("goes with its session when the session is deleted", async () => {
+		const { call, store } = setup();
+		const session = await (await call("POST", "/api/sessions", { name: "要删的" })).json();
+		await call("PUT", `/api/unsent/${session.id}`, { text: "没发出去的" });
+		await call("PATCH", `/api/sessions/${session.id}`, { archived: true });
+		assert.deepEqual(store.deleteArchivedSessions(), [session.id]);
+		assert.equal(store.getUnsent(session.id), "");
+	});
+});
+
 describe("api: providers and keys", () => {
 	async function providerSetup() {
 		const { MemoryKeyStore } = await import("../src/server/keys.ts");

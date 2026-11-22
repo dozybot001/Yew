@@ -23,6 +23,7 @@ import { formatCost, formatNumber, permissionHint, t, useLang } from "../i18n.ts
 import { useImeGuard } from "../ime.ts";
 import { continueMarkdownList, indentMarkdownList, type TextEdit } from "../markdown-edit.ts";
 import { type TranscriptState, useAppState } from "../state.ts";
+import { useUnsent } from "../use-unsent.ts";
 import {
 	ATTACHMENT_ACCEPT,
 	filesFromClipboard,
@@ -266,7 +267,8 @@ export function Composer({
 }) {
 	useLang();
 	const sandboxed = useAppState((state) => (state.health?.sandbox ?? "none") !== "none");
-	const [text, setText] = useState("");
+	// What is typed and not sent is kept, and is here again when the session is opened the next time.
+	const [text, setText] = useUnsent(session.id);
 	const ime = useImeGuard();
 	const [staged, setStaged] = useState<StagedAttachment[]>([]);
 	const [dragging, setDragging] = useState(false);
@@ -294,7 +296,7 @@ export function Composer({
 		if (waiting === undefined) return;
 		const value = takePrefill(session.id);
 		if (value !== null) setText(value);
-	}, [waiting, session.id]);
+	}, [waiting, session.id, setText]);
 	const ref = useAutoGrow(text);
 	const working = session.status === "working" || session.status === "waiting";
 	const change = useAction((patch: Parameters<typeof updateSession>[1]) =>

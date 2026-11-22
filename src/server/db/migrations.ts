@@ -409,4 +409,11 @@ ALTER TABLE letters ADD COLUMN origin_entry_id TEXT;
 CREATE INDEX letters_origin ON letters (to_session, origin_entry_id) WHERE origin_entry_id IS NOT NULL;`,
 	// The person's words a letter passes on, as Yew found them in its records: a JSON array of PersonQuote.
 	`ALTER TABLE letters ADD COLUMN quotes TEXT NOT NULL DEFAULT '[]';`,
+	// Text typed into a message box and not sent, kept until it is sent or cleared: one row for each
+	// session, under its id, and one for the home page, under "home".
+	`
+CREATE TABLE unsent (
+	place TEXT PRIMARY KEY,
+	text TEXT NOT NULL
+) STRICT;`,
 ];

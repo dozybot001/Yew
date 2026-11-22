@@ -447,6 +447,23 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 		return c.body(null, 204);
 	});
 
+	// Text typed into a message box and not sent, kept so it is still there when the page comes back.
+	// `place` is a session's id, or "home" for the box on the home page.
+	const unsentPlace = (place: string): string => {
+		if (place !== "home") store.getSession(place);
+		return place;
+	};
+
+	app.get("/unsent/:place", (c) =>
+		c.json({ text: store.getUnsent(unsentPlace(c.req.param("place"))) }),
+	);
+
+	app.put("/unsent/:place", async (c) => {
+		const place = unsentPlace(c.req.param("place"));
+		store.setUnsent(place, reqString(await readJson(c), "text", 100_000));
+		return c.body(null, 204);
+	});
+
 	// Fast file suggestions for the composer's `@` picker across cwd and extraDirs.
 	app.get("/sessions/:id/files", async (c) => {
 		const session = store.getSession(c.req.param("id"));

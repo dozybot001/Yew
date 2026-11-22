@@ -37,7 +37,8 @@ export async function api<T = unknown>(
 	method: "GET" | "POST" | "PATCH" | "PUT" | "DELETE",
 	path: string,
 	body?: unknown,
-	options: { idempotent?: boolean } = {},
+	/** `keepalive`: the request outlives the page, for what is saved as the page goes away. */
+	options: { idempotent?: boolean; keepalive?: boolean } = {},
 ): Promise<T> {
 	const headers: Record<string, string> = {};
 	if (body !== undefined) headers["Content-Type"] = "application/json";
@@ -48,6 +49,7 @@ export async function api<T = unknown>(
 			method,
 			headers,
 			credentials: "same-origin",
+			...(options.keepalive ? { keepalive: true } : {}),
 			...(body === undefined ? {} : { body: JSON.stringify(body) }),
 		});
 	} catch {

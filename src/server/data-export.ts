@@ -13,7 +13,8 @@ import type { Store } from "./store.ts";
 /**
  * Everything Yew keeps, as files a person can read without Yew: each session as Markdown, and
  * letters, cards, scheduled tasks and settings as JSON.
- * Left out: API keys (they are in the keychain), paired phones and their tokens, sign-in tokens.
+ * Left out: API keys (they are in the keychain), paired phones and their tokens, sign-in tokens, and
+ * text typed into a message box and not sent.
  */
 export interface ExportCounts {
 	sessions: number;

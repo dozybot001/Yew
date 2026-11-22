@@ -5,6 +5,7 @@ import { t, useLang } from "../i18n.ts";
 import { useImeGuard } from "../ime.ts";
 import { continueMarkdownList, indentMarkdownList, type TextEdit } from "../markdown-edit.ts";
 import { setState, useAppState } from "../state.ts";
+import { useUnsent } from "../use-unsent.ts";
 import {
 	ATTACHMENT_ACCEPT,
 	filesFromClipboard,
@@ -46,7 +47,8 @@ export function HomeView() {
 	useLang();
 	const settings = useAppState((state) => state.settings);
 	const homeFolder = useAppState((state) => state.homeFolder);
-	const [text, setText] = useState("");
+	// What is typed and not sent is kept, and is here again when the home page is opened the next time.
+	const [text, setText] = useUnsent("home");
 	const ime = useImeGuard();
 	// The default workspace from the settings is chosen to start with; the bar changes it.
 	const [folder, setFolder] = useState<string | null>(
@@ -147,6 +149,7 @@ export function HomeView() {
 			value,
 			files,
 		);
+		setText("");
 	});
 	const pickTemplate = (key: TemplateKey) => {
 		const next = template === key ? null : key;

@@ -1432,6 +1432,27 @@ export class Store {
 		this.appendEvent(sessionId, { type: "queue", queue: this.listQueue(sessionId) });
 	}
 
+	// --- text typed into a message box and not sent ---
+
+	/** `place` is a session's id, or "home" for the box on the home page. */
+	getUnsent(place: string): string {
+		const row = this.#q("SELECT text FROM unsent WHERE place = ?").get(place) as
+			| { text: string }
+			| undefined;
+		return row?.text ?? "";
+	}
+
+	/** Keeps the text for when the page comes back; an empty box keeps nothing. */
+	setUnsent(place: string, text: string): void {
+		if (text === "") {
+			this.#q("DELETE FROM unsent WHERE place = ?").run(place);
+			return;
+		}
+		this.#q(
+			"INSERT INTO unsent (place, text) VALUES (?, ?) ON CONFLICT (place) DO UPDATE SET text = excluded.text",
+		).run(place, text);
+	}
+
 	// --- settings ---
 
 	getSetting<T>(key: string, fallback: T): T {
@@ -1541,8 +1562,9 @@ export class Store {
 
 	/**
 	 * Deletes archived sessions for good: their conversations, tool calls, approvals, queued messages,
-	 * events, search entries and the letters sent to them. Letters they sent and decisions they asked for
-	 * stay, without the link to them. Sessions `keep` names (still running) are left alone.
+	 * events, search entries, the text left unsent in their message box and the letters sent to them.
+	 * Letters they sent and decisions they asked for stay, without the link to them. Sessions `keep`
+	 * names (still running) are left alone.
 	 */
 	deleteArchivedSessions(keep: (id: string) => boolean = () => false): string[] {
 		return this.tx(() => {
@@ -1552,6 +1574,7 @@ export class Store {
 			const ids = rows.map((row) => row.id).filter((id) => !keep(id));
 			for (const id of ids) {
 				this.#q("DELETE FROM message_search WHERE session_id = ?").run(id);
+				this.#q("DELETE FROM unsent WHERE place = ?").run(id);
 				this.#q("DELETE FROM sessions WHERE id = ?").run(id);
 			}
 			if (ids.length > 0) this.publish({ type: "sessionsDeleted", ids });
