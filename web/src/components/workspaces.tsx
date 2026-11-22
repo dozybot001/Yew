@@ -4,8 +4,10 @@ import { api } from "../api.ts";
 import { t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";
 import { getState, useAppState, type Workspace } from "../state.ts";
+import { Dialog } from "./dialog.tsx";
 import { FolderIcon, PlusIcon } from "./icons.tsx";
-import { Button, Dialog, ErrorBox, Field, Select, useAction } from "./ui.tsx";
+import { Select } from "./select.tsx";
+import { Button, ErrorBox, Field, useAction } from "./ui.tsx";
 
 /** The saved workspaces: folders sessions work in, each with a name. */
 export function useWorkspaces(): Workspace[] {

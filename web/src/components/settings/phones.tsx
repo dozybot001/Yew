@@ -10,11 +10,11 @@ import {
 } from "../../actions/settings.ts";
 import { formatAgo, t, useLang } from "../../i18n.ts";
 import { NOTIFY_KINDS, useAppState } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { ConfirmDialog } from "../dialogs.tsx";
 import { CheckIcon, PhoneIcon, RenameIcon, RetryIcon, TrashIcon } from "../icons.tsx";
 import {
 	Button,
-	Dialog,
 	ErrorBox,
 	Field,
 	SettingGroup,

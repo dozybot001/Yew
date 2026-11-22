@@ -4,6 +4,7 @@ import { saveSettings } from "../../actions/settings.ts";
 import { checkUpdates, installUpdate, loadUpdates, restartYew } from "../../actions/updates.ts";
 import { formatAgo, getLang, t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import {
 	ArrowUpIcon,
 	CheckIcon,
@@ -16,7 +17,7 @@ import {
 	YewMark,
 } from "../icons.tsx";
 import { Mascot } from "../mascot.tsx";
-import { Button, Dialog, ErrorBox, Switch, Toggletip, useAction, useNow } from "../ui.tsx";
+import { Button, ErrorBox, Switch, Toggletip, useAction, useNow } from "../ui.tsx";
 
 export function About() {
 	useLang();

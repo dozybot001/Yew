@@ -18,17 +18,17 @@ import { selectSession } from "../actions.ts";
 import { ApiError } from "../api.ts";
 import { formatWhen, type MessageKey, t, useLang } from "../i18n.ts";
 import { useAppState } from "../state.ts";
+import { Dialog } from "./dialog.tsx";
 import { ConfirmDialog } from "./dialogs.tsx";
 import { CheckIcon, PlayIcon, PlusIcon, RenameIcon, TrashIcon } from "./icons.tsx";
 import { Mascot } from "./mascot.tsx";
+import { Select } from "./select.tsx";
 import { SidebarToggle } from "./sidebar-toggle.tsx";
 import {
 	Button,
-	Dialog,
 	describeError,
 	ErrorBox,
 	Field,
-	Select,
 	SettingRow,
 	Switch,
 	useAction,

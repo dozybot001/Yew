@@ -10,6 +10,7 @@ import {
 } from "../../actions/settings.ts";
 import { hasMessage, type MessageKey, t, useLang } from "../../i18n.ts";
 import { type McpServerView, useAppState } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { ConfirmDialog } from "../dialogs.tsx";
 import {
 	CheckIcon,
@@ -21,17 +22,8 @@ import {
 	SignOutIcon,
 	TrashIcon,
 } from "../icons.tsx";
-import {
-	Button,
-	Dialog,
-	ErrorBox,
-	Field,
-	Select,
-	SettingGroup,
-	SettingRow,
-	Switch,
-	useAction,
-} from "../ui.tsx";
+import { Select } from "../select.tsx";
+import { Button, ErrorBox, Field, SettingGroup, SettingRow, Switch, useAction } from "../ui.tsx";
 
 /** Names with values, typed a line at a time; values are hidden as they are typed, like API keys. */
 interface Pair {

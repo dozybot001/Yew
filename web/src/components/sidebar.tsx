@@ -58,8 +58,9 @@ import {
 	UsageIcon,
 	YewMark,
 } from "./icons.tsx";
+import { Menu, type MenuEntry } from "./menu.tsx";
 import { SettingsButton } from "./settings.tsx";
-import { Button, describeError, ErrorBox, Menu, type MenuEntry, useAction, useNow } from "./ui.tsx";
+import { Button, describeError, ErrorBox, useAction, useNow } from "./ui.tsx";
 import { shortPath, useWorkspaces, WorkspaceDialog } from "./workspaces.tsx";
 
 interface SearchResult {

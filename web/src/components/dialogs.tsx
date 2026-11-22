@@ -18,16 +18,16 @@ import { ApiError } from "../api.ts";
 import { formatCost, t, useLang } from "../i18n.ts";
 import { isImeEvent } from "../ime.ts";
 import { useAppState } from "../state.ts";
+import { Dialog } from "./dialog.tsx";
 import { CheckIcon, CloseIcon, FolderIcon, PlusIcon } from "./icons.tsx";
 import { ModelPicker } from "./model-picker.tsx";
+import { Select } from "./select.tsx";
 import {
 	Button,
-	Dialog,
 	describeError,
 	describeRule,
 	ErrorBox,
 	Field,
-	Select,
 	SettingGroup,
 	SettingRow,
 	Switch,

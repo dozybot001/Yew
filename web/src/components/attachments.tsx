@@ -1,8 +1,9 @@
 import { type ClipboardEvent, useState } from "react";
 import type { AttachmentKind, AttachmentRef } from "../../../src/shared/messages.ts";
 import { t, useLang } from "../i18n.ts";
+import { Dialog } from "./dialog.tsx";
 import { CloseIcon, ExportIcon, NotesIcon } from "./icons.tsx";
-import { Button, Dialog } from "./ui.tsx";
+import { Button } from "./ui.tsx";
 
 export const MAX_STAGED_ATTACHMENTS = 10;
 

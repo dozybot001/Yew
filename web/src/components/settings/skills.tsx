@@ -2,8 +2,9 @@ import { useCallback, useEffect, useId, useState } from "react";
 import { loadSkills, patchSkill, revealSkill } from "../../actions/settings.ts";
 import { t, useLang } from "../../i18n.ts";
 import type { SkillList, SkillView } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { FolderIcon } from "../icons.tsx";
-import { Button, Dialog, ErrorBox, SettingGroup, Switch, useAction } from "../ui.tsx";
+import { Button, ErrorBox, SettingGroup, Switch, useAction } from "../ui.tsx";
 
 function SkillRow({
 	skill,

@@ -3,7 +3,9 @@ import { FILE_OPENERS, type FileOpener } from "../../../../src/shared/types.ts";
 import { saveSettings } from "../../actions/settings.ts";
 import { t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
-import { Dialog, Select, SettingGroup, SettingRow, Switch } from "../ui.tsx";
+import { Dialog } from "../dialog.tsx";
+import { Select } from "../select.tsx";
+import { SettingGroup, SettingRow, Switch } from "../ui.tsx";
 
 /**
  * Personalization: theme, language, Yew in the interface and how the opening

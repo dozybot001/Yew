@@ -3,10 +3,12 @@ import { PERMISSION_MODES, type PermissionMode } from "../../../../src/shared/ty
 import { saveSettings, spentToday } from "../../actions/settings.ts";
 import { formatCost, permissionHint, t, useLang } from "../../i18n.ts";
 import { useAppState } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { cleanAmount } from "../dialogs.tsx";
 import { CheckIcon } from "../icons.tsx";
 import { ModelPicker } from "../model-picker.tsx";
-import { Button, Dialog, ErrorBox, Field, Select, SettingRow, Switch, useAction } from "../ui.tsx";
+import { Select } from "../select.tsx";
+import { Button, ErrorBox, Field, SettingRow, Switch, useAction } from "../ui.tsx";
 
 /**
  * Defaults for new sessions (the model and the permission rules), and where decisions are logged;

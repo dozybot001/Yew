@@ -2,6 +2,7 @@ import { type ReactNode, useEffect, useId, useRef, useState } from "react";
 import { openSettings } from "../actions.ts";
 import { type MessageKey, t, useLang } from "../i18n.ts";
 import { type SettingsDialogName, setState, useAppState } from "../state.ts";
+import { Dialog, InSettingsWindow, useBackdropClose } from "./dialog.tsx";
 import {
 	BackIcon,
 	CloseIcon,
@@ -27,7 +28,7 @@ import { ProvidersDialog } from "./settings/providers.tsx";
 import { SkillsDialog } from "./settings/skills.tsx";
 import { SystemDialog } from "./settings/system.tsx";
 import { useNarrow } from "./sidebar.tsx";
-import { Button, Dialog, InSettingsWindow, useBackdropClose } from "./ui.tsx";
+import { Button } from "./ui.tsx";
 
 /** The settings window's sections, in order. */
 const SECTIONS: { name: SettingsDialogName; label: MessageKey; icon: ReactNode }[] = [

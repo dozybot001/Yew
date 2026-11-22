@@ -10,9 +10,10 @@ import {
 } from "../../actions/settings.ts";
 import { formatBytes, formatClock, t, useLang } from "../../i18n.ts";
 import type { DataCleanup, DataExport, DataOverview } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { ConfirmDialog } from "../dialogs.tsx";
 import { ExportIcon, FolderIcon, TrashIcon } from "../icons.tsx";
-import { Button, Dialog, ErrorBox, SettingGroup, useAction } from "../ui.tsx";
+import { Button, ErrorBox, SettingGroup, useAction } from "../ui.tsx";
 
 /**
  * Data: what the data folder takes and where it is, exporting everything

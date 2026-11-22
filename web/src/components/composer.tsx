@@ -33,6 +33,7 @@ import {
 	StagedAttachmentStrip,
 } from "./attachments.tsx";
 import { ComposerMenu, useComposerMenu } from "./composer-menu.tsx";
+import { Dialog } from "./dialog.tsx";
 import {
 	ArrowUpIcon,
 	AttachIcon,
@@ -45,7 +46,8 @@ import {
 	TrashIcon,
 } from "./icons.tsx";
 import { ModelPicker, useModels } from "./model-picker.tsx";
-import { Button, Dialog, describeError, ErrorBox, place, Select, useAction } from "./ui.tsx";
+import { Select } from "./select.tsx";
+import { Button, describeError, ErrorBox, place, useAction } from "./ui.tsx";
 import { WorkspacePicker } from "./workspaces.tsx";
 
 /**

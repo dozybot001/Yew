@@ -3,7 +3,8 @@ import type { ThinkingLevel } from "../../../src/shared/types.ts";
 import { loadModels } from "../actions/settings.ts";
 import { t, useLang } from "../i18n.ts";
 import { type ModelInfo, useAppState } from "../state.ts";
-import { Menu, type MenuEntry, type MenuItem, Select } from "./ui.tsx";
+import { Menu, type MenuEntry, type MenuItem } from "./menu.tsx";
+import { Select } from "./select.tsx";
 
 export function useModels(provider: string): ModelInfo[] {
 	const models = useAppState((state) => state.models[provider]);

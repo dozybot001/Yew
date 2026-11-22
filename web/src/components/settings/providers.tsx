@@ -16,9 +16,10 @@ import {
 	type SearchServiceView,
 	useAppState,
 } from "../../state.ts";
+import { Dialog } from "../dialog.tsx";
 import { ConfirmDialog } from "../dialogs.tsx";
 import { CheckIcon, KeyIcon, PlusIcon, PulseIcon, TrashIcon } from "../icons.tsx";
-import { Button, Dialog, ErrorBox, Switch, useAction } from "../ui.tsx";
+import { Button, ErrorBox, Switch, useAction } from "../ui.tsx";
 
 /**
  * One service that takes an API key: its name and whether a key is saved, with save, replace and
