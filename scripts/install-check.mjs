@@ -6,7 +6,10 @@
 // - installed globally into a throwaway prefix (no install scripts run), the system sandbox gets the
 //   zod the lock file pins, and no high or critical advisory remains in what was installed;
 // - packed on macOS, it carries the Mac app's program (dist/mac/Yew, both architectures), so
-//   `yew app install` makes the window app and not the launcher that opens the browser.
+//   `yew app install` makes the window app and not the launcher that opens the browser;
+// - the installed package runs: `yew serve` starts from it, the sessions of the demo story use their
+//   tools with a stand-in model, commands in the system sandbox, a push that is asked about goes
+//   through once allowed, and the web interface is served (scripts/package-run.ts).
 //
 //   npm run audit:install
 import { spawnSync } from "node:child_process";
@@ -147,8 +150,20 @@ try {
 		for (const [name, entry] of severe) console.error(`install-check: ${entry.severity}: ${name}`);
 		process.exit(1);
 	}
+
+	// The sources run from this repository every day; what people install is the compiled package.
+	const { runInstalled } = await import("./package-run.ts");
+	let ran;
+	try {
+		ran = await runInstalled(join(installed, "bin", "yew.js"), join(work, "run"));
+	} catch (error) {
+		console.error(
+			`install-check: the installed package did not run the demo story: ${error.message}\nIts folder is kept: ${join(work, "run")}`,
+		);
+		process.exit(1);
+	}
 	console.log(
-		`install-check: ${tarball}: the bundled ${runtime} matches the registry's ${version} (${ours.size} files); installed, the sandbox gets zod ${got}; no high or critical advisory in what was installed`,
+		`install-check: ${tarball}: the bundled ${runtime} matches the registry's ${version} (${ours.size} files); installed, the sandbox gets zod ${got}; no high or critical advisory in what was installed; ${ran}`,
 	);
 } finally {
 	rmSync(work, { recursive: true, force: true });

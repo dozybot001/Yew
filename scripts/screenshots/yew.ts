@@ -49,8 +49,8 @@ function yewEnv(home: string): NodeJS.ProcessEnv {
 	};
 }
 
-const yew = (env: NodeJS.ProcessEnv, ...args: string[]) =>
-	execFileSync(process.execPath, [BIN, ...args], {
+const yew = (env: NodeJS.ProcessEnv, bin: string, ...args: string[]) =>
+	execFileSync(process.execPath, [bin, ...args], {
 		env,
 		encoding: "utf8",
 		stdio: ["ignore", "pipe", "pipe"],
@@ -161,7 +161,7 @@ export function seed(
 
 	const env = yewEnv(home);
 	const ci = JSON.parse(
-		yew(env, "send", "--json", "--kind", "notice", names.backend, story.earlier.ci),
+		yew(env, BIN, "send", "--json", "--kind", "notice", names.backend, story.earlier.ci),
 	) as { id: string };
 
 	// Read, and sent when their hours say; Content has not worked since its report.
@@ -205,18 +205,23 @@ export function freePort(): Promise<number> {
 	});
 }
 
-/** A running `yew serve` and the person's side of its API. */
+/**
+ * A running `yew serve` and the person's side of its API. `bin` is the yew.js to run: this
+ * repository's, or the one of an installed package.
+ */
 export class Yew {
 	readonly base: string;
 	readonly #env: NodeJS.ProcessEnv;
+	readonly #bin: string;
 	readonly #process: ChildProcess;
 	#cookie = "";
 
-	constructor(env: NodeJS.ProcessEnv, port: number, logFile: string) {
+	constructor(env: NodeJS.ProcessEnv, port: number, logFile: string, bin = BIN) {
 		this.#env = env;
+		this.#bin = bin;
 		this.base = `http://127.0.0.1:${port}`;
 		const out = (piece: Buffer) => writeFileSync(logFile, piece, { flag: "a" });
-		this.#process = spawn(process.execPath, [BIN, "serve", "--port", String(port)], {
+		this.#process = spawn(process.execPath, [bin, "serve", "--port", String(port)], {
 			env,
 			stdio: ["ignore", "pipe", "pipe"],
 		});
@@ -245,7 +250,7 @@ export class Yew {
 
 	/** A new one-time sign-in link, from `yew open --print`. */
 	link(): string {
-		return yew(this.#env, "open", "--print").trim();
+		return yew(this.#env, this.#bin, "open", "--print").trim();
 	}
 
 	async call<T>(method: string, path: string, body?: unknown): Promise<T> {
@@ -271,7 +276,11 @@ export class Yew {
 	}
 }
 
-async function until(what: string, check: () => Promise<boolean>, ms = 90_000): Promise<void> {
+export async function until(
+	what: string,
+	check: () => Promise<boolean>,
+	ms = 90_000,
+): Promise<void> {
 	const end = Date.now() + ms;
 	while (!(await check())) {
 		if (Date.now() > end) throw new Error(`Gave up waiting for ${what}.`);
