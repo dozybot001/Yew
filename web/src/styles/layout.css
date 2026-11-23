@@ -233,7 +233,6 @@
 			var(--lift);
 	}
 	.app.with-yew .main .todo-card,
-	.app.with-yew .main .letter-card,
 	.app.with-yew .main .card,
 	.app.with-yew .main .artifact-viewer {
 		background: color-mix(in srgb, var(--surface) 92%, transparent);

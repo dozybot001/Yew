@@ -1,3 +1,4 @@
+import { type ReactNode, useState } from "react";
 import {
 	bodyAfterSummary,
 	type LetterRef,
@@ -8,7 +9,7 @@ import { selectSession } from "../actions.ts";
 import { formatWhen, t, useLang } from "../i18n.ts";
 import { useAppState } from "../state.ts";
 import { Capped, Markdown } from "./content.tsx";
-import { DecisionIcon, MailIcon, QuoteIcon } from "./icons.tsx";
+import { ChevronIcon, DecisionIcon, MailIcon, QuoteIcon } from "./icons.tsx";
 
 /** Where the person's words come from, in their own terms: "你在「总办」里写的". */
 function quoteOrigin(quote: PersonQuote): string {
@@ -54,32 +55,49 @@ export function PersonQuotes({ quotes }: { quotes: PersonQuote[] | undefined }) 
 }
 
 /**
- * A letter from another session, a script or Yew, shown as a letter, not as words of the person. The
- * person's own decisions carry the "by you" mark, and the person's words it passes on, as Yew found
- * them, are set apart from the sender's.
+ * A letter from another session, a script or Yew, as one line the way a letter the session sent is
+ * one line: who it is from, what kind and its summary. Opening it shows the letter. The person's own
+ * decisions carry the "by you" mark, and the person's words a letter passes on, as Yew found them,
+ * are set apart from the sender's.
  */
 export function LetterEntry({ letter }: { letter: LetterRef }) {
 	useLang();
+	const [open, setOpen] = useState(false);
 	const senderId = letter.from.sessionId;
 	const sender = useAppState((state) =>
 		senderId ? (state.sessions[senderId]?.name ?? null) : null,
 	);
+	const fold = (label: string, line: ReactNode, detail: ReactNode) => (
+		<details
+			className="activity letter-fold"
+			aria-label={label}
+			open={open}
+			onToggle={(event) => setOpen((event.target as HTMLDetailsElement).open)}
+		>
+			<summary>
+				{line}
+				<ChevronIcon />
+			</summary>
+			{open && <div className="tool-detail letter-detail">{detail}</div>}
+		</details>
+	);
 	if (letter.kind === "decision" && letter.decision && letter.from.kind === "person") {
 		const decision = letter.decision;
-		return (
-			<section
-				className="letter-card letter-decision"
-				aria-label={t("decisionHeading", { n: decision.number })}
-			>
-				<div className="letter-head">
-					<DecisionIcon />
-					<span>{t("decisionHeading", { n: decision.number })}</span>
-					<span className="tag">{t("byYou")}</span>
-				</div>
+		const heading = t("decisionHeading", { n: decision.number });
+		const choice = decision.choice ? t("decidedChoice", { c: decision.choice }) : t("noteOnly");
+		return fold(
+			heading,
+			<>
+				<DecisionIcon />
+				<span className="activity-verb">{heading}</span>
+				<span className="tag">{t("byYou")}</span>
+				<span className="letter-fold-summary">{choice}</span>
+			</>,
+			<>
 				<p className="letter-summary">{decision.title}</p>
-				<p>{decision.choice ? t("decidedChoice", { c: decision.choice }) : t("noteOnly")}</p>
+				<p>{choice}</p>
 				{decision.note && <p className="letter-note">{decision.note}</p>}
-			</section>
+			</>,
 		);
 	}
 	const from =
@@ -93,10 +111,17 @@ export function LetterEntry({ letter }: { letter: LetterRef }) {
 	// An automatic report repeats its first line as the summary; show it once.
 	const body = bodyAfterSummary(letter.body, letter.summary);
 	const kind = t(`letterKind_${letter.kind}`);
-	return (
-		<section className="letter-card" aria-label={`${kind} · ${from}`}>
+	const summary = plainLine(letter.summary) || letter.summary;
+	return fold(
+		`${kind} · ${from}`,
+		<>
+			<MailIcon />
+			<span className="activity-verb">{t("letterFrom", { name: from })}</span>
+			<span className="tag">{kind}</span>
+			<span className="letter-fold-summary">{summary}</span>
+		</>,
+		<>
 			<div className="letter-head">
-				<MailIcon />
 				{senderId && sender ? (
 					<button
 						type="button"
@@ -108,7 +133,6 @@ export function LetterEntry({ letter }: { letter: LetterRef }) {
 				) : (
 					<span>{from}</span>
 				)}
-				<span className="tag">{kind}</span>
 				{letter.schedule && letter.from.kind !== "yew" && (
 					<span className="hint">
 						{t("fromSchedule", { name: t("quoted", { s: letter.schedule.name }) })}
@@ -116,7 +140,7 @@ export function LetterEntry({ letter }: { letter: LetterRef }) {
 				)}
 				{letter.auto && <span className="hint">{t("sentByYew")}</span>}
 			</div>
-			<p className="letter-summary">{plainLine(letter.summary) || letter.summary}</p>
+			<p className="letter-summary">{summary}</p>
 			{body && (
 				<Capped className="letter-body" label={letter.summary}>
 					<Markdown text={body} breaks />
@@ -131,6 +155,6 @@ export function LetterEntry({ letter }: { letter: LetterRef }) {
 						: t("noteOnly")}
 				</p>
 			)}
-		</section>
+		</>,
 	);
 }

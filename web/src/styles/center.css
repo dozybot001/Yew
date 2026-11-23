@@ -273,15 +273,21 @@
 	font-weight: 500;
 }
 
-/* Letters in a conversation read as letters, not as the person's words. */
-.letter-card {
-	display: grid;
-	grid-template-columns: minmax(0, 1fr);
+/* A letter in a conversation is one line, like a letter the session sent; opening it shows the letter. */
+.letter-fold > summary svg:first-child {
+	flex: none;
+	color: var(--text-3);
+}
+.letter-fold-summary {
+	min-width: 0;
+	color: var(--text-3);
+	font-size: var(--fs-s);
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.letter-detail {
 	gap: 6px;
-	padding: 10px 14px 12px;
-	border: 1px solid var(--border);
-	border-radius: var(--radius-l);
-	background: var(--surface);
 }
 .letter-head {
 	display: flex;
@@ -290,10 +296,6 @@
 	gap: 8px;
 	color: var(--text-2);
 	font-size: var(--fs-s);
-}
-.letter-card .letter-head svg {
-	flex: none;
-	color: var(--text-3);
 }
 .letter-summary {
 	margin: 0;
@@ -537,7 +539,7 @@
 	font-size: var(--fs-m);
 	font-weight: 600;
 }
-.letter-card p,
+.letter-detail p,
 .decision-card p {
 	margin: 0;
 }
