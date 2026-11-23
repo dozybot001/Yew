@@ -562,6 +562,17 @@ export class Store {
 				options: source.options,
 			});
 			this.#copyHistory(id, copy.id, through);
+			// The copy keeps the original's system prompt, so its first request reads the cache the
+			// original wrote. What the original was told after the point of the copy is not in the
+			// copy's record: then the copy is told again whatever differs from the prompt.
+			const context = this.getContextSnapshot<{ told?: unknown }>(id);
+			if (context) {
+				const later = this.#q(
+					"SELECT 1 FROM messages WHERE session_id = ? AND seq > ? AND role = 'system' LIMIT 1",
+				).get(id, through);
+				const { told: _told, ...prompt } = context;
+				this.setContextSnapshot(copy.id, later ? prompt : context);
+			}
 			const restoredTokens = this.#contextTokensThrough(id, through);
 			if (restoredTokens > 0) {
 				this.#q("UPDATE sessions SET context_tokens = ? WHERE id = ?").run(restoredTokens, copy.id);

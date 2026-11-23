@@ -201,6 +201,25 @@ describe("forking from a reply", () => {
 		assert.equal(store.getSession(source.id).status, "working");
 	});
 
+	test("the copy's requests start with the original's system prompt, and it hears its own name", async () => {
+		const { store, agents, make, scripts, seen } = harness();
+		const site = make("Website");
+		scripts.set("Website", [fauxAssistantMessage("Done."), fauxAssistantMessage("Blue now.")]);
+		agents.send(site.id, "Fix the footer.");
+		await agents.whenIdle(site.id);
+		const reply = store
+			.listEntries(site.id, { limit: 50 })
+			.entries.find((entry) => entry.role === "assistant") as Entry;
+		const fork = store.forkSession(site.id, reply.id, "Website 分叉");
+		agents.send(fork.id, "Make it blue.");
+		await agents.whenIdle(fork.id);
+		// Both requests carry the original's name in the prompt: the provider's cache is read by its start.
+		const [first, second] = seen.get("Website") ?? [];
+		assert.equal(second?.messages[0]?.content, first?.messages[0]?.content);
+		assert.match(JSON.stringify(second?.messages), /Your name is now \\"Website 分叉\\"/);
+		assert.match(JSON.stringify(store.listEntries(fork.id, { limit: 50 }).entries), /Blue now\./);
+	});
+
 	test("from a finished reply or before a message of the person's, in that session only", () => {
 		const { store, make, source, asked, call } = conversation();
 		// Before the person's first message: a session with nothing in it yet.
