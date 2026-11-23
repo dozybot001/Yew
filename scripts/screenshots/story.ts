@@ -18,6 +18,8 @@ export interface Story {
 	toBackend: LetterText;
 	/** What the coordinator says once it has written the letters, and once Backend has reported. */
 	coordinator: { handedOff: string; summary: string };
+	/** What the observing Yew says about the coordinator's first turn, when she watches. */
+	remark: string;
 	website: { look: string; change: string; done: string; push: string; pushed: string };
 	backend: { look: string; change: string; fixed: string };
 	tests: string;
@@ -56,6 +58,8 @@ export const STORIES: Record<Lang, Story> = {
 			summary: "修复刷新页面后被登出的问题",
 			body: "用户反馈登录半小时左右刷新页面就被登出，哪怕一直在用。",
 		},
+		remark:
+			"两件事互不相干，分给两个会话是对的。它没说什么时候回报，登录那件事影响用户，你可以先问一句进度。",
 		coordinator: {
 			handedOff: "首页交给了网站，登录的问题交给了后端。它们做完会回报，我再汇总给你。",
 			summary:
@@ -132,6 +136,8 @@ export const STORIES: Record<Lang, Story> = {
 			summary: "Fix users being signed out when they reload the page",
 			body: "Users say a reload signs them out after about half an hour, even while they are using the site.",
 		},
+		remark:
+			"Two unrelated jobs, so two sessions is right. It gave no time for the reports. The sign-in bug hits users, so ask about that one first.",
 		coordinator: {
 			handedOff:
 				"The home page is with Website and the sign-in problem with Backend. I'll sum up when they report back.",
@@ -326,6 +332,11 @@ export function storyScript(): Script {
 		const at = messages.findLastIndex((message) => message.role === "user");
 		if (at < 0) return null;
 		const said = textOf(messages[at]);
+		// The observing Yew reads a turn: she speaks about the one the person's request started.
+		if (said.includes("The assistant's reply:")) {
+			const story = Object.values(STORIES).find((candidate) => said.includes(candidate.kickoff));
+			return say(JSON.stringify(story ? { says: true, text: story.remark } : { says: false }));
+		}
 		const flow = all.find((candidate) => said.includes(candidate.trigger));
 		const last = messages.at(-1);
 		if (!flow || (last?.role === "tool" && /declined|Not run/i.test(textOf(last)))) return null;

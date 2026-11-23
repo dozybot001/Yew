@@ -175,6 +175,30 @@
 	gap: 6px;
 	min-width: 0;
 }
+/* What the observing Yew said about the reply above: her picture, the words, a way to remove them. */
+.remark {
+	display: flex;
+	align-items: flex-start;
+	gap: 10px;
+	max-width: 560px;
+	padding: 10px 12px;
+	border: 1px solid var(--border);
+	border-radius: 12px;
+	background: var(--surface-2);
+}
+.remark .mascot {
+	flex: none;
+}
+.remark-body {
+	display: grid;
+	gap: 4px;
+	flex: 1;
+	min-width: 0;
+}
+.remark-body p {
+	margin: 0;
+	overflow-wrap: anywhere;
+}
 /* A message from the person with its actions underneath, both at the right. */
 .message-mine {
 	display: grid;

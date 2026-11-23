@@ -383,6 +383,12 @@ function applySessionEvent(sessionId: string, event: SessionEvent): void {
 			case "rewound":
 				// The stream sends this as a reset, which loads the transcript again.
 				return {};
+			case "remark":
+				return { remarks: { ...t.remarks, [event.remark.id]: event.remark } };
+			case "remarkGone": {
+				const { [event.id]: _gone, ...remarks } = t.remarks;
+				return { remarks };
+			}
 		}
 	});
 }
@@ -399,6 +405,11 @@ export function indexBy<T extends { id: string }>(items: T[]): Record<string, T>
 	return Object.fromEntries(items.map((item) => [item.id, item]));
 }
 
+/** Removes something the observing Yew said; the event that follows takes it off the page. */
+export async function deleteRemark(sessionId: string, id: string): Promise<void> {
+	await api("DELETE", `/api/sessions/${sessionId}/remarks/${id}`);
+}
+
 export async function loadTranscript(sessionId: string): Promise<number> {
 	const data = await api<Transcript>("GET", `/api/sessions/${sessionId}/transcript?limit=150`);
 	// A late answer for a session you have already left must not replace the open one.
@@ -412,6 +423,7 @@ export async function loadTranscript(sessionId: string): Promise<number> {
 						toolCalls: indexBy(data.toolCalls),
 						approvals: indexBy(data.approvals),
 						queue: data.queue,
+						remarks: indexBy(data.remarks ?? []),
 						olderCursor: data.olderCursor,
 						draft: null,
 						retry: null,
@@ -458,6 +470,7 @@ export async function loadEarlier(): Promise<void> {
 		],
 		toolCalls: { ...indexBy(data.toolCalls), ...t.toolCalls },
 		approvals: { ...indexBy(data.approvals), ...t.approvals },
+		remarks: { ...indexBy(data.remarks ?? []), ...t.remarks },
 		olderCursor: data.olderCursor,
 	}));
 }

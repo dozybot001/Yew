@@ -500,6 +500,20 @@ const zh = {
 	sideModelSends:
 		"起名时会话开头的一段、读回复时回复的最后 3000 个字，会发给 {provider}，适用它的隐私政策。",
 	sideModelNoKey: "{provider} 没有密钥，这两件事现在由各会话自己的模型来做。",
+	observerModel: "旁观模型",
+	observerOff: "不旁观",
+	observerOffHint: "选一个模型后，Yew 在你发起的每一轮结束时看一遍，有话就在回复下面说一句。",
+	observerSends:
+		"每轮结束后，你的上一条消息、会话做过的操作和它的回复（各有长度上限）会发给 {provider}，适用它的隐私政策。费用记在该会话上。",
+	observerNoKey: "{provider} 没有密钥，Yew 现在不旁观。",
+	observerHelp:
+		"Yew 只看、不动手：她说的话不进入会话的上下文，不记到下一轮，只评工作。只看你发起的那一轮，会话之间来往的信不看。可以在会话设置里对单个会话关掉。她的人设写在数据目录的 persona.md 里，没有这个文件时用自带的人设。",
+	observeSection: "旁观",
+	observe: "让 Yew 旁观这个会话",
+	observeHint: "在设置里选了旁观模型后生效；关掉后这个会话的内容不发给旁观模型",
+	remarkBy: "Yew 旁观",
+	aiGenerated: "AI 生成",
+	remarkDelete: "删除这句话",
 	region_cn: "国内",
 	region_global: "境外",
 	region_custom: "自定义",
@@ -1741,6 +1755,22 @@ const en: Record<MessageKey, string> = {
 	sideModelSends:
 		"The start of a session, when it is named, and the last 3,000 characters of a reply, when it is read, go to {provider}; its privacy policy applies.",
 	sideModelNoKey: "{provider} has no key, so each session's own model does these two jobs for now.",
+	observerModel: "Observer model",
+	observerOff: "Not observing",
+	observerOffHint:
+		"With a model chosen, Yew reads each turn you start when it ends and, if she has something to say, says it under the reply.",
+	observerSends:
+		"After each turn, your last message, what the session did and its reply (each up to a length limit) are sent to {provider}, under its privacy policy. The cost counts as the session's.",
+	observerNoKey: "{provider} has no key, so Yew is not observing for now.",
+	observerHelp:
+		"Yew only watches: what she says does not enter the session's context, she keeps nothing for the next turn, and she talks about the work only. She reads the turns you start, not the letters sessions send each other. You can turn her off for one session in its settings. Her character is in persona.md in the data folder; without that file she uses the built-in one.",
+	observeSection: "Observing",
+	observe: "Let Yew observe this session",
+	observeHint:
+		"Takes effect once an observer model is chosen in the settings; when off, nothing from this session is sent to that model",
+	remarkBy: "Yew, observing",
+	aiGenerated: "AI-generated",
+	remarkDelete: "Remove this remark",
 	region_cn: "Chinese providers",
 	region_global: "Other providers",
 	region_custom: "Custom",

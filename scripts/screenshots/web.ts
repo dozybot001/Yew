@@ -110,6 +110,10 @@ export async function webPictures(
 				await tab.locator("[role=tab]").first().click();
 				await tab.locator(".decision-card").waitFor();
 			},
+			observer: async () => {
+				await tab.locator(".nav-row").first().click();
+				await tab.locator(".transcript .remark").waitFor();
+			},
 			letters: async () => {
 				await tab.locator(".nav-row").nth(1).click();
 				await tab.locator("[role=tab]").nth(2).click();

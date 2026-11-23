@@ -12,6 +12,8 @@ export interface SideCall {
 	/** What the model is given to read, as one message. */
 	content: string;
 	signal?: AbortSignal;
+	/** The models to ask, in turn, instead of the ones for side jobs. */
+	models?: ModelInfo[];
 }
 
 /** How many times a request beside the conversation is tried again when it fails in a way that may pass. */
@@ -45,7 +47,7 @@ export async function sideCall(call: SideCall): Promise<string | null> {
 	const { store, gateway, session } = call;
 	const own = gateway.model(session.provider, session.model);
 	if (!own) return null;
-	for (const model of await sideModels(store, gateway, own)) {
+	for (const model of call.models ?? (await sideModels(store, gateway, own))) {
 		if (call.signal?.aborted) return null;
 		const reply = await gateway.stream({
 			provider: model.provider,

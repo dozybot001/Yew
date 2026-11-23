@@ -423,4 +423,15 @@ UPDATE sessions SET capped_day = (
 	SELECT json_extract(value, '$."' || sessions.id || '"') FROM settings WHERE key = 'cappedSessions'
 );
 DELETE FROM settings WHERE key = 'cappedSessions';`,
+	// What the observing Yew said about a turn, beside the reply it ended with. Not part of the
+	// conversation: no model request of the session carries it.
+	`
+CREATE TABLE remarks (
+	id TEXT PRIMARY KEY,
+	session_id TEXT NOT NULL REFERENCES sessions (id) ON DELETE CASCADE,
+	entry_id TEXT NOT NULL,
+	text TEXT NOT NULL,
+	created_at INTEGER NOT NULL
+) STRICT;
+CREATE INDEX remarks_entry ON remarks (entry_id);`,
 ];

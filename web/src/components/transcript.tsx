@@ -1,15 +1,15 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import type { AssistantMessage, ToolResultMessage } from "../../../src/shared/messages.ts";
-import type { ChangeStep, Entry, Session } from "../../../src/shared/types.ts";
+import type { ChangeStep, Entry, Remark, Session } from "../../../src/shared/types.ts";
 import { forkSession, rewindSession } from "../actions/sessions.ts";
-import { loadEarlier, markRead, toolCallFor } from "../actions.ts";
+import { deleteRemark, loadEarlier, markRead, toolCallFor } from "../actions.ts";
 import { formatAgo, formatCost, getLang, t, useLang } from "../i18n.ts";
 import { YEW_NOTE } from "../progress.ts";
 import { type TranscriptState, useAppState } from "../state.ts";
 import { MessageAttachments } from "./attachments.tsx";
 import { Capped, Markdown, useStickToBottom } from "./content.tsx";
 import { ConfirmDialog } from "./dialogs.tsx";
-import { CheckIcon, ChevronIcon, CopyIcon, ForkIcon, RewindIcon } from "./icons.tsx";
+import { CheckIcon, ChevronIcon, CopyIcon, ForkIcon, RewindIcon, TrashIcon } from "./icons.tsx";
 import { LetterEntry } from "./letter-entry.tsx";
 import { Mascot } from "./mascot.tsx";
 import { changeText } from "./permission-card.tsx";
@@ -229,6 +229,35 @@ function MessageActions({
 	);
 }
 
+/**
+ * What the observing Yew said about the reply above it. It is hers, not the session's: marked as
+ * written by a model, and the person can remove it.
+ */
+function RemarkView({ remark }: { remark: Remark }) {
+	const remove = useAction(() => deleteRemark(remark.sessionId, remark.id));
+	return (
+		<aside className="remark" aria-label={t("remarkBy")}>
+			<Mascot pose="peek" height={40} />
+			<div className="remark-body">
+				<p>{remark.text}</p>
+				<span className="hint">
+					{t("remarkBy")} · {t("aiGenerated")}
+				</span>
+				<ErrorBox error={remove.error} />
+			</div>
+			<Button
+				variant="icon"
+				aria-label={t("remarkDelete")}
+				title={t("remarkDelete")}
+				busy={remove.busy}
+				onClick={() => void remove.run()}
+			>
+				<TrashIcon />
+			</Button>
+		</aside>
+	);
+}
+
 /** A message from the person, a letter, or a notice from Yew. */
 function EntryView({ entry, sessionId }: { entry: Entry; sessionId: string }) {
 	switch (entry.role) {
@@ -345,6 +374,10 @@ function EntryView({ entry, sessionId }: { entry: Entry; sessionId: string }) {
 export function Transcript({ transcript }: { transcript: TranscriptState }) {
 	useLang();
 	const session = useAppState((state) => state.sessions[transcript.sessionId]);
+	const remarks = useMemo(
+		() => Object.values(transcript.remarks).sort((a, b) => a.createdAt - b.createdAt),
+		[transcript.remarks],
+	);
 	const byId = useMemo(
 		() => new Map(transcript.entries.map((entry) => [entry.id, entry])),
 		[transcript.entries],
@@ -478,6 +511,10 @@ export function Transcript({ transcript }: { transcript: TranscriptState }) {
 										canRewind={(byId.get(item.forkFrom) as Entry).seq >= summarySeq}
 									/>
 								)}
+								{item.forkFrom &&
+									remarks
+										.filter((remark) => remark.entryId === item.forkFrom)
+										.map((remark) => <RemarkView key={remark.id} remark={remark} />)}
 							</div>
 						);
 					}

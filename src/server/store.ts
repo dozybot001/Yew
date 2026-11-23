@@ -12,6 +12,7 @@ import type {
 	PermissionRule,
 	QuestionRequest,
 	QueuedMessage,
+	Remark,
 	Session,
 	SessionEvent,
 	SessionKind,
@@ -654,6 +655,10 @@ export class Store {
 			this.#q(`UPDATE messages SET body = ${TAKEN_BACK} WHERE session_id = ? AND rewound = 1`).run(
 				id,
 			);
+			// What was said about them repeats them.
+			this.#q(
+				"DELETE FROM remarks WHERE entry_id IN (SELECT id FROM messages WHERE session_id = ? AND rewound = 1)",
+			).run(id);
 			// Earlier events can carry what was taken back. A client that missed some loads the
 			// conversation again, as it does after a rewind anyway.
 			this.#q("DELETE FROM session_events WHERE session_id = ?").run(id);
@@ -1470,6 +1475,51 @@ export class Store {
 		this.#q(
 			"INSERT INTO unsent (place, text) VALUES (?, ?) ON CONFLICT (place) DO UPDATE SET text = excluded.text",
 		).run(place, text);
+	}
+
+	// --- what the observing Yew said ---
+
+	addRemark(sessionId: string, entryId: string, text: string): Remark {
+		const remark: Remark = { id: newId(), sessionId, entryId, text, createdAt: Date.now() };
+		this.#q(
+			"INSERT INTO remarks (id, session_id, entry_id, text, created_at) VALUES (?, ?, ?, ?, ?)",
+		).run(remark.id, sessionId, entryId, text, remark.createdAt);
+		this.appendEvent(sessionId, { type: "remark", remark });
+		return remark;
+	}
+
+	/** The remarks about these entries, oldest first. */
+	remarksFor(entryIds: string[]): Remark[] {
+		if (entryIds.length === 0) return [];
+		const rows = this.db
+			.prepare(
+				`SELECT * FROM remarks WHERE entry_id IN (${entryIds.map(() => "?").join(", ")}) ORDER BY created_at`,
+			)
+			.all(...entryIds) as unknown as {
+			id: string;
+			session_id: string;
+			entry_id: string;
+			text: string;
+			created_at: number;
+		}[];
+		return rows.map((row) => ({
+			id: row.id,
+			sessionId: row.session_id,
+			entryId: row.entry_id,
+			text: row.text,
+			createdAt: row.created_at,
+		}));
+	}
+
+	/** The person removed a remark. False when the session has none with this id. */
+	deleteRemark(sessionId: string, id: string): boolean {
+		const { changes } = this.#q("DELETE FROM remarks WHERE id = ? AND session_id = ?").run(
+			id,
+			sessionId,
+		);
+		if (changes === 0) return false;
+		this.appendEvent(sessionId, { type: "remarkGone", id });
+		return true;
 	}
 
 	// --- settings ---

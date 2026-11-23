@@ -256,6 +256,8 @@ export function SessionSettingsDialog({
 	const savedDomains = (session.options.allowedDomains ?? []).join("\n");
 	const [domainsText, setDomainsText] = useState(savedDomains);
 	const [containers, setContainers] = useState(session.options.allowContainers === true);
+	const [observe, setObserve] = useState(session.options.observe !== false);
+	const observeId = useId();
 	const roleId = useId();
 	const containersId = useId();
 	const compactId = useId();
@@ -301,6 +303,7 @@ export function SessionSettingsDialog({
 				...(containers !== (session.options.allowContainers === true)
 					? { allowContainers: containers }
 					: {}),
+				...(observe !== (session.options.observe !== false) ? { observe } : {}),
 				...(JSON.stringify(extraDirs) !== JSON.stringify(savedExtraDirs) ? { extraDirs } : {}),
 				...(domainsText !== savedDomains ? { allowedDomains: nextDomains } : {}),
 			},
@@ -318,6 +321,7 @@ export function SessionSettingsDialog({
 		canPost !== (session.options.canPostCards === true) ||
 		canOrganize !== (session.options.canOrganize === true) ||
 		containers !== (session.options.allowContainers === true) ||
+		observe !== (session.options.observe !== false) ||
 		JSON.stringify(extraDirs) !== JSON.stringify(savedExtraDirs) ||
 		domainsText !== savedDomains;
 	return (
@@ -499,6 +503,11 @@ export function SessionSettingsDialog({
 						</SettingRow>
 					</>
 				)}
+			</SettingGroup>
+			<SettingGroup title={t("observeSection")}>
+				<SettingRow label={t("observe")} labelId={observeId} hint={t("observeHint")}>
+					<Switch labelledBy={observeId} checked={observe} onChange={setObserve} />
+				</SettingRow>
 			</SettingGroup>
 			<SettingGroup title={t("budgetSection")}>
 				<SettingRow

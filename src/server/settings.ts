@@ -52,6 +52,11 @@ export const SETTING_DEFAULTS = {
 	 * each session's own model.
 	 */
 	sideModel: null as SideModel | null,
+	/**
+	 * The model the observing Yew reads turns with. Null, the default, means she does not watch: what
+	 * she reads goes to that model's provider, so the person turns it on.
+	 */
+	observerModel: null as SideModel | null,
 	theme: "system" as "system" | "light" | "dark",
 	language: "system" as "system" | "zh" | "en",
 	workspaces: [] as Workspace[],
@@ -128,6 +133,7 @@ export function readSettings(store: Store): Settings {
 	return {
 		defaultModel: store.getSetting("defaultModel", SETTING_DEFAULTS.defaultModel),
 		sideModel: store.getSetting("sideModel", SETTING_DEFAULTS.sideModel),
+		observerModel: store.getSetting("observerModel", SETTING_DEFAULTS.observerModel),
 		theme: store.getSetting("theme", SETTING_DEFAULTS.theme),
 		language: store.getSetting("language", SETTING_DEFAULTS.language),
 		workspaces,

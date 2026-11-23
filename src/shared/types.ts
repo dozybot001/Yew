@@ -71,6 +71,8 @@ export interface SessionOptions {
 	budgetExtra?: { day: string; amount: number } | null;
 	/** Named after its first message; after its first turn Yew gives it a short name of its own. */
 	autoName?: boolean;
+	/** False keeps the observing Yew out of this session; absent or true lets her read its turns. */
+	observe?: boolean;
 }
 
 export const RECEIVE_POLICIES = ["accept", "hold", "refuse"] as const;
@@ -732,7 +734,22 @@ export type SessionEvent =
 	| { type: "approval"; approval: Approval }
 	| { type: "queue"; queue: QueuedMessage[] }
 	/** The conversation was taken back to just after this entry: load it again. */
-	| { type: "rewound"; throughSeq: number };
+	| { type: "rewound"; throughSeq: number }
+	| { type: "remark"; remark: Remark }
+	| { type: "remarkGone"; id: string };
+
+/**
+ * What the observing Yew said to the person about a turn. It is shown beside the reply the turn
+ * ended with and is never part of the conversation the session's model reads.
+ */
+export interface Remark {
+	id: string;
+	sessionId: string;
+	/** The reply it is about. */
+	entryId: string;
+	text: string;
+	createdAt: number;
+}
 
 export interface Transcript {
 	session: Session;
@@ -740,6 +757,8 @@ export interface Transcript {
 	toolCalls: ToolCallView[];
 	approvals: Approval[];
 	queue: QueuedMessage[];
+	/** What the observing Yew said about the entries returned. */
+	remarks: Remark[];
 	/** Seq of the oldest entry returned when older ones exist; pass as `before` to load them. */
 	olderCursor: number | null;
 }

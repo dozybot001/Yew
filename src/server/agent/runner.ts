@@ -52,6 +52,7 @@ import {
 import { Held } from "./held.ts";
 import { Mailroom } from "./mailroom.ts";
 import { nameAfterFirstTurn } from "./naming.ts";
+import { Observer } from "./observer.ts";
 import {
 	type ContextSnapshot,
 	type InstructionExtras,
@@ -172,6 +173,7 @@ export class Agents {
 	readonly #hooks: SessionHooks;
 	readonly #calls: Calls;
 	readonly #replyQuestions: ReplyQuestions;
+	readonly #observer: Observer;
 	/** Letters, decision cards and the approval center. */
 	readonly post: PostOffice;
 	/** Scheduled tasks, whose runs end in this runner. */
@@ -277,6 +279,13 @@ export class Agents {
 			settled: (id) => this.#wake(id),
 			enabled: options.readReplies ?? false,
 		});
+		this.#observer = new Observer({
+			store: this.#store,
+			gateway: this.#gateway,
+			home: this.#home,
+			log: this.#log,
+			isRunning: (id) => this.isRunning(id),
+		});
 	}
 
 	get home(): string {
@@ -322,6 +331,7 @@ export class Agents {
 			attachmentIds.length > 0 ? this.attachments.verifyPending(sessionId, attachmentIds) : [];
 		// The person stepped in: a full quota of letters again, and a new chain of hand-offs.
 		this.#replyQuestions.drop(sessionId);
+		this.#observer.drop(sessionId);
 		this.#held.resume(sessionId);
 		this.#store.resetLettersSent(sessionId);
 		this.#store.addIntervention(sessionId);
@@ -362,6 +372,7 @@ export class Agents {
 		if (entries.length === 0)
 			throw conflict("There is nothing to continue yet.", undefined, "nothing-to-continue");
 		this.#replyQuestions.drop(sessionId);
+		this.#observer.drop(sessionId);
 		this.#held.resume(sessionId);
 		// Continuing a session that stopped at a spending limit gives it as much room again for today.
 		grantMore(this.#store, session, Date.now());
@@ -418,6 +429,7 @@ export class Agents {
 		}
 		const count = this.#store.rewindSession(sessionId, this.#store.turnPoint(sessionId, entryId));
 		this.#replyQuestions.drop(sessionId);
+		this.#observer.drop(sessionId);
 		for (const approval of this.#store.pendingApprovals(sessionId)) {
 			this.#store.cancelApproval(approval.id);
 		}
@@ -542,7 +554,7 @@ export class Agents {
 		this.#live.set(sessionId, live);
 		this.#lastText.delete(sessionId);
 		this.#mail.begin(sessionId, options.byPerson ?? false, options.originEntryId ?? null);
-		live.done = this.#run(sessionId, live, options.resume ?? false)
+		live.done = this.#run(sessionId, live, options.resume ?? false, options.byPerson ?? false)
 			.catch((error: unknown) =>
 				this.#log(`session ${sessionId}: ${(error as Error).stack ?? error}`),
 			)
@@ -577,7 +589,7 @@ export class Agents {
 		return model;
 	}
 
-	async #run(sessionId: string, live: Live, resume: boolean): Promise<void> {
+	async #run(sessionId: string, live: Live, resume: boolean, byPerson: boolean): Promise<void> {
 		const signal = live.controller.signal;
 		this.#store.setStatus(sessionId, "working");
 		let endStatus: SessionStatus = "idle";
@@ -781,6 +793,8 @@ export class Agents {
 				nameAfterFirstTurn(this.#store, this.#gateway, sessionId).catch((error: unknown) =>
 					this.#log(`session ${sessionId}: naming failed: ${(error as Error).message}`),
 				);
+				// She reads the turns the person started, not what sessions do among themselves.
+				if (byPerson) this.#observer.watch(this.#store.getSession(sessionId), said);
 			}
 		}
 	}

@@ -64,6 +64,8 @@ export function seed(
 	folder: string,
 	lang: Lang,
 	modelUrl: string,
+	/** Whether the observing Yew watches, with the stand-in as her model. */
+	observe = false,
 ): { env: NodeJS.ProcessEnv; ids: Ids } {
 	const story = STORIES[lang];
 	const home = join(folder, "home");
@@ -112,7 +114,8 @@ export function seed(
 	store.setSetting("theme", "system");
 	// The sidebar mascot's bubble would say the same thing in every picture; the website shows her in a
 	// claim of her own.
-	store.setSetting("mascot", false);
+	store.setSetting("mascot", observe);
+	if (observe) store.setSetting("observerModel", { provider: "demo", model: "demo-1" });
 	store.setSetting("workspaces", [{ id: randomUUID(), name: "acme-shop", path: cwd }]);
 	const product = store.createGroup(story.teams.product);
 	const session = (name: string, role: string, groupId: string | null, workspace: string | null) =>

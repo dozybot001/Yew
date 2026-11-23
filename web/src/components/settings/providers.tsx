@@ -432,7 +432,15 @@ function ModelRoles() {
 		saveSettings({ defaultModel: value }),
 	);
 	const side = useAction((value: Settings["sideModel"]) => saveSettings({ sideModel: value }));
+	const observer = useAction((value: Settings["observerModel"]) =>
+		saveSettings({ observerModel: value }),
+	);
 	if (!settings) return null;
+	const watcher = settings.observerModel;
+	const watcherAt = watcher
+		? providers.find((provider) => provider.id === watcher.provider)
+		: undefined;
+	const watcherName = watcherAt?.name ?? watcher?.provider ?? "";
 	const chosen = settings.sideModel;
 	const at = chosen ? providers.find((provider) => provider.id === chosen.provider) : undefined;
 	const name = at?.name ?? chosen?.provider ?? "";
@@ -461,6 +469,22 @@ function ModelRoles() {
 							: t("sideModelNoKey", { provider: name })}
 				</span>
 				<ErrorBox error={side.error} />
+			</Field>
+			<Field label={t("observerModel")} info={t("observerHelp")}>
+				<SideModelPicker
+					value={watcher}
+					busy={observer.busy}
+					none={t("observerOff")}
+					onChange={(value) => void observer.run(value)}
+				/>
+				<span className="hint" role="status">
+					{!watcher
+						? t("observerOffHint")
+						: watcherAt && (watcherAt.hasKey || !watcherAt.keyRequired)
+							? t("observerSends", { provider: watcherName })
+							: t("observerNoKey", { provider: watcherName })}
+				</span>
+				<ErrorBox error={observer.error} />
 			</Field>
 		</>
 	);

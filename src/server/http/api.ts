@@ -311,6 +311,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			const canPostCards = optBoolean(options, "canPostCards");
 			const canOrganize = optBoolean(options, "canOrganize");
 			const allowContainers = optBoolean(options, "allowContainers");
+			const observe = optBoolean(options, "observe");
 			const dailyBudget = options.dailyBudget;
 			if (dailyBudget !== undefined && !isBudget(dailyBudget)) {
 				throw invalid("dailyBudget must be an amount in US dollars above 0, or null.", "options");
@@ -341,6 +342,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			if (canPostCards !== undefined) next.canPostCards = canPostCards;
 			if (canOrganize !== undefined) next.canOrganize = canOrganize;
 			if (allowContainers !== undefined) next.allowContainers = allowContainers;
+			if (observe !== undefined) next.observe = observe;
 			if (extraDirs !== undefined) next.extraDirs = extraDirs;
 			if (allowedDomains !== undefined) next.allowedDomains = allowedDomains;
 			// A new limit starts without the room given by continuing under the old one.
@@ -408,6 +410,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 				toolCalls,
 				approvals: [...approvals, ...pending],
 				queue: store.listQueue(session.id),
+				remarks: store.remarksFor(page.entries.map((entry) => entry.id)),
 				olderCursor: page.olderCursor,
 			};
 		});
@@ -452,6 +455,14 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 
 	app.delete("/sessions/:id/queue/:queuedId", (c) => {
 		store.removeQueued(c.req.param("id"), c.req.param("queuedId"));
+		return c.body(null, 204);
+	});
+
+	// The person removes something the observing Yew said.
+	app.delete("/sessions/:id/remarks/:remarkId", (c) => {
+		const session = store.getSession(c.req.param("id"));
+		const remarkId = c.req.param("remarkId");
+		if (!store.deleteRemark(session.id, remarkId)) throw notFound("Remark", remarkId);
 		return c.body(null, 204);
 	});
 
@@ -563,6 +574,19 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 				};
 				deps.checkModel?.(value.provider, value.model);
 				store.setSetting("sideModel", value);
+			}
+		}
+		// null stops the observing Yew.
+		if (fields.observerModel === null) store.setSetting("observerModel", null);
+		else {
+			const observerModel = optObject(fields, "observerModel");
+			if (observerModel) {
+				const value: SideModel = {
+					provider: reqString(observerModel, "provider", 100),
+					model: reqString(observerModel, "model", 200),
+				};
+				deps.checkModel?.(value.provider, value.model);
+				store.setSetting("observerModel", value);
 			}
 		}
 		const theme = optEnum(fields, "theme", ["system", "light", "dark"] as const);

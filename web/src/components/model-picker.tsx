@@ -171,10 +171,13 @@ export function SideModelPicker({
 	value,
 	onChange,
 	busy,
+	none,
 }: {
 	value: SideModelChoice | null;
 	onChange: (value: SideModelChoice | null) => void;
 	busy?: boolean;
+	/** What choosing no model is called; the side jobs' "same as the session" when left out. */
+	none?: string;
 }) {
 	useLang();
 	const providers = useAppState((state) => state.providers);
@@ -191,7 +194,7 @@ export function SideModelPicker({
 				<Select
 					labelledBy={ids.provider}
 					value={value?.provider ?? ""}
-					options={[{ value: "", label: t("sideModelFollow") }, ...providerChoices(usable)]}
+					options={[{ value: "", label: none ?? t("sideModelFollow") }, ...providerChoices(usable)]}
 					busy={busy}
 					onChange={async (provider) => {
 						if (!provider) return onChange(null);

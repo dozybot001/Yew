@@ -11,6 +11,7 @@ import type {
 	Letter,
 	PermissionMode,
 	QueuedMessage,
+	Remark,
 	Schedule,
 	Session,
 	ThinkingLevel,
@@ -34,6 +35,7 @@ export interface Settings {
 	defaultModel: { provider: string; model: string; thinking: ThinkingLevel };
 	/** The model for the jobs beside every conversation; null leaves them to each session's provider. */
 	sideModel: { provider: string; model: string } | null;
+	observerModel: { provider: string; model: string } | null;
 	theme: "system" | "light" | "dark";
 	language: "system" | "zh" | "en";
 	workspaces: Workspace[];
@@ -239,6 +241,8 @@ export interface TranscriptState {
 	toolCalls: Record<string, ToolCallView>;
 	approvals: Record<string, Approval>;
 	queue: QueuedMessage[];
+	/** What the observing Yew said, by id. */
+	remarks: Record<string, Remark>;
 	olderCursor: number | null;
 	draft: AssistantMessage | null;
 	/** A model request that failed and is being tried again; gone when the answer starts. */

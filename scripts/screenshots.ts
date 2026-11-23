@@ -33,6 +33,7 @@
  *   node scripts/screenshots.ts [picture…] [--lang zh|en] [--out <folder>] [--app <Yew.app>] [--keep]
  *
  * Pictures are approval, main, letters, permission, models and phone; without any it makes all six.
+ * `observer` is one more, made only when named: the main conversation with the observing Yew's remark.
  * --keep leaves the temporary folder (printed at the start) in place.
  */
 import { existsSync, mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync } from "node:fs";
@@ -57,6 +58,7 @@ import {
 	pause,
 	ROOT,
 	type Theme,
+	USUAL,
 } from "./screenshots/shared.ts";
 import { STORIES, storyScript } from "./screenshots/story.ts";
 import { type Browser, launchBrowser, webPictures } from "./screenshots/web.ts";
@@ -81,7 +83,7 @@ async function main(): Promise<void> {
 		);
 		return;
 	}
-	const pictures = (positionals.length > 0 ? positionals : [...PICTURES]) as Picture[];
+	const pictures = (positionals.length > 0 ? positionals : USUAL) as Picture[];
 	const unknown = pictures.filter((picture) => !PICTURES.includes(picture));
 	if (unknown.length > 0) throw new Error(`Unknown picture: ${unknown.join(", ")}`);
 	const langs = (values.lang ?? ["zh", "en"]) as Lang[];
@@ -124,7 +126,7 @@ async function main(): Promise<void> {
 			const story = STORIES[lang];
 			const place = join(folder, lang);
 			log(`${lang}: setting up a throwaway Yew…`);
-			const { env, ids } = seed(place, lang, modelUrl);
+			const { env, ids } = seed(place, lang, modelUrl, pictures.includes("observer"));
 			const app = new Yew(env, await freePort(), join(place, "serve.log"));
 			running.push(app);
 			await app.start();

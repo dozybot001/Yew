@@ -3,9 +3,22 @@ import { fileURLToPath } from "node:url";
 
 export type Lang = "zh" | "en";
 export type Theme = "light" | "dark";
-export const PICTURES = ["approval", "main", "letters", "permission", "models", "phone"] as const;
+export const PICTURES = [
+	"approval",
+	"main",
+	"letters",
+	"permission",
+	"models",
+	"phone",
+	"observer",
+] as const;
 export type Picture = (typeof PICTURES)[number];
-export const WEB_ORDER: Picture[] = ["main", "permission", "approval", "letters"];
+export const WEB_ORDER: Picture[] = ["main", "permission", "approval", "letters", "observer"];
+/**
+ * The pictures a run without names makes. The observer's is made only when asked for: with her
+ * watching, her remark is in the main conversation, which the other pictures show without it.
+ */
+export const USUAL: Picture[] = PICTURES.filter((picture) => picture !== "observer");
 
 export const ROOT = fileURLToPath(new URL("../..", import.meta.url));
 export const BIN = join(ROOT, "bin/yew.js");
