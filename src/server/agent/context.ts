@@ -1,5 +1,7 @@
 import type {
 	AssistantMessage,
+	AttachmentRef,
+	EntryBody,
 	ModelMessage,
 	ToolCallBlock,
 	ToolResultMessage,
@@ -29,6 +31,17 @@ export const hookNote = (event: string, text: string): string =>
 /** Whether a stored message is one of Yew's own notes or a hook's: words that are not the person's. */
 export const isOwnNote = (text: string): boolean =>
 	text.startsWith(YEW_NOTE) || text.startsWith(HOOK_NOTE);
+
+/** Cuts a text to `max` characters, ending in "…" when something was cut. */
+export const clip = (text: string, max: number) =>
+	[...text].length > max ? `${[...text].slice(0, max - 1).join("")}…` : text;
+
+/** A message stored as the person's: what they wrote, a letter, or a note of Yew's or of a hook. */
+export const userEntry = (text: string, attachments?: AttachmentRef[]): EntryBody => ({
+	role: "user",
+	message: { role: "user", content: text, timestamp: Date.now() },
+	...(attachments && attachments.length > 0 ? { attachments } : {}),
+});
 
 function placeholder(call: ToolCallBlock, timestamp: number): ToolResultMessage {
 	return {

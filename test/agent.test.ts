@@ -4,7 +4,7 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { SUMMARY_HEADING } from "../src/server/agent/context.ts";
-import { askedInReply } from "../src/server/agent/runner.ts";
+import { askedInReply } from "../src/server/agent/reply-question.ts";
 import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.ts";
 import { choicesFrom } from "../src/server/tools/misc.ts";
 import { ALL_TOOLS } from "../src/server/tools/registry.ts";

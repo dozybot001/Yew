@@ -2,29 +2,18 @@ import { rmSync } from "node:fs";
 import { join } from "node:path";
 import {
 	type AssistantMessage,
-	type AttachmentRef,
-	type EntryBody,
 	type JsonObject,
 	messageText,
 	type Notice,
-	plainLine,
 	type ToolCallBlock,
-	type ToolResultMessage,
 } from "../../shared/messages.ts";
-import {
-	type Approval,
-	type ApprovalDecision,
-	type Entry,
-	type PermissionNote,
-	type PermissionRequest,
-	permissionModeOf,
-	personOnly,
-	type QuestionAnswer,
-	type QuestionRequest,
-	type QueuedMessage,
-	type Session,
-	type SessionStatus,
-	type ToolCallView,
+import type {
+	Approval,
+	Entry,
+	QuestionRequest,
+	QueuedMessage,
+	Session,
+	SessionStatus,
 } from "../../shared/types.ts";
 import { AttachmentStore } from "../attachments.ts";
 import {
@@ -36,83 +25,41 @@ import {
 	reached,
 } from "../budget.ts";
 import { conflict, invalid, YewError } from "../errors.ts";
-import type { HookEvent, HookOutcome, Hooks } from "../hooks.ts";
+import type { Hooks } from "../hooks.ts";
 import { PostOffice } from "../mail/post.ts";
 import { Manager } from "../manage.ts";
 import type { ModelGateway, ModelInfo } from "../model/gateway.ts";
 import type { PermissionEngine } from "../permissions/engine.ts";
 import { ScheduleBook } from "../schedules.ts";
 import { skillFolders } from "../skills.ts";
-import { type Store, validateSessionName } from "../store.ts";
+import type { Store } from "../store.ts";
 import { Jobs } from "../tools/jobs.ts";
-import { choicesFrom, settleAnswer } from "../tools/misc.ts";
+import { settleAnswer } from "../tools/misc.ts";
 import { ReadState } from "../tools/read-state.ts";
 import { ALL_TOOLS, specs, toolsFor } from "../tools/registry.ts";
-import {
-	type Lookup,
-	type MailContext,
-	type Roles,
-	type ToolContext,
-	type ToolDefinition,
-	ToolInputError,
-	type ToolResult,
-} from "../tools/types.ts";
+import type { Roles, ToolDefinition } from "../tools/types.ts";
+import { type Answer, Calls, failure, type Live } from "./calls.ts";
 import { ContextKeeper, notice } from "./compaction.ts";
 import {
+	clip,
 	hookNote,
 	prepareModelMessages,
 	sanitizeInterrupted,
 	usageTotals,
+	userEntry,
 	YEW_NOTE,
 } from "./context.ts";
 import { Held } from "./held.ts";
-import { runHelper } from "./helper.ts";
-import { freeName, Mailroom } from "./mailroom.ts";
+import { Mailroom } from "./mailroom.ts";
+import { nameAfterFirstTurn } from "./naming.ts";
 import {
-	CHOICES_PROMPT,
 	type ContextSnapshot,
-	helperPrompt,
 	type InstructionExtras,
-	NAMING_PROMPT,
 	type Placement,
 	systemPrompt,
 } from "./prompt.ts";
-import { reviewStep } from "./review.ts";
-
-/** Words a reply uses to offer a next step instead of asking outright. */
-const OFFER =
-	/如需|需要的话|要不要|是否需要|告诉我|说一声|let me know|tell me if|shall i|should i|would you like|do you want/i;
-
-/**
- * The question a reply ends with, if it ends with one: its last paragraph (outside code) when that asks
- * something or offers a next step. A session that asks the person this way goes idle, so Yew puts the
- * question in the approval center for it: Yew's code carries this, not a rule in the prompt.
- */
-export function askedInReply(text: string): string | null {
-	const prose = text.replace(/```[\s\S]*?(```|$)/g, "").trim();
-	const last =
-		prose
-			.split(/\n\s*\n/)
-			.at(-1)
-			?.trim() ?? "";
-	if (!last) return null;
-	const end = last.replace(/[\s*_`)\]）」』"'”’]+$/u, "");
-	if (!/[?？]$/.test(end) && !OFFER.test(last)) return null;
-	return last.length > 600 ? `…${last.slice(-600)}` : last;
-}
-
-type Answer = {
-	decision?: ApprovalDecision;
-	reason?: string;
-	answer?: string;
-	answers?: QuestionAnswer[];
-};
-
-interface Live {
-	controller: AbortController;
-	done: Promise<void>;
-	waiters: Map<string, (answer: Answer | null) => void>;
-}
+import { ReplyQuestions } from "./reply-question.ts";
+import { SessionHooks } from "./session-hooks.ts";
 
 export interface AgentsOptions {
 	store: Store;
@@ -155,10 +102,6 @@ const CUT_CALL =
 	"Not run: your reply was cut off at the output limit before its tool calls were complete. Make the call again; write long content in parts.";
 const CUT_TOO_OFTEN = "The reply was cut off at the model's output limit several times in a row.";
 
-/** The result of a call that was running when Yew stopped. */
-const RESTARTED =
-	"Yew restarted while this call was running. It may or may not have finished; check the current state before running it again.";
-
 const MAX_DRAFT_THINKING_CHARS = 12_000;
 const MAX_DRAFT_ARG_CHARS = 500;
 
@@ -191,42 +134,11 @@ function slimDraft(draft: AssistantMessage): AssistantMessage {
 	};
 }
 
-const clip = (text: string, max: number) =>
-	[...text].length > max ? `${[...text].slice(0, max - 1).join("")}…` : text;
-
-const userEntry = (text: string, attachments?: AttachmentRef[]): EntryBody => ({
-	role: "user",
-	message: { role: "user", content: text, timestamp: Date.now() },
-	...(attachments && attachments.length > 0 ? { attachments } : {}),
-});
-
 /** Tokens the next request starts from: everything sent plus what the model just wrote. */
 function contextSize(message: AssistantMessage): number {
 	const usage = message.usage;
 	return usage.input + usage.cacheRead + usage.cacheWrite + usage.output;
 }
-
-function resultEntry(
-	call: { callId: string; tool: string },
-	result: ToolResult,
-	started: number,
-): EntryBody {
-	const message: ToolResultMessage = {
-		role: "toolResult",
-		toolCallId: call.callId,
-		toolName: call.tool,
-		content: result.content,
-		isError: result.isError ?? false,
-		timestamp: Date.now(),
-		durationMs: Date.now() - started,
-	};
-	return { role: "toolResult", message };
-}
-
-const failure = (text: string): ToolResult => ({
-	content: [{ type: "text", text }],
-	isError: true,
-});
 
 /**
  * Runs sessions. Each working session is one async loop in this process: ask the model, check and
@@ -238,7 +150,6 @@ export class Agents {
 	readonly #gateway: ModelGateway;
 	readonly #permissions: PermissionEngine;
 	readonly #home: string;
-	readonly #version: string;
 	readonly #allTools: () => ToolDefinition[];
 	readonly #log: (line: string) => void;
 	readonly #draftInterval: number;
@@ -247,11 +158,9 @@ export class Agents {
 	readonly #jobs = new Map<string, Jobs>();
 	/** Messages from Yew itself (such as "a background job ended") waiting to reach the model. */
 	readonly #notes = new Map<string, string[]>();
-	readonly #hooks: Hooks | null;
-	/** By session: what the person wrote that the UserPromptSubmit hooks have not seen yet. */
-	readonly #prompts = new Map<string, string[]>();
-	/** By tool call: what ran without being asked about (skip mode) or was allowed by the check. */
-	readonly #permissionNotes = new Map<string, PermissionNote>();
+	readonly #hooks: SessionHooks;
+	readonly #calls: Calls;
+	readonly #replyQuestions: ReplyQuestions;
 	/** Letters, decision cards and the approval center. */
 	readonly post: PostOffice;
 	/** Scheduled tasks, whose runs end in this runner. */
@@ -261,8 +170,6 @@ export class Agents {
 	readonly #mail: Mailroom;
 	/** Each working session's latest written reply in this turn. */
 	readonly #lastText = new Map<string, string>();
-	/** Sessions whose question from a reply is getting its choices: stopped when the question goes. */
-	readonly #choosing = new Map<string, AbortController>();
 	readonly #userHome: string | null;
 	/**
 	 * Sessions the person stopped (letters wait until the person writes to them or continues them) and
@@ -272,23 +179,12 @@ export class Agents {
 	readonly #maxSteps: number;
 	readonly #context: ContextKeeper;
 	readonly #manager: Manager;
-	/** A session's or team's name by id, for what the person reads on permission cards. */
-	readonly #names = (id: string): string | null => {
-		const session = this.post.sessionName(id);
-		if (session) return session;
-		try {
-			return this.#store.getGroup(id).name;
-		} catch {
-			return null;
-		}
-	};
 
 	constructor(options: AgentsOptions) {
 		this.#store = options.store;
 		this.#gateway = options.gateway;
 		this.#permissions = options.permissions;
 		this.#home = options.home;
-		this.#version = options.version;
 		const tools = options.tools ?? ALL_TOOLS;
 		this.attachments = options.attachments ?? new AttachmentStore(options.store, options.home);
 		const readAttachment = this.attachments.readTool();
@@ -310,7 +206,7 @@ export class Agents {
 		this.#userHome = options.userHome ?? null;
 		this.#held = new Held(options.store);
 		this.#maxSteps = options.maxSteps ?? MAX_STEPS;
-		this.#hooks = options.hooks ?? null;
+		this.#hooks = new SessionHooks(options.store, options.hooks ?? null);
 		this.#context = new ContextKeeper({
 			store: this.#store,
 			gateway: this.#gateway,
@@ -334,7 +230,7 @@ export class Agents {
 			waitMs: options.waitMs ?? WAIT_MS,
 			isRunning: (id) => this.isRunning(id),
 			wake: (id) => this.#wake(id),
-			quiet: (session, said) => this.#askFromReply(session, said),
+			quiet: (session, said) => this.#replyQuestions.ask(session, said),
 		});
 		this.post.setHooks({ queued: (letter) => this.#mail.queued(letter) });
 		this.#manager = new Manager({
@@ -345,11 +241,26 @@ export class Agents {
 			modelExists: (provider, model) => Boolean(this.#gateway.model(provider, model)),
 			onArchived: (id) => this.archived(id),
 		});
-	}
-
-	/** What tools may look up while Yew checks a call of `session`. */
-	#lookup(session: Session): Lookup {
-		return { name: this.#names, plan: (args) => this.#manager.plan(session, args) };
+		this.#calls = new Calls({
+			store: this.#store,
+			gateway: this.#gateway,
+			permissions: this.#permissions,
+			home: this.#home,
+			version: options.version,
+			post: this.post,
+			mail: this.#mail,
+			manager: this.#manager,
+			hooks: this.#hooks,
+			tools: (session) => this.#toolsOf(session),
+			readState: (id) => this.#readState(id),
+			jobs: (id) => this.#jobsFor(id),
+		});
+		this.#replyQuestions = new ReplyQuestions({
+			store: this.#store,
+			gateway: this.#gateway,
+			log: this.#log,
+			mainId: () => this.post.mainSessionId(),
+		});
 	}
 
 	get home(): string {
@@ -394,7 +305,7 @@ export class Agents {
 		const attachments =
 			attachmentIds.length > 0 ? this.attachments.verifyPending(sessionId, attachmentIds) : [];
 		// The person stepped in: a full quota of letters again, and a new chain of hand-offs.
-		this.#dropReplyQuestions(sessionId);
+		this.#replyQuestions.drop(sessionId);
 		this.#held.resume(sessionId);
 		this.#store.resetLettersSent(sessionId);
 		this.#store.addIntervention(sessionId);
@@ -402,7 +313,10 @@ export class Agents {
 		if (this.isRunning(sessionId)) {
 			return { queued: this.#store.enqueue(sessionId, text, attachments) };
 		}
-		this.#dropLeftovers(sessionId, "Not run: the person sent a new message instead of continuing.");
+		this.#calls.dropLeftovers(
+			sessionId,
+			"Not run: the person sent a new message instead of continuing.",
+		);
 		const entry = this.#store.tx(() => {
 			const created = this.#store.appendEntry(sessionId, userEntry(text, attachments));
 			if (attachments.length > 0) {
@@ -415,7 +329,7 @@ export class Agents {
 			return created;
 		});
 		const hookPrompt = trimmed || attachments.map((item) => `[Attached: ${item.name}]`).join(", ");
-		this.#prompted(sessionId, [hookPrompt]);
+		this.#hooks.prompted(sessionId, [hookPrompt]);
 		const originEntryId = sessionId === this.post.mainSessionId() ? entry.id : null;
 		this.#start(sessionId, { byPerson: true, originEntryId });
 		return { entry };
@@ -431,7 +345,7 @@ export class Agents {
 		const entries = this.#store.contextEntries(sessionId);
 		if (entries.length === 0)
 			throw conflict("There is nothing to continue yet.", undefined, "nothing-to-continue");
-		this.#dropReplyQuestions(sessionId);
+		this.#replyQuestions.drop(sessionId);
 		this.#held.resume(sessionId);
 		// Continuing a session that stopped at a spending limit gives it as much room again for today.
 		grantMore(this.#store, session, Date.now());
@@ -487,7 +401,7 @@ export class Agents {
 			throw conflict("Stop the session first, then take it back.", undefined, "session-busy");
 		}
 		const count = this.#store.rewindSession(sessionId, this.#store.turnPoint(sessionId, entryId));
-		this.#dropReplyQuestions(sessionId);
+		this.#replyQuestions.drop(sessionId);
 		for (const approval of this.#store.pendingApprovals(sessionId)) {
 			this.#store.cancelApproval(approval.id);
 		}
@@ -624,24 +538,12 @@ export class Agents {
 	}
 
 	/** The calls a session can make depend on its place: card tools for the main conversation. */
-	#roles(session: Session): Roles {
-		return {
+	#toolsOf(session: Session): ToolDefinition[] {
+		const roles: Roles = {
 			canPostCards: this.post.canPostCards(session),
 			canOrganize: this.post.canOrganize(session),
 		};
-	}
-
-	/**
-	 * The conversation moves on: calls left over from an interrupted run will not be run later. Calls that
-	 * were running when Yew stopped may have finished, so they say that rather than "not run".
-	 */
-	#dropLeftovers(sessionId: string, reason: string): void {
-		this.#store.tx(() => {
-			for (const call of this.#store.toolCallsByStatus(sessionId, ["pending", "needs_review"])) {
-				const text = call.status === "needs_review" ? RESTARTED : reason;
-				this.#finishCall(call, failure(text), "error", Date.now());
-			}
-		});
+		return toolsFor(session, this.#allTools(), roles);
 	}
 
 	/** Memory folders from the settings, and where the person's own skills and instructions are. */
@@ -669,7 +571,7 @@ export class Agents {
 			let retriedOverflow = false;
 			let cutReplies = 0;
 			let stopHooks = 0;
-			if (resume) await this.#resumeCalls(sessionId, live);
+			if (resume) await this.#calls.resume(sessionId, live);
 			this.#deliver(sessionId);
 			for (let step = 0; ; step++) {
 				if (signal.aborted) break;
@@ -702,7 +604,7 @@ export class Agents {
 				}
 				if (signal.aborted) break;
 				// The person's hooks: at the start of a session and for what they wrote (hooks.ts).
-				if (await this.#promptHooks(sessionId)) break;
+				if (await this.#hooks.beforeRequest(sessionId)) break;
 				if (signal.aborted) break;
 
 				const currentSnapshot =
@@ -778,8 +680,8 @@ export class Agents {
 						);
 					}
 					// The person's Stop hooks may send it back to work, a few times at most.
-					if (this.#hooks?.has("Stop") && stopHooks < MAX_STOP_HOOKS) {
-						const stopped = await this.#hook("Stop", sessionId, {
+					if (this.#hooks.has("Stop") && stopHooks < MAX_STOP_HOOKS) {
+						const stopped = await this.#hooks.run("Stop", sessionId, {
 							stop_hook_active: stopHooks > 0,
 						});
 						if (stopped.block) {
@@ -809,7 +711,9 @@ export class Agents {
 					// The reply stopped at the output limit in the middle of its calls. Arguments that were
 					// cut short can still read as complete (half a file to write, say), so none of them runs.
 					this.#store.tx(() => {
-						for (const row of rows) this.#finishCall(row, failure(CUT_CALL), "error", Date.now());
+						for (const row of rows) {
+							this.#calls.finish(row, failure(CUT_CALL), "error", Date.now());
+						}
 					});
 					if (cutReplies >= MAX_CUT_REPLIES) {
 						endStatus = "error";
@@ -822,7 +726,7 @@ export class Agents {
 					continue;
 				}
 				cutReplies = 0;
-				await this.#runCalls(sessionId, rows, calls, live);
+				await this.#calls.run(sessionId, rows, calls, live);
 				if (signal.aborted) {
 					this.#notice(sessionId, "interrupted", "Stopped by the person.");
 					break;
@@ -856,81 +760,10 @@ export class Agents {
 			if (capped && !signal.aborted) this.#mail.endTurn(sessionId, "error", capped, false, said);
 			else this.#mail.endTurn(sessionId, endStatus, detail, signal.aborted, said);
 			if (endStatus === "idle" && !signal.aborted && !capped) {
-				this.#nameAfterFirstTurn(sessionId).catch((error: unknown) =>
+				nameAfterFirstTurn(this.#store, this.#gateway, sessionId).catch((error: unknown) =>
 					this.#log(`session ${sessionId}: naming failed: ${(error as Error).message}`),
 				);
 			}
-		}
-	}
-
-	/**
-	 * A session started from the home page is named after the start of its first message. After its
-	 * first turn its own model gives it a short name, once; a name the person or the main conversation
-	 * chose is kept.
-	 */
-	async #nameAfterFirstTurn(sessionId: string): Promise<void> {
-		const session = this.#store.getSession(sessionId);
-		if (!session.options.autoName) return;
-		this.#store.updateSession(sessionId, { options: { autoName: false } });
-		const model = this.#gateway.model(session.provider, session.model);
-		if (!model) return;
-		const entries = this.#store.contextEntries(sessionId);
-		const asked = entries.find((entry) => entry.role === "user");
-		const replied = entries.find((entry) => entry.role === "assistant");
-		const textOf = (entry: Entry | undefined) => {
-			if (!entry) return "";
-			if (entry.role === "user") {
-				const raw = messageText(entry.message).trim();
-				if (raw) return raw;
-				return (entry.attachments ?? []).map((item) => item.name).join(", ");
-			}
-			if (entry.role === "assistant") return messageText(entry.message).trim();
-			return "";
-		};
-		const first = clip(textOf(asked), 2000);
-		if (!first) return;
-		const reply = await this.#gateway.stream({
-			provider: session.provider,
-			model: model.id,
-			thinking: "off",
-			systemPrompt: NAMING_PROMPT,
-			messages: [
-				{
-					role: "user",
-					content: `The person's first message:\n${first}\n\nThe start of the reply:\n${clip(textOf(replied), 500)}`,
-					timestamp: Date.now(),
-				},
-			],
-			tools: [],
-			signal: new AbortController().signal,
-		});
-		const now = this.#store.getSession(sessionId);
-		this.#store.addUsage(sessionId, usageTotals(reply), now.contextTokens);
-		const said = reply.content
-			.map((block) => (block.type === "text" ? block.text : ""))
-			.join("")
-			.trim();
-		const name = plainLine(said)
-			.replace(/^["'“”‘’「」『』《》]+|["'“”‘’「」『』《》]+$/g, "")
-			.replace(/[。.!！?？]+$/, "")
-			.trim();
-		// Renamed meanwhile, or nothing usable came back: keep the name it has.
-		if (reply.stopReason !== "stop" || !name || now.name !== session.name) return;
-		let chosen: string;
-		try {
-			chosen = freeName(this.#store, validateSessionName(clip(name, 40)));
-		} catch {
-			return;
-		}
-		this.#store.updateSession(sessionId, { name: chosen });
-		// One turn in, there is little prompt cache to keep: the prompt learns the name without an update.
-		const saved = this.#store.getContextSnapshot<ContextSnapshot>(sessionId);
-		if (saved) {
-			this.#store.setContextSnapshot(sessionId, {
-				...saved,
-				name: chosen,
-				...(saved.told ? { told: { ...saved.told, name: chosen } } : {}),
-			});
 		}
 	}
 
@@ -940,7 +773,7 @@ export class Agents {
 		snapshot: ContextSnapshot,
 		signal: AbortSignal,
 	): Promise<AssistantMessage> {
-		const tools = toolsFor(session, this.#allTools(), this.#roles(session));
+		const tools = this.#toolsOf(session);
 		let last = 0;
 		let pending: ReturnType<typeof setTimeout> | null = null;
 		let latest: AssistantMessage | null = null;
@@ -995,601 +828,6 @@ export class Agents {
 	}
 
 	/**
-	 * Checks every call of a batch first (asking where needed), then runs the allowed ones
-	 * (docs/prior-art.md, 4.1).
-	 */
-	async #runCalls(
-		sessionId: string,
-		rows: ToolCallView[],
-		calls: (ToolCallBlock | null)[],
-		live: Live,
-	): Promise<void> {
-		const signal = live.controller.signal;
-		const current = this.#store.getSession(sessionId);
-		const byName = new Map(
-			toolsFor(current, this.#allTools(), this.#roles(current)).map((tool) => [tool.name, tool]),
-		);
-		const results = new Map<
-			string,
-			{ result: ToolResult; status: "done" | "error" | "denied"; started: number }
-		>();
-		const approved: { row: ToolCallView; tool: ToolDefinition }[] = [];
-
-		for (const [index, row] of rows.entries()) {
-			const started = Date.now();
-			if (signal.aborted) {
-				results.set(row.id, {
-					result: failure("Not run: stopped by the person."),
-					status: "error",
-					started,
-				});
-				continue;
-			}
-			const tool = byName.get(row.tool);
-			const argumentsError = calls[index]?.argumentsError;
-			if (!tool) {
-				results.set(row.id, {
-					result: failure(`There is no tool named ${row.tool}.`),
-					status: "error",
-					started,
-				});
-				continue;
-			}
-			if (argumentsError) {
-				results.set(row.id, {
-					result: failure(`The arguments were not valid JSON: ${argumentsError}`),
-					status: "error",
-					started,
-				});
-				continue;
-			}
-			const session = this.#store.getSession(sessionId);
-			const activeRun = this.#mail.run(sessionId);
-			// Scheduled unattended runs can never self-escalate by modifying schedules or widening permissions (even in skip mode).
-			if (activeRun?.unattended && row.tool === "manage_yew") {
-				let blockedReason: string | null = null;
-				if (Array.isArray((row.args as { schedules?: unknown }).schedules)) {
-					blockedReason = "Scheduled unattended runs cannot create or modify scheduled tasks.";
-				} else {
-					try {
-						if (this.#manager.plan(session, row.args).tier === "widen") {
-							blockedReason =
-								"Scheduled unattended runs cannot widen permissions or runtime boundaries.";
-						}
-					} catch {
-						// Invalid arguments will be caught normally below.
-					}
-				}
-				if (blockedReason) {
-					activeRun.refused.push(blockedReason);
-					results.set(row.id, {
-						result: { ...failure(`Refused: ${blockedReason}`), detail: { code: "unattended" } },
-						status: "denied",
-						started,
-					});
-					continue;
-				}
-			}
-			// The person's PreToolUse hooks can stop a call before anything else (hooks.ts).
-			if (this.#hooks?.has("PreToolUse", row.tool)) {
-				const before = await this.#hook("PreToolUse", sessionId, {}, row.tool, row.args);
-				if (before.block) {
-					results.set(row.id, {
-						result: failure(hookNote("PreToolUse", `It stopped this call: ${before.block}`)),
-						status: "denied",
-						started,
-					});
-					continue;
-				}
-			}
-			let decision: ReturnType<PermissionEngine["decide"]>;
-			try {
-				// In the automatic mode the model asks for a person's approval itself, with `confirm`.
-				const flagged = (row.args as { confirm?: unknown }).confirm === true;
-				const subject = tool.subject(row.args, session, this.#lookup(session));
-				decision = this.#permissions.decide(subject, this.#mail.withRunMode(session), flagged);
-			} catch (error) {
-				const message =
-					error instanceof ToolInputError
-						? error.message
-						: `Could not check this call: ${(error as Error).message}`;
-				results.set(row.id, { result: failure(message), status: "error", started });
-				continue;
-			}
-			if (decision.effect === "deny") {
-				results.set(row.id, {
-					result: failure(`Refused by Yew: ${decision.reason}`),
-					status: "denied",
-					started,
-				});
-				continue;
-			}
-			if (decision.effect === "allow" && decision.note) this.#notePermission(row.id, decision.note);
-			// The automatic mode: the check decides first; the person is asked when it does not allow.
-			if (decision.effect === "ask" && decision.review) {
-				const verdict = await reviewStep({
-					gateway: this.#gateway,
-					store: this.#store,
-					session,
-					request: decision.request,
-					signal: live.controller.signal,
-				});
-				if (verdict.allow) {
-					this.#notePermission(row.id, { reviewed: verdict.reason });
-					this.#recordReview(sessionId, decision.request, verdict.reason);
-					approved.push({ row, tool });
-					continue;
-				}
-				decision.request.review = verdict.reason;
-			}
-			const run = this.#mail.run(sessionId);
-			if (decision.effect === "ask" && run?.unattended) {
-				// Nobody is there to say yes: refuse now rather than wait.
-				run.refused.push(decision.request.summary);
-				results.set(row.id, {
-					result: {
-						...failure(
-							`Refused: this turn runs for the scheduled task "${run.name}" and nobody is watching, so nobody can approve it. Do what you can without it; Yew lists what was refused in the report.`,
-						),
-						detail: { code: "unattended" },
-					},
-					status: "denied",
-					started,
-				});
-				continue;
-			}
-			if (decision.effect === "ask") {
-				this.#store.updateToolCall(row.id, { status: "waiting" });
-				const approval = this.#store.createApproval({
-					sessionId,
-					toolCallId: row.id,
-					kind: "permission",
-					// What the call is for and what it would change, so the person decides on what they see.
-					request: {
-						...decision.request,
-						...tool.preview?.(row.args, session, this.#lookup(session)),
-					},
-				});
-				const answer = await this.#waitFor(sessionId, approval.id, live);
-				if (!answer || answer.decision === "deny" || answer.decision === undefined) {
-					const reason = answer?.reason?.trim();
-					const text = !answer
-						? "Not run: stopped before the person decided."
-						: reason
-							? `The person declined this call: ${reason}`
-							: "The person declined this call.";
-					results.set(row.id, { result: failure(text), status: "denied", started });
-					continue;
-				}
-				if (answer.decision === "allow_always" && decision.request.rememberRules) {
-					const current = this.#store.getSession(sessionId);
-					this.#store.updateSession(sessionId, {
-						rules: [...current.rules, ...decision.request.rememberRules],
-					});
-				}
-				// Clear "waiting" immediately once approved so the UI never keeps showing "Needs your permission".
-				this.#store.updateToolCall(row.id, { status: "pending" });
-			}
-			approved.push({ row, tool });
-		}
-
-		const execute = async ({ row, tool }: { row: ToolCallView; tool: ToolDefinition }) => {
-			const started = Date.now();
-			if (signal.aborted) {
-				results.set(row.id, {
-					result: failure("Not run: stopped by the person."),
-					status: "error",
-					started,
-				});
-				return;
-			}
-			this.#store.updateToolCall(row.id, { status: "running", startedAt: started });
-			let result: ToolResult;
-			try {
-				result = await tool.run(row.args, this.#toolContext(sessionId, row, live));
-			} catch (error) {
-				result = failure(
-					error instanceof ToolInputError
-						? error.message
-						: `The tool failed: ${(error as Error).message}`,
-				);
-			}
-			// The person's PostToolUse hooks see what it did, and may add a word for the model (hooks.ts).
-			if (!result.isError && this.#hooks?.has("PostToolUse", row.tool)) {
-				const said = result.content
-					.map((block) => (block.type === "text" ? block.text : ""))
-					.join("\n")
-					.slice(0, 10_000);
-				const after = await this.#hook(
-					"PostToolUse",
-					sessionId,
-					{ tool_response: { content: said } },
-					row.tool,
-					row.args,
-				);
-				if (after.block) {
-					result = {
-						...result,
-						content: [
-							...result.content,
-							{ type: "text", text: hookNote("PostToolUse", after.block) },
-						],
-					};
-				}
-			}
-			results.set(row.id, { result, status: result.isError ? "error" : "done", started });
-		};
-		// Run contiguous read-only calls concurrently while preserving exact order around mutating calls.
-		for (let i = 0; i < approved.length; ) {
-			const currentCall = approved[i];
-			if (!currentCall) break;
-			if (!currentCall.tool.readOnly) {
-				await execute(currentCall);
-				i++;
-				continue;
-			}
-			const start = i;
-			while (i < approved.length && approved[i]?.tool.readOnly) i++;
-			await Promise.all(approved.slice(start, i).map(execute));
-		}
-
-		// Results go into the transcript in the order the model made the calls.
-		this.#store.tx(() => {
-			for (const row of rows) {
-				const outcome = results.get(row.id) ?? {
-					result: failure("Not run."),
-					status: "error" as const,
-					started: Date.now(),
-				};
-				this.#finishCall(row, outcome.result, outcome.status, outcome.started);
-			}
-		});
-	}
-
-	#finishCall(
-		row: Pick<ToolCallView, "id" | "callId" | "tool" | "sessionId">,
-		result: ToolResult,
-		status: "done" | "error" | "denied",
-		started: number,
-	): void {
-		const entry = this.#store.appendEntry(row.sessionId, resultEntry(row, result, started));
-		const detail = (result.detail as JsonObject | undefined) ?? null;
-		const note = this.#permissionNotes.get(row.id);
-		this.#permissionNotes.delete(row.id);
-		this.#store.updateToolCall(row.id, {
-			status,
-			// The row shows what ran unasked with its risk, or what the check allowed.
-			detail: note ? { ...detail, permission: note as unknown as JsonObject } : detail,
-			resultMessageId: entry.id,
-			finishedAt: Date.now(),
-		});
-		// A letter this call waited for is now in the transcript, inside the result.
-		const handed = this.#mail.takeHanded(row.id);
-		if (handed) this.post.mail.setLetterEntry(handed, entry.id);
-	}
-
-	/** What the person wrote, for the UserPromptSubmit hooks of the next step. */
-	#prompted(sessionId: string, texts: string[]): void {
-		const wanted = texts.filter((text) => text.trim());
-		if (!this.#hooks || wanted.length === 0) return;
-		this.#prompts.set(sessionId, [...(this.#prompts.get(sessionId) ?? []), ...wanted]);
-	}
-
-	/** Runs one event's hooks; a hook that failed is a notice for the person. */
-	async #hook(
-		event: HookEvent,
-		sessionId: string,
-		fields: JsonObject,
-		tool?: string,
-		args?: JsonObject,
-	): Promise<HookOutcome> {
-		const hooks = this.#hooks;
-		if (!hooks) return { block: null, context: "", errors: [] };
-		const session = this.#store.getSession(sessionId);
-		const outcome = await hooks.run(event, fields, {
-			sessionId,
-			cwd: session.cwd,
-			...(tool !== undefined ? { tool } : {}),
-			...(args !== undefined ? { args } : {}),
-		});
-		for (const error of outcome.errors) {
-			this.#notice(sessionId, "hook", error, { event, kind: "error", text: error });
-		}
-		return outcome;
-	}
-
-	/**
-	 * SessionStart for a session's first turn, UserPromptSubmit for each thing the person wrote.
-	 * What they print goes to the model as Yew's note; true when one stopped what the person wrote.
-	 */
-	async #promptHooks(sessionId: string): Promise<boolean> {
-		if (!this.#hooks) return false;
-		const first = !this.#store
-			.contextEntries(sessionId)
-			.some((entry) => entry.role === "assistant");
-		if (first && this.#hooks.has("SessionStart")) {
-			const started = await this.#hook("SessionStart", sessionId, { source: "startup" });
-			if (started.context) {
-				this.#store.appendEntry(sessionId, userEntry(hookNote("SessionStart", started.context)));
-			}
-		}
-		const prompts = this.#prompts.get(sessionId) ?? [];
-		this.#prompts.delete(sessionId);
-		if (!this.#hooks.has("UserPromptSubmit")) return false;
-		for (const prompt of prompts) {
-			const checked = await this.#hook("UserPromptSubmit", sessionId, { prompt });
-			if (checked.block) {
-				this.#store.appendEntry(
-					sessionId,
-					userEntry(
-						hookNote(
-							"UserPromptSubmit",
-							`It stopped the message above, so that message is not to be acted on: ${checked.block}`,
-						),
-					),
-				);
-				this.#notice(sessionId, "hook", checked.block, {
-					event: "UserPromptSubmit",
-					kind: "blocked",
-					text: checked.block,
-				});
-				return true;
-			}
-			if (checked.context) {
-				this.#store.appendEntry(
-					sessionId,
-					userEntry(hookNote("UserPromptSubmit", checked.context)),
-				);
-			}
-		}
-		return false;
-	}
-
-	/** Adds to what a call's row says about how it was allowed. */
-	#notePermission(callId: string, note: PermissionNote): void {
-		const current = this.#permissionNotes.get(callId) ?? {};
-		const risk = [...new Set([...(current.risk ?? []), ...(note.risk ?? [])])];
-		const reviewed = [current.reviewed, note.reviewed].filter((text) => text !== undefined);
-		this.#permissionNotes.set(callId, {
-			...(risk.length > 0 ? { risk } : {}),
-			...(reviewed.length > 0 ? { reviewed: reviewed.filter(Boolean).join(" ") } : {}),
-		});
-	}
-
-	/**
-	 * A permission a running command asks for, such as reaching a site: what only the person gives in
-	 * the session's mode goes to them; otherwise skip mode allows it, and the automatic mode's check
-	 * decides first. True when allowed; else the request to ask the person with.
-	 */
-	async #settlePermit(
-		sessionId: string,
-		callId: string,
-		request: PermissionRequest,
-		live: Live,
-	): Promise<PermissionRequest | true> {
-		const session = this.#store.getSession(sessionId);
-		const mode = permissionModeOf(this.#mail.withRunMode(session).options);
-		if (personOnly(request.reasons ?? [], mode)) return { ...request, matter: true };
-		if (mode === "skip") {
-			this.#notePermission(callId, { risk: request.reasons ?? [] });
-			return true;
-		}
-		if (mode !== "review") return request;
-		const verdict = await reviewStep({
-			gateway: this.#gateway,
-			store: this.#store,
-			session,
-			request,
-			signal: live.controller.signal,
-		});
-		if (!verdict.allow) return { ...request, review: verdict.reason };
-		this.#notePermission(callId, { reviewed: verdict.reason });
-		this.#recordReview(sessionId, request, verdict.reason);
-		return true;
-	}
-
-	/** Each step the check let run stays in the session to look back on. */
-	#recordReview(sessionId: string, request: PermissionRequest, reason: string): void {
-		notice(this.#store, sessionId, "reviewed", reason, {
-			tool: request.tool,
-			summary: request.summary.slice(0, 300),
-			reason,
-		});
-	}
-
-	/** After a restart: calls that were running get an honest "unknown" result; calls that never ran are checked again. */
-	async #resumeCalls(sessionId: string, live: Live): Promise<void> {
-		const unknown = this.#store.toolCallsByStatus(sessionId, ["needs_review"]);
-		this.#store.tx(() => {
-			for (const call of unknown) this.#finishCall(call, failure(RESTARTED), "error", Date.now());
-		});
-		const pending = this.#store.toolCallsByStatus(sessionId, ["pending"]);
-		if (pending.length > 0)
-			await this.#runCalls(
-				sessionId,
-				pending,
-				pending.map(() => null),
-				live,
-			);
-	}
-
-	#waitFor(sessionId: string, approvalId: string, live: Live): Promise<Answer | null> {
-		const signal = live.controller.signal;
-		this.#store.setStatus(sessionId, "waiting");
-		return new Promise<Answer | null>((resolve) => {
-			const finish = (answer: Answer | null) => {
-				live.waiters.delete(approvalId);
-				signal.removeEventListener("abort", onAbort);
-				if (!signal.aborted) this.#store.setStatus(sessionId, "working");
-				resolve(answer);
-			};
-			const onAbort = () => {
-				this.#store.cancelApproval(approvalId);
-				finish(null);
-			};
-			live.waiters.set(approvalId, finish);
-			if (signal.aborted) onAbort();
-			else signal.addEventListener("abort", onAbort, { once: true });
-		});
-	}
-
-	#toolContext(sessionId: string, row: ToolCallView, live: Live): ToolContext {
-		const session = this.#store.getSession(sessionId);
-		const model = this.#gateway.model(session.provider, session.model);
-		let tail = "";
-		let timer: ReturnType<typeof setTimeout> | null = null;
-		let permits: Promise<boolean> = Promise.resolve(true);
-		const context: ToolContext = {
-			session,
-			signal: live.controller.signal,
-			readState: this.#readState(sessionId),
-			jobs: this.#jobsFor(sessionId),
-			tmpDir: join(this.#home, "tmp", sessionId),
-			acceptsImages: model?.input.includes("image") ?? false,
-			version: this.#version,
-			output: (chunk) => {
-				tail = (tail + chunk).slice(-4000);
-				if (timer) return;
-				timer = setTimeout(() => {
-					timer = null;
-					this.#store.live(sessionId, { type: "toolOutput", toolCallId: row.id, output: tail });
-				}, 200);
-			},
-			setTodos: (todos) => this.#store.setTodos(sessionId, todos),
-			offLimits: (path) => this.#permissions.offLimits(path),
-			ask: async (request) => {
-				const run = this.#mail.run(sessionId);
-				if (run?.unattended) {
-					const first = request.questions?.[0]?.question ?? request.question ?? "";
-					run.refused.push(`Question: ${clip(plainLine(first), 200)}`);
-					throw new ToolInputError(
-						`Nobody can answer now: this turn runs for the scheduled task "${run.name}" and nobody is watching. Decide what you can yourself and say in your reply what is still open.`,
-					);
-				}
-				const approval = this.#store.createApproval({
-					sessionId,
-					toolCallId: row.id,
-					kind: "question",
-					request,
-				});
-				const answer = await this.#waitFor(sessionId, approval.id, live);
-				if (!answer?.answer) throw new ToolInputError("Stopped before the person answered.");
-				return answer.answer;
-			},
-			permit: (asked, until) => {
-				// One card at a time for a call; the next waits until the person has answered.
-				const next = permits.then(async () => {
-					if (until?.aborted) return false;
-					const request = await this.#settlePermit(sessionId, row.id, asked, live);
-					if (request === true) return true;
-					const run = this.#mail.run(sessionId);
-					if (run?.unattended) {
-						run.refused.push(request.summary);
-						return false;
-					}
-					this.#store.updateToolCall(row.id, { status: "waiting" });
-					const approval = this.#store.createApproval({
-						sessionId,
-						toolCallId: row.id,
-						kind: "permission",
-						request,
-					});
-					// The need passed before the person answered: the card is withdrawn.
-					const withdraw = () => {
-						if (this.#store.getApproval(approval.id).status !== "pending") return;
-						this.#store.cancelApproval(approval.id);
-						live.waiters.get(approval.id)?.(null);
-					};
-					until?.addEventListener("abort", withdraw, { once: true });
-					const answer = await this.#waitFor(sessionId, approval.id, live);
-					until?.removeEventListener("abort", withdraw);
-					if (!live.controller.signal.aborted) {
-						this.#store.updateToolCall(row.id, { status: "running" });
-					}
-					if (answer?.decision === "allow_always" && request.rememberRules) {
-						const newDomains = request.rememberRules
-							.filter((rule) => rule.tool === "sandbox_site" && rule.pattern)
-							.map((rule) => rule.pattern as string);
-						if (newDomains.length > 0) {
-							const current = this.#store.getSession(sessionId);
-							const merged = [
-								...new Set([...(current.options.allowedDomains ?? []), ...newDomains]),
-							];
-							this.#store.updateSession(sessionId, { options: { allowedDomains: merged } });
-						}
-					}
-					return answer?.decision === "allow_once" || answer?.decision === "allow_always";
-				});
-				permits = next.catch(() => false);
-				return next;
-			},
-			mail: this.#mailContext(sessionId, live, row.id),
-			helper: (task) => {
-				const parent = this.#store.getSession(sessionId);
-				return runHelper({
-					gateway: this.#gateway,
-					permissions: this.#permissions,
-					session: this.#mail.withRunMode(parent),
-					tools: toolsFor(parent, this.#allTools(), this.#roles(parent)),
-					lookup: this.#lookup(parent),
-					// Its own reads, so they do not count as the session's before an edit; no questions.
-					context: {
-						...context,
-						readState: new ReadState(),
-						output: () => {},
-						setTodos: () => {},
-						ask: async () => {
-							throw new ToolInputError("A helper cannot ask the person.");
-						},
-						permit: async () => false,
-					},
-					systemPrompt: helperPrompt(parent.name, parent.cwd),
-					task,
-					signal: live.controller.signal,
-					onStep: (line) => context.output(`${line}\n`),
-					onUsage: (usage) =>
-						this.#store.addUsage(sessionId, usage, this.#store.getSession(sessionId).contextTokens),
-				});
-			},
-		};
-		return context;
-	}
-
-	// --- letters ---
-
-	#mailContext(sessionId: string, live: Live, callId: string): MailContext {
-		return {
-			post: this.post,
-			canPostCards: this.post.canPostCards(this.#store.getSession(sessionId)),
-			send: (out) => {
-				const session = this.#store.getSession(sessionId);
-				const originEntryId = this.#mail.originOf(sessionId);
-				return this.#mail.sent(
-					sessionId,
-					this.post.send(
-						{ kind: "session", session },
-						{ ...out, ...(originEntryId ? { originEntryId } : {}) },
-					),
-				);
-			},
-			wait: (letter) => this.#mail.awaitReply(sessionId, letter, live.controller.signal, callId),
-			open: (input) => this.#mail.openChild(this.#store.getSession(sessionId), input, callId),
-			finish: (outcome) => this.#store.setOutcome(sessionId, outcome),
-			manage: (args) => {
-				const by = this.#store.getSession(sessionId);
-				if (!this.post.canOrganize(by)) {
-					throw conflict(
-						"Only the main conversation, or a session the person allowed, can manage Yew.",
-						undefined,
-						"not-allowed",
-					);
-				}
-				return this.#manager.apply(by, args);
-			},
-		};
-	}
-
-	/**
 	 * Starts a session that has letters waiting, when it is free: idle, or stopped by an error. A session
 	 * that needs review or that the person stopped waits for the person; one that is working gets its
 	 * letters between tool calls.
@@ -1607,7 +845,10 @@ export class Agents {
 		// At a spending limit letters wait: for the next day, a higher limit, or the person.
 		if (reached(this.#store, session, Date.now())) return;
 		if (this.post.mail.queuedFor(sessionId).length === 0) return;
-		this.#dropLeftovers(sessionId, "Not run: a letter arrived and the conversation moved on.");
+		this.#calls.dropLeftovers(
+			sessionId,
+			"Not run: a letter arrived and the conversation moved on.",
+		);
 		this.#start(sessionId);
 	}
 
@@ -1657,93 +898,6 @@ export class Agents {
 			limit: mark.limit,
 		});
 		return text;
-	}
-
-	/**
-	 * A code session's last reply that nobody else reads, ending with a question or an offer, becomes a
-	 * question in the approval center, and the session shows that it waits. The latest such question
-	 * replaces an older one; the person's next message, or continuing, takes it away.
-	 */
-	#askFromReply(session: Session, said: string): void {
-		if (!session.cwd || session.archivedAt !== null || session.id === this.post.mainSessionId()) {
-			return;
-		}
-		const older = this.#replyQuestions(session.id);
-		const asked = askedInReply(said);
-		if (asked) {
-			this.#dropReplyQuestions(session.id);
-			const card = this.#store.createApproval({
-				sessionId: session.id,
-				toolCallId: null,
-				kind: "question",
-				request: { questions: [{ question: asked }], fromReply: true },
-			});
-			const choosing = new AbortController();
-			this.#choosing.set(session.id, choosing);
-			this.#offerChoices(session, card.id, asked, said, choosing.signal)
-				.catch((error: unknown) =>
-					this.#log(
-						`session ${session.id}: no choices for its question: ${(error as Error).message}`,
-					),
-				)
-				.finally(() => {
-					if (this.#choosing.get(session.id) === choosing) this.#choosing.delete(session.id);
-				});
-		}
-		if (asked || older.length > 0) this.#store.setStatus(session.id, "waiting", null);
-	}
-
-	/**
-	 * Gives a question taken from a reply its choices, so the person answers with one click. The
-	 * session's own model writes them from the end of the reply. The card is there meanwhile, and
-	 * stays as it is when this fails, when the question has no fixed answers, or when the person has
-	 * answered by then.
-	 */
-	async #offerChoices(
-		session: Session,
-		approvalId: string,
-		asked: string,
-		said: string,
-		signal: AbortSignal,
-	): Promise<void> {
-		const model = this.#gateway.model(session.provider, session.model);
-		if (!model) return;
-		const reply = await this.#gateway.stream({
-			provider: session.provider,
-			model: model.id,
-			thinking: "off",
-			systemPrompt: CHOICES_PROMPT,
-			messages: [
-				{
-					role: "user",
-					content: `The end of the reply:\n${said.slice(-3000)}\n\nThe question:\n${asked}`,
-					timestamp: Date.now(),
-				},
-			],
-			tools: [],
-			signal,
-		});
-		const now = this.#store.getSession(session.id);
-		this.#store.addUsage(session.id, usageTotals(reply), now.contextTokens);
-		const wrote = reply.content.map((block) => (block.type === "text" ? block.text : "")).join("");
-		const choices = choicesFrom(wrote);
-		if (!choices || signal.aborted) return;
-		this.#store.amendApproval(approvalId, {
-			questions: [{ question: asked, ...choices }],
-			fromReply: true,
-		});
-	}
-
-	#replyQuestions(sessionId: string): Approval[] {
-		return this.#store
-			.pendingApprovals(sessionId)
-			.filter((approval) => (approval.request as QuestionRequest).fromReply === true);
-	}
-
-	#dropReplyQuestions(sessionId: string): void {
-		this.#choosing.get(sessionId)?.abort();
-		this.#choosing.delete(sessionId);
-		for (const approval of this.#replyQuestions(sessionId)) this.#store.cancelApproval(approval.id);
 	}
 
 	/** The main conversation and the session's opener, as the system prompt names them. */
@@ -1808,7 +962,7 @@ export class Agents {
 				entry.id,
 			);
 		});
-		this.#prompted(
+		this.#hooks.prompted(
 			sessionId,
 			delivered.map((entry) => {
 				if (entry.role !== "user") return "";
