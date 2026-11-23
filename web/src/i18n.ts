@@ -487,7 +487,7 @@ const zh = {
 	personal_yew: "Yew",
 	opening: "开场",
 	openingHint:
-		"打开时一秒左右的开场。选「点击进入」时，启动完成后停在开场，点一下或按任意键再进去。界面里的 Yew 隐藏时不播开场。",
+		"打开时一秒左右的开场。「点击进入」会停在开场，点一下或按任意键进去。界面里的 Yew 隐藏时不播。",
 	opening_auto: "自动进入",
 	opening_click: "点击进入",
 	mascot_on: "显示",
@@ -501,7 +501,7 @@ const zh = {
 	observerOff: "不旁观",
 	observerNoKey: "{provider} 没有密钥，Yew 现在不旁观。",
 	observerHelp:
-		"选了模型后，你发起的每一轮结束时 Yew 看一遍，有话就在回复下面说一句。你的上一条消息、这一轮每个操作的名称和参数（每个一行）和会话的回复（各有长度上限）会发给这个模型的服务商，适用它的隐私政策；费用记在该会话上。她只评工作，说的话不进会话的上下文。可以在会话设置里对单个会话关掉；人设可以写在数据目录的 persona.md 里。",
+		"你发起的每一轮结束时 Yew 看一遍，有话就在回复下面说一句，只评工作。你的上一条消息、这一轮的操作（名称和参数）和回复会发给这个模型的服务商，适用它的隐私政策；费用记在该会话上。可在会话设置里单独关掉。",
 	observeSection: "旁观",
 	observe: "让 Yew 旁观这个会话",
 	observeHint: "在设置里选了旁观模型后生效；关掉后这个会话的内容不发给旁观模型",
@@ -585,7 +585,7 @@ const zh = {
 	mainModelHelp:
 		"新建会话时默认选这个服务商、模型和思考强度；已有的会话不受影响，每个会话可以单独改。",
 	sideModelHelp:
-		"给新会话起名、读回复末尾是不是给你留了问题，这两件小事用它。「跟随主模型」时每个会话用自己的模型。另选模型后，起名用的会话开头和回复的最后 3000 个字会发给它的服务商，适用它的隐私政策；它没答完整或没有密钥时，由会话自己的模型来做。",
+		"给新会话起名、读回复末尾是不是留了问题，由它来做。另选模型后，会话开头和回复的最后 3000 个字会发给它的服务商，适用它的隐私政策；它答不了时由会话自己的模型做。",
 	deleteProviderBody:
 		"删除自定义服务商 {name}？它的配置和钥匙串里的 API Key 都会删除，用它的会话将无法请求模型。",
 	err_network: "连不上 Yew Harness 服务。确认 yew serve 还在运行，然后重试。",
@@ -740,7 +740,7 @@ const zh = {
 	fromCli: "命令行",
 	ownInstructions: "固定说明",
 	ownInstructionsHelp:
-		"每个会话开始时都会读到的说明，比如你的习惯和要守的规矩。存在 Yew Harness 数据目录的 AGENTS.md 里，会话自己改不了；改了以后，进行中的会话在下一条消息时收到新的内容，压缩上下文之后也照样带着。",
+		"每个会话开始时都会读到，比如你的习惯和规矩。存在数据目录的 AGENTS.md 里，会话自己改不了；改动在进行中的会话的下一条消息生效。",
 	ownInstructionsPlaceholder: "例如：回复简短；提交信息用英文",
 	letterFrom: "{name} 来信",
 	sentByYew: "Yew Harness 代发",
@@ -914,25 +914,25 @@ const zh = {
 	receive_refuse_hint: "不收其他会话的信",
 	letterQuota: "发信额度",
 	letterQuotaHelp:
-		"你每给这个会话发一条消息或做一个决定，它最多发这么多封信。留空用默认值：主对话 60 封，其他会话 30 封。",
+		"你每发一条消息或做一个决定，它最多发这么多封信。留空用默认：主对话 60，其他 30。",
 	lettersLeft: "到你下一条消息前还能发 {n} 封",
 	budgetSection: "费用",
 	dailyBudget: "每日费用上限（美元）",
 	dailyBudgetHelp:
-		"这个会话一天最多花这么多，按服务商的价格估算，按这台电脑的日期算一天。到 80% 时提醒，到上限时会话停下；点「继续」当天再给同样多的额度，也可以调高上限。留空不设。没有价格的模型不计费用。",
+		"这个会话一天最多花这么多，按服务商的价格估算。到 80% 提醒，到上限停下，点「继续」当天再给同样多。留空不设。",
 	memoryDirs: "记忆目录",
 	memoryDirsHelp:
-		"你跨会话保存笔记的文件夹，一行一个。会话能直接读这些文件夹，每个文件夹的索引（index.md、MEMORY.md 或 README.md）会随说明一起给它；写这些文件夹仍然要问你。",
+		"跨会话保存笔记的文件夹，一行一个。会话可以直接读，各文件夹的索引（index.md、MEMORY.md 或 README.md）随说明给它；写仍然要问你。",
 	memoryDirsPlaceholder: "例如 ~/memory",
 	hiddenFolders: "会话读不到的目录",
 	hiddenFoldersHelp:
-		"放密钥、私人笔记这类内容的文件夹，一行一个。会话的文件工具读不到、也改不了这些文件夹，搜索结果里也没有里面的文件；会话的命令仍以你的系统账户运行，读得到。凭据文件和 Yew Harness 自己的数据本来就读不到，不用写在这里。",
+		"放密钥、私人笔记的文件夹，一行一个。会话的文件工具读不到、改不了，搜索也不出现；会话的命令仍以你的账户运行，读得到。",
 	hiddenFoldersHelpSandbox:
-		"放密钥、私人笔记这类内容的文件夹，一行一个。会话的文件工具和沙箱里的命令都读不到、也改不了这些文件夹，搜索结果里也没有里面的文件。凭据文件和 Yew Harness 自己的数据本来就读不到，不用写在这里。",
+		"放密钥、私人笔记的文件夹，一行一个。会话的文件工具和沙箱里的命令都读不到、改不了，搜索也不出现。",
 	hiddenFoldersPlaceholder: "例如 ~/memory/.private",
 	dailyBudgetAll: "全部会话的每日费用上限（美元）",
 	dailyBudgetAllHelp:
-		"所有会话一天加起来最多花这么多，按服务商的价格估算。到上限时，正在干活的会话在下一次请求模型前停下。留空不设。",
+		"所有会话一天加起来最多花这么多，按服务商的价格估算。到上限时会话在下一次请求模型前停下。留空不设。",
 	spentToday: "今天已用 USD {n}",
 	budgetNone: "不设",
 	canPostCards: "可以直接往审批中心放卡片",
@@ -988,8 +988,7 @@ const zh = {
 	access_read: "只读",
 	access_write: "读写",
 	extraDirsSection: "附加工作目录",
-	extraDirsHelp:
-		"在主工作目录之外，让这个会话直接读取或修改的其他目录（沙箱与文件工具同步生效；凭据目录和隐藏目录始终拒绝）。",
+	extraDirsHelp: "工作目录之外，这个会话还能读或改的目录。凭据目录和「会话读不到的目录」始终拒绝。",
 	extraDirAccess: "目录权限",
 	extraDirsPlaceholder: "输入绝对路径，例如 ~/Projects/website",
 	removeFolder: "移除目录 {path}",
@@ -1001,14 +1000,14 @@ const zh = {
 	sessionDomainsLabel: "本会话允许的域名",
 	sandboxAllowedDomains: "沙箱全局允许的域名",
 	sandboxDomainsHelp:
-		"每行一个域名（如 api.tenonai.cn 或 *.tenonai.cn）。沙箱里的命令访问这些域名时不再询问；IP、localhost 和内网地址始终禁止。",
+		"每行一个域名，如 api.tenonai.cn 或 *.tenonai.cn。沙箱里的命令访问它们不再询问；IP、localhost 和内网地址始终禁止。",
 	sandboxDomainsPlaceholder: "每行一个域名，例如 *.tenonai.cn",
 	reviewTraceMain: "自动检查追溯主对话原话",
 	reviewTraceMainHint:
 		"开启后，子会话或委派会话在自动模式下核查授权时，可直接从数据库读取你在主对话里的原话与决定卡，不依赖上游会话的转述。",
 	scheduleMode: "执行模式",
 	scheduleModeHelp:
-		"写信给常设会话会延续原对话上下文；启动独立任务会话每次新建干净的任务会话，干完汇报给归属会话和主对话。",
+		"写信：在常设会话原有的对话里接着做。任务会话：每次新开一个，做完向归属会话和主对话汇报。",
 	scheduleMode_letter: "写信给常设会话",
 	scheduleMode_task_session: "独立任务会话",
 	scheduleModeHint_letter: "沿用归属常设会话的上下文，适合日常跟进",
@@ -1042,12 +1041,11 @@ const zh = {
 	canOrganizeHint: "像主对话一样改会话、团队和 Yew Harness 的设置；放宽权限的改动仍要你确认",
 	chosenMark: "（你选的）",
 	decisionLog: "审批记录文件",
-	decisionLogHelp:
-		"每做一个决定，Yew Harness 在这个 Markdown 文件末尾加一行，不改已有内容。留空就不同步。",
+	decisionLogHelp: "每做一个决定，在这个 Markdown 文件末尾加一行，不改已有内容。留空不同步。",
 	decisionLogPlaceholder: "例如 ~/notes/decisions.md",
 	rolesFolder: "职责文件夹",
 	rolesFolderHelp:
-		"Yew Harness 把每个常设会话的职责写成这个文件夹里的一个 Markdown 文件，职责一改就更新。文件夹在 git 仓库里时，每次更新提交一次，仓库里看得到职责的历史。职责仍在 Yew Harness 里改：在这里改文件不会改职责，文件会被改回去。留空就不写。",
+		"每个常设会话的职责写成这个文件夹里的一个 Markdown 文件，职责一改就更新；文件夹在 git 仓库里时每次更新提交一次。职责仍在 Yew Harness 里改，直接改文件会被改回去。留空不写。",
 	rolesFolderPlaceholder: "例如 ~/company/docs/roles",
 	rolesFolder_on: "文件夹里有 {n} 个会话的职责，改动提交到所在的 git 仓库。",
 	rolesFolder_none: "文件夹里有 {n} 个会话的职责。它不在 git 仓库里，改动不留历史。",
@@ -1093,8 +1091,7 @@ const zh = {
 		"会话可以看屏幕截图、移动鼠标、敲键盘，能操作这台电脑上的任何程序。第一次用时 macOS 会请你给运行 Yew Harness 的程序「屏幕录制」和「辅助功能」权限。由开源的 computer-use-mcp 提供，第一次使用时从 npm 安装到 Yew Harness 的数据目录。它能越过 Yew Harness 的其他授权规则，所以默认方式下点击、输入和按键每一次都要你确认，不能选「总是允许」；跳过方式下不问，它能点到屏幕上的任何东西，包括 Yew Harness 里等你回答的按钮，所以用跳过方式时请停用它，或留意它在做什么。",
 	mcpAdded: "已添加的服务",
 	mcpPresets: "常用服务",
-	mcpPresetsInfo:
-		"官方出品、填上令牌就能用的服务，加之前都实际连通过。添加后和手动添加的一样，记在 mcp.json 里。",
+	mcpPresetsInfo: "填上令牌就能用的官方服务，都实际连通过。添加后记在 mcp.json 里。",
 	mcpPresetAddTitle: "添加 {name}",
 	mcpPresetToken: "令牌",
 	mcpPresetTokenOptional: "令牌（可不填，不填时调用次数有限制）",
@@ -1210,9 +1207,9 @@ const zh = {
 	notify_budget_hint: "到每日上限的 80% 和到上限时",
 	defaultPermission: "新会话的默认授权方式",
 	defaultPermissionHelp:
-		"新建的会话用这种授权方式，之后可以在会话里改。会话自己开的会话不会高于它本身的授权方式。已有的会话不受影响。这台电脑没有开系统沙箱：不问就跑的命令以你的系统账户运行，你的账户能读写的文件它都能读写，也读得到钥匙串。会话要处理网页、邮件、MCP 返回这类外来内容时，建议用默认方式，有风险的操作先问你。",
+		"新会话用这种授权方式，可在会话里改；会话开的会话不会高于它自己。这台电脑没开系统沙箱：不问就跑的命令能读写你账户能读写的一切，也读得到钥匙串。处理网页、邮件这类外来内容的会话建议用默认方式。",
 	defaultPermissionHelpSandbox:
-		"新建的会话用这种授权方式，之后可以在会话里改。会话自己开的会话不会高于它本身的授权方式。已有的会话不受影响。三种方式下，命令都在系统沙箱里运行：读写不了 Yew Harness 的数据，读不到钥匙串，只能写工作区、临时文件夹和沙箱自己的缓存；要在沙箱外跑的命令，默认方式先问你，自动方式先检查，跳过方式不问。会话要处理网页、邮件、MCP 返回这类外来内容时，建议用默认方式，有风险的操作先问你。",
+		"新会话用这种授权方式，可在会话里改；会话开的会话不会高于它自己。三种方式下命令都在系统沙箱里跑：碰不到 Yew Harness 的数据和钥匙串，只能写工作区和临时文件夹。处理网页、邮件这类外来内容的会话建议用默认方式。",
 	defaultWorkspace: "新会话的默认工作区",
 	defaultWorkspaceHelp: "在首页和新建会话时先选中这个工作区，开始前可以改。",
 	defaultWorkspaceNone: "不选",
@@ -1735,7 +1732,7 @@ const en: Record<MessageKey, string> = {
 	personal_yew: "Yew",
 	opening: "Opening",
 	openingHint:
-		"The opening of about a second when the interface opens. With Click to enter it stays there once everything has started, until you click or press a key. It does not play while Yew is hidden.",
+		"About a second of opening when the app starts. With “Click to enter” it stays there until you click or press a key. Not played when Yew is hidden in the interface.",
 	opening_auto: "Enter automatically",
 	opening_click: "Click to enter",
 	mascot_on: "Show",
@@ -1749,7 +1746,7 @@ const en: Record<MessageKey, string> = {
 	observerOff: "Not observing",
 	observerNoKey: "{provider} has no key, so Yew is not observing for now.",
 	observerHelp:
-		"With a model chosen, Yew reads each turn you start when it ends and, if she has something to say, says it under the reply. Your last message, the name and arguments of each call in the turn (one line each) and the session's reply (each up to a length limit) go to this model's provider, under its privacy policy; the cost counts as the session's. She talks about the work only, and what she says does not enter the session's context. You can turn her off for one session in its settings, and write her character in persona.md in the data folder.",
+		"Yew reads each turn you start when it ends and may say one thing under the reply, about the work only. Your last message, the turn's calls (names and arguments) and the reply go to this model's provider, under its privacy policy; the cost counts as the session's. Each session can turn her off in its settings.",
 	observeSection: "Observing",
 	observe: "Let Yew observe this session",
 	observeHint:
@@ -1836,7 +1833,7 @@ const en: Record<MessageKey, string> = {
 	mainModelHelp:
 		"New sessions start with this provider, model and thinking level; existing sessions keep theirs, and each session can change its own.",
 	sideModelHelp:
-		"Two small jobs use it: naming a new session, and reading whether the end of a reply leaves you a question. With “Same as the session”, each session uses its own model. With a model chosen, the start of the session (for the name) and the last 3,000 characters of the reply go to its provider, under its privacy policy; when it gives no complete answer or has no key, the session's own model does the job.",
+		"It names new sessions and reads whether the end of a reply leaves you a question. With a model chosen, the start of the session and the last 3,000 characters of the reply go to its provider, under its privacy policy; when it cannot answer, the session's own model does.",
 	deleteProviderBody:
 		"Delete the custom provider {name}? Its settings and its API key in the keychain are removed, and sessions using it will not be able to reach the model.",
 	err_network:
@@ -2001,7 +1998,7 @@ const en: Record<MessageKey, string> = {
 	fromCli: "Command line",
 	ownInstructions: "Standing instructions",
 	ownInstructionsHelp:
-		"Instructions every session reads when it starts, such as your habits and the rules to keep. They are kept in AGENTS.md in Yew Harness's data folder, which sessions cannot change. After a change, sessions under way get the new text with their next message, and it stays with them after the context is shortened.",
+		"Read by every session when it starts, such as your habits and rules. Kept in AGENTS.md in the data folder, where sessions cannot change it; a change reaches running sessions with their next message.",
 	ownInstructionsPlaceholder: "For example: keep replies short; write commit messages in English",
 	letterFrom: "From {name}",
 	sentByYew: "Sent by Yew Harness",
@@ -2177,25 +2174,25 @@ const en: Record<MessageKey, string> = {
 	receive_refuse_hint: "Letters from other sessions are turned away",
 	letterQuota: "Letter quota",
 	letterQuotaHelp:
-		"Each time you message this session or make a decision for it, it may send up to this many letters. Leave it empty for the default: 60 for the main conversation, 30 for others.",
+		"The most letters it sends per message or decision of yours. Empty uses the default: 60 for the main conversation, 30 for others.",
 	lettersLeft: "{n} left until your next message",
 	budgetSection: "Spending",
 	dailyBudget: "Daily spending limit (USD)",
 	dailyBudgetHelp:
-		"The most this session may spend in a day, estimated from the provider's prices; a day is a calendar day on this computer. Yew Harness tells you at 80% and stops the session at the limit. Continue gives it the same amount again for the day, or raise the limit. Leave empty for no limit. Models without a price are not counted.",
+		"The most this session spends in a day, estimated from the provider's prices. It warns at 80% and stops at the limit; Continue gives the same amount again for the day. Empty sets no limit.",
 	memoryDirs: "Memory folders",
 	memoryDirsHelp:
-		"Folders where you keep notes across sessions, one per line. Sessions can read these folders directly, and each folder's index (index.md, MEMORY.md or README.md) is given to them with your instructions; writing there still asks you.",
+		"Folders for notes kept across sessions, one per line. Sessions read them freely and get each folder's index (index.md, MEMORY.md or README.md) with their instructions; writing still asks you.",
 	memoryDirsPlaceholder: "For example ~/memory",
 	hiddenFolders: "Folders sessions cannot read",
 	hiddenFoldersHelp:
-		"Folders with keys, private notes and the like, one per line. Sessions' file tools can neither read nor change them, and searches leave out the files in them; sessions' commands still run as your user account and can read them. Credential files and Yew Harness's own data are closed already and need not be listed.",
+		"Folders with keys or private notes, one per line. Sessions' file tools cannot read or change them and searches leave them out; sessions' commands still run as your account and can read them.",
 	hiddenFoldersHelpSandbox:
-		"Folders with keys, private notes and the like, one per line. Neither sessions' file tools nor commands in the sandbox can read or change them, and searches leave out the files in them. Credential files and Yew Harness's own data are closed already and need not be listed.",
+		"Folders with keys or private notes, one per line. Neither sessions' file tools nor commands in the sandbox can read or change them, and searches leave them out.",
 	hiddenFoldersPlaceholder: "For example ~/memory/.private",
 	dailyBudgetAll: "Daily spending limit for all sessions (USD)",
 	dailyBudgetAllHelp:
-		"The most all sessions together may spend in a day, estimated from the providers' prices. At the limit, working sessions stop before their next model request. Leave empty for no limit.",
+		"The most all sessions together spend in a day, estimated from providers' prices. At the limit a session stops before its next model request. Empty sets no limit.",
 	spentToday: "USD {n} spent today",
 	budgetNone: "none",
 	canPostCards: "Can put cards in the approval center",
@@ -2255,7 +2252,7 @@ const en: Record<MessageKey, string> = {
 	access_write: "Read & write",
 	extraDirsSection: "Additional folders",
 	extraDirsHelp:
-		"Extra folders this session can read or edit alongside its main working folder. Enforced by both file tools and the sandbox; credentials and hidden folders stay blocked.",
+		"Folders besides the working folder that this session may read or change. Credential folders and folders kept from sessions are always refused.",
 	extraDirAccess: "Folder access",
 	extraDirsPlaceholder: "Absolute path, e.g. ~/Projects/website",
 	removeFolder: "Remove folder {path}",
@@ -2267,14 +2264,14 @@ const en: Record<MessageKey, string> = {
 	sessionDomainsLabel: "Domains allowed for this session",
 	sandboxAllowedDomains: "Global sandbox allowed domains",
 	sandboxDomainsHelp:
-		"One domain per line (such as api.tenonai.cn or *.tenonai.cn). Sandboxed commands reach these without asking. IP addresses, localhost, and local names stay blocked.",
+		"One domain per line, such as api.tenonai.cn or *.tenonai.cn. Commands in the sandbox reach them without asking; IPs, localhost and private addresses are always refused.",
 	sandboxDomainsPlaceholder: "One domain per line, e.g. *.tenonai.cn",
 	reviewTraceMain: "Trace original messages from the main conversation",
 	reviewTraceMainHint:
 		"When on, automatic permission checks in delegated sessions can read your original message in the main conversation and decided cards directly from the database, never relying on upstream session paraphrases.",
 	scheduleMode: "Execution mode",
 	scheduleModeHelp:
-		"Letter mode wakes the standing session in its existing context. Task session mode spawns a fresh isolated task session each run and reports back to the standing session and main conversation.",
+		"A letter continues in the standing session's own conversation. A task session is opened new each time and reports to its owner and the main conversation when done.",
 	scheduleMode_letter: "Send letter to standing session",
 	scheduleMode_task_session: "Fresh task session",
 	scheduleModeHint_letter: "Runs inside the standing session's existing context",
@@ -2312,11 +2309,11 @@ const en: Record<MessageKey, string> = {
 	chosenMark: " (your choice)",
 	decisionLog: "Approval log file",
 	decisionLogHelp:
-		"Yew Harness adds a line to the end of this Markdown file for each decision and leaves the rest alone. Leave it empty to turn this off.",
+		"Each decision adds a line at the end of this Markdown file; nothing already there is changed. Empty keeps no log.",
 	decisionLogPlaceholder: "e.g. ~/notes/decisions.md",
 	rolesFolder: "Roles folder",
 	rolesFolderHelp:
-		"Yew Harness writes each standing session's role into a Markdown file in this folder and updates it whenever the role changes. When the folder is in a git repository, each update is committed, so the repository shows the history of the roles. Roles are still changed in Yew Harness: editing a file here does not change a role, and the file is put back. Leave it empty to turn this off.",
+		"Each standing session's role is written as a Markdown file in this folder and updated when the role changes; in a git repository each update is a commit. Change roles in Yew Harness: an edited file is written back. Empty writes nothing.",
 	rolesFolderPlaceholder: "e.g. ~/company/docs/roles",
 	rolesFolder_on: "Roles in the folder: {n}. Changes are committed to its git repository.",
 	rolesFolder_none:
@@ -2367,7 +2364,7 @@ const en: Record<MessageKey, string> = {
 	mcpAdded: "Added servers",
 	mcpPresets: "Common servers",
 	mcpPresetsInfo:
-		"Official servers that work with a token; each was connected before it went in this list. Once added, it is kept in mcp.json like one you add by hand.",
+		"Official servers that work once you enter a token; each was connected to before it was listed. Added ones are kept in mcp.json.",
 	mcpPresetAddTitle: "Add {name}",
 	mcpPresetToken: "Token",
 	mcpPresetTokenOptional: "Token (optional; without one, calls are limited)",
@@ -2497,9 +2494,9 @@ const en: Record<MessageKey, string> = {
 	notify_budget_hint: "At 80% of a daily limit and at the limit",
 	defaultPermission: "Default permission mode for new sessions",
 	defaultPermissionHelp:
-		"New sessions start with this mode; you can change it in the session. A session opened by another session never gets more than that session has. Existing sessions are not affected. The system sandbox is off on this computer: commands that run without asking run as your user account, read and write whatever your account can, and can read the keychain. For a session that handles outside content, such as web pages, mail or what MCP servers return, use the default mode, which asks before risky operations.",
+		"New sessions start with this mode and can change it; a session opened by another never gets more than its opener. The system sandbox is off here: commands that run without asking can read and write whatever your account can, the keychain included. For sessions that handle outside content such as web pages or mail, use the default mode.",
 	defaultPermissionHelpSandbox:
-		"New sessions start with this mode; you can change it in the session. A session opened by another session never gets more than that session has. Existing sessions are not affected. In all three modes commands run in the system sandbox: they cannot read or change Yew Harness's data or read the keychain, and write only in the workspace, temporary folders and the sandbox's own caches; a command that has to run outside asks you in the default mode, goes to the check in the automatic mode and is not asked about in skip mode. For a session that handles outside content, such as web pages, mail or what MCP servers return, use the default mode, which asks before risky operations.",
+		"New sessions start with this mode and can change it; a session opened by another never gets more than its opener. In all three modes commands run in the system sandbox: no access to Yew Harness's data or the keychain, and writes only in the workspace and temporary folders. For sessions that handle outside content such as web pages or mail, use the default mode.",
 	defaultWorkspace: "Default workspace for new sessions",
 	defaultWorkspaceHelp:
 		"Preselected on the home page and in the new session dialog; you can change it before you start.",
