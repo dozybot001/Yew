@@ -167,15 +167,6 @@ describe("small models", () => {
 		}
 	});
 
-	test("a session's small model is the provider's listed one, when it costs less", () => {
-		const gateway = new ModelGateway({ keys: new MemoryKeyStore(), version: "0.0.0" });
-		assert.equal(gateway.small("deepseek", "deepseek-v4-pro")?.id, "deepseek-flash");
-		assert.equal(gateway.small("deepseek", "deepseek-flash"), undefined, "it is the small one");
-		assert.equal(gateway.small("deepseek", "nope"), undefined, "an unknown model");
-		assert.equal(gateway.small("moonshotai-cn", "kimi-k3"), undefined, "no small model is listed");
-		assert.equal(gateway.small("google", "gemma-4-31b-it"), undefined, "its own model costs less");
-	});
-
 	test("a request can leave the prompt cache unwritten and limit how often it is tried again", async () => {
 		const faux = fauxProvider();
 		const gateway = new ModelGateway({

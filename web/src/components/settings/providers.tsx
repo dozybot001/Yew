@@ -455,7 +455,7 @@ function ModelRoles() {
 				/>
 				<span className="hint" role="status">
 					{!chosen
-						? t("sideModelUnsetHint")
+						? t("sideModelFollowHint")
 						: at && (at.hasKey || !at.keyRequired)
 							? t("sideModelSends", { provider: name })
 							: t("sideModelNoKey", { provider: name })}

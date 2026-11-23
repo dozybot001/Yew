@@ -20,8 +20,8 @@ const SIDE_RETRIES = 1;
 /**
  * The models asked for a job beside a session that runs `own`, in turn. First the model the person
  * set for these jobs, whatever it costs and whichever provider it is at, as long as that provider
- * has a key; with none set, the small model of the session's own provider when it has a cheaper one.
- * Last the session's own model, which also does the job alone when the first cannot be used.
+ * has a key. Last the session's own model, which does the job alone when none is set or the set
+ * one cannot be used.
  */
 export async function sideModels(
 	store: Store,
@@ -29,10 +29,7 @@ export async function sideModels(
 	own: ModelInfo,
 ): Promise<ModelInfo[]> {
 	const set = store.getSetting("sideModel", SETTING_DEFAULTS.sideModel);
-	if (!set) {
-		const small = gateway.small(own.provider, own.id);
-		return small ? [small, own] : [own];
-	}
+	if (!set) return [own];
 	const model = gateway.model(set.provider, set.model);
 	if (!model || (model.provider === own.provider && model.id === own.id)) return [own];
 	return (await gateway.hasKey(model.provider)) ? [model, own] : [own];

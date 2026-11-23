@@ -495,9 +495,8 @@ const zh = {
 	language_system: "跟随系统",
 	mainModel: "主路模型",
 	sideModel: "旁路模型",
-	sideModelUnset: "未选择",
-	sideModelUnsetHint:
-		"还没选：各会话用自己服务商的小模型；那家没有，或它不比会话自己的模型便宜时，用会话自己的模型。",
+	sideModelFollow: "跟随主模型",
+	sideModelFollowHint: "每个会话用自己的模型做这两件事。选一个便宜的小模型可以省钱。",
 	sideModelSends:
 		"起名时会话开头的一段、读回复时回复的最后 3000 个字，会发给 {provider}，适用它的隐私政策。",
 	sideModelNoKey: "{provider} 没有密钥，这两件事现在由各会话自己的模型来做。",
@@ -578,7 +577,7 @@ const zh = {
 	mainModelHelp:
 		"新建会话时默认选这个服务商、模型和思考强度；已有的会话不受影响，每个会话可以单独改。",
 	sideModelHelp:
-		"对话之外的两件小事用它：给新会话起名，读一条回复的末尾是不是给你留了问题（留了就放进审批中心）。选了模型后，所有会话的这两件事都交给它，不论价格；它没给出完整回答，或它的服务商没有密钥时，由会话自己的模型来做。",
+		"对话之外的两件小事用它：给新会话起名，读一条回复的末尾是不是给你留了问题（留了就放进审批中心）。「跟随主模型」时每个会话用自己的模型。选了模型后，所有会话的这两件事都交给它，不论价格；它没给出完整回答，或它的服务商没有密钥时，由会话自己的模型来做。",
 	deleteProviderBody:
 		"删除自定义服务商 {name}？它的配置和钥匙串里的 API Key 都会删除，用它的会话将无法请求模型。",
 	err_network: "连不上 Yew Harness 服务。确认 yew serve 还在运行，然后重试。",
@@ -1729,9 +1728,9 @@ const en: Record<MessageKey, string> = {
 	language_system: "Match system",
 	mainModel: "Main model",
 	sideModel: "Side model",
-	sideModelUnset: "Not chosen",
-	sideModelUnsetHint:
-		"None chosen yet: each session uses the small model of its own provider; where there is none, or it costs no less than the session's own model, the session's own model.",
+	sideModelFollow: "Same as the session",
+	sideModelFollowHint:
+		"Each session does these two jobs with its own model. Choosing a cheap small model costs less.",
 	sideModelSends:
 		"The start of a session, when it is named, and the last 3,000 characters of a reply, when it is read, go to {provider}; its privacy policy applies.",
 	sideModelNoKey: "{provider} has no key, so each session's own model does these two jobs for now.",
@@ -1814,7 +1813,7 @@ const en: Record<MessageKey, string> = {
 	mainModelHelp:
 		"New sessions start with this provider, model and thinking level; existing sessions keep theirs, and each session can change its own.",
 	sideModelHelp:
-		"Two small jobs beside a conversation use it: naming a new session, and reading whether the end of a reply leaves you a question (one that does goes to the approval center). A model you choose does both jobs for every session, whatever it costs; when it gives no complete answer, or its provider has no key, the session's own model does them.",
+		"Two small jobs beside a conversation use it: naming a new session, and reading whether the end of a reply leaves you a question (one that does goes to the approval center). With “Same as the session”, each session uses its own model. A model you choose does both jobs for every session, whatever it costs; when it gives no complete answer, or its provider has no key, the session's own model does them.",
 	deleteProviderBody:
 		"Delete the custom provider {name}? Its settings and its API key in the keychain are removed, and sessions using it will not be able to reach the model.",
 	err_network:

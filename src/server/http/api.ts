@@ -527,7 +527,7 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			deps.checkModel?.(value.provider, value.model);
 			store.setSetting("defaultModel", value);
 		}
-		// null goes back to the small model of each session's own provider.
+		// null goes back to each session's own model.
 		if (fields.sideModel === null) store.setSetting("sideModel", null);
 		else {
 			const sideModel = optObject(fields, "sideModel");

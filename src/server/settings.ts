@@ -49,7 +49,7 @@ export const SETTING_DEFAULTS = {
 	} as DefaultModel,
 	/**
 	 * The model that does the jobs beside every conversation, such as naming it. Null leaves them to
-	 * the small model of each session's own provider.
+	 * each session's own model.
 	 */
 	sideModel: null as SideModel | null,
 	theme: "system" as "system" | "light" | "dark",

@@ -197,10 +197,10 @@ const HIDDEN_PROVIDERS = new Set([
 ]);
 
 /**
- * The small model of each provider, for jobs beside a conversation such as naming a session. A fixed
- * list, not "the provider's cheapest model": the cheapest may be a batch or trial variant that comes
- * with other terms. It is the provider's own current small model, so the request goes where the
- * session's own requests go. A provider that is not listed has none.
+ * The small model of each provider: what the side model picker offers first when the person picks
+ * that provider for the jobs beside a conversation, such as naming a session. A fixed list, not
+ * "the provider's cheapest model": the cheapest may be a batch or trial variant that comes with
+ * other terms. A provider that is not listed has none.
  */
 export const SMALL_MODELS: Readonly<Record<string, string>> = {
 	"ant-ling": "Ling-2.6-flash",
@@ -590,16 +590,6 @@ export class ModelGateway {
 	 * the provider has one (SMALL_MODELS) and it costs less than the session's own model. Undefined
 	 * otherwise: the session's own model does the job then.
 	 */
-	small(provider: string, id: string): ModelInfo | undefined {
-		const small = this.#small[provider];
-		if (!small || small === id) return undefined;
-		const own = this.model(provider, id);
-		const model = this.model(provider, small);
-		if (!own || !model) return undefined;
-		const price = (item: ModelInfo) => item.cost.input + item.cost.output;
-		return price(model) < price(own) ? model : undefined;
-	}
-
 	/** Throws a 400 error when the provider or model is unknown. */
 	check(provider: string, id: string): void {
 		if (!this.#models.getProvider(provider)) {

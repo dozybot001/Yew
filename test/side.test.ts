@@ -13,7 +13,7 @@ const price = (input: number) => ({ input, output: input * 5, cacheRead: 0, cach
  * A provider with a large and a small model; sessions run the large one. A second provider has one
  * model that costs more than both, and a key unless `otherKey` is false.
  */
-function setup(options: { small?: boolean; otherKey?: boolean } = {}) {
+function setup(options: { otherKey?: boolean } = {}) {
 	const faux = fauxProvider({
 		models: [
 			{ id: "tide-5-max", cost: price(4) },
@@ -34,7 +34,6 @@ function setup(options: { small?: boolean; otherKey?: boolean } = {}) {
 		version: "0.0.0",
 		providers: [faux.provider, other.provider],
 		retry: { maxRetries: 0, baseDelayMs: 1 },
-		small: options.small === false ? {} : { [faux.provider.id]: "tide-5-mini" },
 	});
 	const session = store.createSession({
 		name: "帮我看看这个仓库…",
@@ -51,14 +50,18 @@ function setup(options: { small?: boolean; otherKey?: boolean } = {}) {
 			asked.push(model.id);
 			return reply;
 		};
-	return { faux, other, store, gateway, session, asked, answer };
+	/** Sets the provider's small model for the jobs beside a conversation. */
+	const setSmall = () =>
+		store.setSetting("sideModel", { provider: faux.provider.id, model: "tide-5-mini" });
+	return { faux, other, store, gateway, session, asked, answer, setSmall };
 }
 
 const failed = fauxAssistantMessage([], { stopReason: "error", errorMessage: "400 bad request" });
 
 describe("requests beside a session's conversation", () => {
-	test("the provider's small model answers, and what it costs counts as the session's", async () => {
-		const { faux, store, gateway, session, asked, answer } = setup();
+	test("a small model set for these jobs answers, and what it costs counts as the session's", async () => {
+		const { faux, store, gateway, session, asked, answer, setSmall } = setup();
+		setSmall();
 		faux.setResponses([answer(fauxAssistantMessage("仓库体检"))]);
 		const said = await sideCall({
 			store,
@@ -73,7 +76,8 @@ describe("requests beside a session's conversation", () => {
 	});
 
 	test("the session's own model answers when the small one fails", async () => {
-		const { faux, store, gateway, session, asked, answer } = setup();
+		const { faux, store, gateway, session, asked, answer, setSmall } = setup();
+		setSmall();
 		faux.setResponses([answer(failed), answer(fauxAssistantMessage("仓库体检"))]);
 		const said = await sideCall({
 			store,
@@ -86,8 +90,8 @@ describe("requests beside a session's conversation", () => {
 		assert.deepEqual(asked, ["tide-5-mini", "tide-5-max"]);
 	});
 
-	test("without a small model the session's own model answers; no answer is null", async () => {
-		const { faux, store, gateway, session, asked, answer } = setup({ small: false });
+	test("with no model set the session's own model answers; no answer is null", async () => {
+		const { faux, store, gateway, session, asked, answer } = setup();
 		faux.setResponses([answer(fauxAssistantMessage("仓库体检")), answer(failed)]);
 		const call = { store, gateway, session, systemPrompt: "Name it.", content: "…" };
 		assert.equal(await sideCall(call), "仓库体检");
@@ -146,8 +150,9 @@ describe("requests beside a session's conversation", () => {
 		assert.deepEqual(same.asked, ["tide-5-max"]);
 	});
 
-	test("a session is named by the small model after its first turn", async () => {
-		const { faux, store, gateway, session, asked, answer } = setup();
+	test("a session is named by the model set for these jobs after its first turn", async () => {
+		const { faux, store, gateway, session, asked, answer, setSmall } = setup();
+		setSmall();
 		store.appendEntry(session.id, {
 			role: "user",
 			message: { role: "user", content: "帮我看看这个仓库里有哪些地方需要整理", timestamp: 1 },
