@@ -1,4 +1,5 @@
 import { execFile, execFileSync } from "node:child_process";
+import { createHash } from "node:crypto";
 import { accessSync, constants, existsSync, readFileSync, realpathSync } from "node:fs";
 import { dirname, join, resolve, sep } from "node:path";
 import type { InstallKind, UpdateState } from "../shared/types.ts";
@@ -11,8 +12,9 @@ import type { Store } from "./store.ts";
  *
  * Once a day, unless turned off, Yew Harness asks the npm registry the person's npm uses for the
  * newest version of the package: nothing but that request, with `yew/<version>` as the user agent.
- * A source checkout is not checked; it is told only that its service runs older code than the
- * checkout has. An update is installed with the npm that comes with the Node.js running Yew
+ * A source checkout is not checked, and neither is a copy of one installed with
+ * scripts/install-local.mjs; it is told only that its service runs older code than is there now. An
+ * update is installed with the npm that comes with the Node.js running Yew
  * Harness, into the folder it is installed in, without install scripts; then Yew Harness restarts
  * once no session is at work, or at once when the person says so. Where it cannot do that itself
  * (another kind of install, a folder it may not write), it shows the command instead. Only the
@@ -41,9 +43,78 @@ export function newer(a: string, b: string): boolean {
 	return false;
 }
 
+/**
+ * What the service loads from the package's folder. A commit that changed nothing here (the
+ * interface, the documents, the tests) is taken up without a restart.
+ */
+export const SERVICE_PATHS = [
+	"src",
+	"bin",
+	"mcp-builtin",
+	"skills-builtin",
+	"package.json",
+	"package-lock.json",
+] as const;
+
+/**
+ * In a copy installed with scripts/install-local.mjs: its commit, then the id of its code. Not
+ * "BUILD": the checkout has a folder called build, and macOS takes the two names for one.
+ */
+export const COMMIT_FILE = "COMMIT";
+
+export interface Build {
+	/** The short commit. */
+	build: string;
+	/** An id of what the service loads at that commit; null when it could not be worked out. */
+	code: string | null;
+}
+
+/** The commit `rev` of the checkout in `root`; null when git does not answer. */
+export function buildAt(root: string, rev = "HEAD"): Build | null {
+	const git = (args: string[]) =>
+		execFileSync("git", args, {
+			cwd: root,
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+			timeout: 5000,
+		}).trim();
+	let build: string;
+	try {
+		build = git(["rev-parse", "--short", `${rev}^{commit}`]);
+	} catch {
+		return null;
+	}
+	try {
+		const ids = git(["rev-parse", ...SERVICE_PATHS.map((path) => `${rev}:${path}`)]);
+		return { build, code: createHash("sha256").update(ids).digest("hex").slice(0, 16) };
+	} catch {
+		return { build, code: null };
+	}
+}
+
+/**
+ * The build of the code in `root`: from git in Yew's own checkout, from the COMMIT file in a copy
+ * installed from one; null otherwise. An npm install can sit inside another repository (Homebrew's
+ * /opt/homebrew is one), where git would answer with that one's commit, so only a `.git` in the
+ * folder itself counts.
+ */
+export function buildIn(root: string): Build | null {
+	if (existsSync(join(root, ".git"))) return buildAt(root);
+	let words: string[];
+	try {
+		words = readFileSync(join(root, COMMIT_FILE), "utf8").split(/\s+/).filter(Boolean);
+	} catch {
+		return null;
+	}
+	const id = /^[0-9a-f]{7,40}$/;
+	const [build, code] = words;
+	if (!build || !id.test(build)) return null;
+	return { build, code: code && id.test(code) ? code : null };
+}
+
 /** How the package in `root` was installed. */
 export function installKind(root: string): InstallKind {
-	if (existsSync(join(root, ".git"))) return "source";
+	if (existsSync(join(root, ".git")) || buildIn(root)) return "source";
 	// `npm install --global` puts it at <prefix>/lib/node_modules/@tenonai/yew. The folder may come
 	// with a slash at the end, as a URL turned into a path does.
 	return resolve(root).split(sep).slice(-4).join("/") === `lib/node_modules/${PACKAGE}`
@@ -95,6 +166,8 @@ export interface UpdateOptions {
 	/** Running now. */
 	version: string;
 	build: string | null;
+	/** The id of the code this process loaded (`Build.code`); null when not known. */
+	code?: string | null;
 	/** The package's folder, where its package.json is. */
 	root: string;
 	/** The Node.js running Yew Harness; its npm installs the update. */
@@ -177,8 +250,8 @@ export class Updates {
 		return !latest || this.#now() - latest.checkedAt >= DAY_MS;
 	}
 
-	/** What is installed now: package.json read again, and a checkout's commit. */
-	#installed(): UpdateState["installed"] {
+	/** What is installed now: package.json read again, and the build of a checkout or a copy of one. */
+	#installed(): UpdateState["installed"] & { code: string | null } {
 		let version = this.#o.version;
 		try {
 			const pkg = JSON.parse(readFileSync(join(this.#root, "package.json"), "utf8")) as {
@@ -188,20 +261,8 @@ export class Updates {
 		} catch {
 			// A package being replaced right now: the running version stands.
 		}
-		let build: string | null = null;
-		if (this.#kind === "source") {
-			try {
-				build = execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-					cwd: this.#root,
-					encoding: "utf8",
-					stdio: ["ignore", "pipe", "ignore"],
-					timeout: 5000,
-				}).trim();
-			} catch {
-				build = null;
-			}
-		}
-		return { version, build };
+		const built = this.#kind === "source" ? buildIn(this.#root) : null;
+		return { version, build: built?.build ?? null, code: built?.code ?? null };
 	}
 
 	/** The command that installs `version` here, when Yew Harness cannot run it itself; else null. */
@@ -225,15 +286,19 @@ export class Updates {
 	}
 
 	state(): UpdateState {
-		const installed = this.#installed();
+		const { code, ...installed } = this.#installed();
 		const latest = this.#kind === "source" ? null : this.#latest();
 		const available = latest !== null && newer(latest.version, installed.version);
 		// Installed again as it should be: the block is lifted.
 		if (this.#blocked?.cleared()) this.#blocked = null;
-		const restart =
-			this.#blocked === null &&
-			(installed.version !== this.#o.version ||
-				(installed.build !== null && this.#o.build !== null && installed.build !== this.#o.build));
+		// A newer commit whose code is what this process loaded needs no restart; where the code's id
+		// is not known, any other commit counts.
+		const running = this.#o.code ?? null;
+		const changed =
+			code !== null && running !== null
+				? code !== running
+				: installed.build !== null && this.#o.build !== null && installed.build !== this.#o.build;
+		const restart = this.#blocked === null && (installed.version !== this.#o.version || changed);
 		return {
 			version: this.#o.version,
 			build: this.#o.build,

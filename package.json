@@ -56,7 +56,8 @@
 		"build": "node -e \"require('node:fs').rmSync('dist', { recursive: true, force: true })\" && tsc -p tsconfig.build.json && npm run build:web && npm run build:mac && node scripts/notices.mjs && tsc -p tsconfig.sim.json && node scripts/sim-types.mjs",
 		"prepack": "npm run build",
 		"audit:gate": "node scripts/audit-gate.mjs",
-		"audit:install": "node scripts/install-check.mjs"
+		"audit:install": "node scripts/install-check.mjs",
+		"install:local": "node scripts/install-local.mjs"
 	},
 	"devDependencies": {
 		"@biomejs/biome": "2.6.6",

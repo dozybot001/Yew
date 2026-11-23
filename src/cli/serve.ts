@@ -1,13 +1,5 @@
-import { execFile, execFileSync, spawn } from "node:child_process";
-import {
-	closeSync,
-	existsSync,
-	mkdirSync,
-	openSync,
-	readFileSync,
-	rmSync,
-	writeFileSync,
-} from "node:fs";
+import { execFile, spawn } from "node:child_process";
+import { closeSync, mkdirSync, openSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { parseArgs } from "node:util";
@@ -107,25 +99,6 @@ function startReplacement(home: string): void {
 		{ detached: true, stdio: ["ignore", out, out] },
 	).unref();
 	closeSync(out);
-}
-
-/**
- * The short commit of Yew's own source checkout; null otherwise. An npm install can sit inside
- * another repository (Homebrew's /opt/homebrew is one), where git would answer with that one's commit.
- */
-export function shortCommit(
-	root: string = fileURLToPath(new URL("../..", import.meta.url)),
-): string | null {
-	if (!existsSync(join(root, ".git"))) return null;
-	try {
-		return execFileSync("git", ["rev-parse", "--short", "HEAD"], {
-			cwd: root,
-			encoding: "utf8",
-			stdio: ["ignore", "pipe", "ignore"],
-		}).trim();
-	} catch {
-		return null;
-	}
 }
 
 export function openBrowser(url: string): void {
@@ -317,14 +290,16 @@ export function serveCommand(): Command {
 			});
 			const { systemControl } = await import("./system.ts");
 			// Versions and updates: a restart replaces this process.
-			const { Updates } = await import("../server/updates.ts");
+			const { Updates, buildIn } = await import("../server/updates.ts");
 			const { startedByService } = await import("./service.ts");
 			const { appInstalled, realAppHost } = await import("./app.ts");
-			const build = shortCommit();
+			const built = buildIn(fileURLToPath(new URL("../..", import.meta.url)));
+			const build = built?.build ?? null;
 			let stopWith: ((code: number) => void) | null = null;
 			const updates = new Updates({
 				version: VERSION,
 				build,
+				code: built?.code ?? null,
 				root: fileURLToPath(new URL("../..", import.meta.url)),
 				node: process.execPath,
 				store,

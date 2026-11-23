@@ -4,10 +4,12 @@ import { execFileSync } from "node:child_process";
 import { mkdirSync, realpathSync, symlinkSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, mock, test } from "node:test";
-import { shortCommit } from "../src/cli/serve.ts";
 import { startedByService } from "../src/cli/service.ts";
 import { createApp } from "../src/server/http/app.ts";
 import {
+	buildAt,
+	buildIn,
+	COMMIT_FILE,
 	globalPrefix,
 	installKind,
 	newer,
@@ -152,8 +154,60 @@ describe("versions", () => {
 		git("commit", "-q", "--allow-empty", "-m", "brew");
 		const installed = join(outer, "lib", "node_modules", "@tenonai", "yew");
 		mkdirSync(installed, { recursive: true });
-		assert.equal(shortCommit(installed), null);
-		assert.match(shortCommit(outer) ?? "", /^[0-9a-f]{7,}$/);
+		assert.equal(buildIn(installed), null);
+		assert.match(buildIn(outer)?.build ?? "", /^[0-9a-f]{7,}$/);
+	});
+
+	test("the id of the code changes with what the service loads, not with the interface or the documents", () => {
+		const checkout = realpathSync(tempDir("yew-src-"));
+		const git = (...args: string[]) =>
+			execFileSync("git", ["-c", "user.name=t", "-c", "user.email=t@example.invalid", ...args], {
+				cwd: checkout,
+				stdio: "ignore",
+			});
+		const write = (path: string, text: string) => {
+			mkdirSync(join(checkout, path, ".."), { recursive: true });
+			writeFileSync(join(checkout, path), text);
+			git("add", "-A");
+			git("commit", "-q", "-m", path);
+		};
+		git("init", "-q");
+		for (const path of [
+			"src/a.ts",
+			"bin/yew.js",
+			"mcp-builtin/package.json",
+			"skills-builtin/a.md",
+		])
+			write(path, "1");
+		write("package.json", "{}");
+		// Not everything the service loads is there yet: the commit is known, the code's id is not.
+		assert.equal(buildIn(checkout)?.code, null);
+		write("package-lock.json", "{}");
+		const first = buildIn(checkout);
+		assert.match(first?.code ?? "", /^[0-9a-f]{16}$/);
+		write("web/src/app.tsx", "1");
+		write("README.md", "1");
+		const second = buildIn(checkout);
+		assert.notEqual(second?.build, first?.build);
+		assert.equal(second?.code, first?.code);
+		write("src/a.ts", "2");
+		assert.notEqual(buildIn(checkout)?.code, first?.code);
+		// An earlier commit can be asked about, as the install script does.
+		assert.deepEqual(buildAt(checkout, first?.build), first);
+		assert.equal(buildAt(checkout, "no-such-commit"), null);
+	});
+
+	test("a copy installed from a checkout says its build in a file", () => {
+		const copy = realpathSync(tempDir("yew-copy-"));
+		assert.equal(installKind(copy), "other");
+		writeFileSync(join(copy, COMMIT_FILE), "66f5352\n0123456789abcdef\n");
+		assert.deepEqual(buildIn(copy), { build: "66f5352", code: "0123456789abcdef" });
+		assert.equal(installKind(copy), "source");
+		writeFileSync(join(copy, COMMIT_FILE), "66f5352\n");
+		assert.deepEqual(buildIn(copy), { build: "66f5352", code: null });
+		writeFileSync(join(copy, COMMIT_FILE), "$Format:%h$\n");
+		assert.equal(buildIn(copy), null);
+		assert.equal(installKind(copy), "other");
 	});
 
 	test("a service older than what is installed asks for a restart", () => {
@@ -163,6 +217,36 @@ describe("versions", () => {
 		const state = updates.state();
 		assert.equal(state.restart, true);
 		assert.deepEqual(state.installed, { version: "1.8.0", build: null });
+	});
+
+	test("a newer commit asks for a restart only when the service's code changed", async () => {
+		const copy = realpathSync(tempDir("yew-copy-"));
+		writeFileSync(join(copy, "package.json"), JSON.stringify({ version: "1.7.0" }));
+		writeFileSync(join(copy, COMMIT_FILE), "aaaaaaa 1111111111111111\n");
+		const { updates, requests } = setup({ root: copy, build: "aaaaaaa", code: "1111111111111111" });
+		assert.equal(updates.state().restart, false);
+		// Only the interface changed: the new commit is in use as it is.
+		writeFileSync(join(copy, COMMIT_FILE), "bbbbbbb 1111111111111111\n");
+		let state = updates.state();
+		assert.equal(state.restart, false);
+		assert.deepEqual(state.installed, { version: "1.7.0", build: "bbbbbbb" });
+		writeFileSync(join(copy, COMMIT_FILE), "ccccccc 2222222222222222\n");
+		state = updates.state();
+		assert.equal(state.restart, true);
+		assert.equal(state.kind, "source");
+		// A copy of a checkout is not checked against npm either.
+		assert.equal((await updates.check()).latest, null);
+		assert.equal(requests.length, 0);
+	});
+
+	test("without an id for the code, any other commit asks for a restart", () => {
+		const copy = realpathSync(tempDir("yew-copy-"));
+		writeFileSync(join(copy, "package.json"), JSON.stringify({ version: "1.7.0" }));
+		writeFileSync(join(copy, COMMIT_FILE), "aaaaaaa\n");
+		const { updates } = setup({ root: copy, build: "aaaaaaa", code: null });
+		assert.equal(updates.state().restart, false);
+		writeFileSync(join(copy, COMMIT_FILE), "bbbbbbb 1111111111111111\n");
+		assert.equal(updates.state().restart, true);
 	});
 });
 

@@ -130,7 +130,9 @@ function VersionLine() {
 		void loadUpdates();
 	}, []);
 	const versionText = t("version", { v: health?.version ?? "" });
-	const buildText = health?.build ? t("build", { b: health.build }) : null;
+	// What is installed: a newer commit that left the service's code alone is in use already.
+	const build = updates?.installed.build ?? health?.build;
+	const buildText = build ? t("build", { b: build }) : null;
 	const join = (...parts: ReactNode[]) =>
 		parts
 			.filter((part) => part !== null && part !== undefined && part !== "")
