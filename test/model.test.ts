@@ -176,7 +176,7 @@ describe("small models", () => {
 		assert.equal(gateway.small("google", "gemma-4-31b-it"), undefined, "its own model costs less");
 	});
 
-	test("a request beside the conversation writes no prompt cache and is tried again once", async () => {
+	test("a request can leave the prompt cache unwritten and limit how often it is tried again", async () => {
 		const faux = fauxProvider();
 		const gateway = new ModelGateway({
 			keys: new MemoryKeyStore({ [faux.provider.id]: "test-key" }),
@@ -196,7 +196,7 @@ describe("small models", () => {
 			messages: [{ role: "user" as const, content: "hi", timestamp: 1 }],
 		};
 		faux.setResponses([overloaded, overloaded, overloaded]);
-		const failed = await gateway.stream({ ...request, side: true });
+		const failed = await gateway.stream({ ...request, cache: false, retries: 1 });
 		assert.equal(failed.stopReason, "error");
 		assert.deepEqual(caches, ["none", "none"], "the request and one more try");
 

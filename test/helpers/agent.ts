@@ -19,9 +19,13 @@ export function setup(
 		tools?: ToolDefinition[];
 		/** Have a model read the end of each reply for a question to the person. */
 		readReplies?: boolean;
+		/** What the model costs, in US dollars per million tokens; nothing when not given. */
+		cost?: { input: number; output: number; cacheRead: number; cacheWrite: number };
 	} = {},
 ) {
-	const faux = fauxProvider();
+	const faux = fauxProvider(
+		options.cost ? { models: [{ id: "tide-5", cost: options.cost }] } : undefined,
+	);
 	const { store } = newStore();
 	const keys = new MemoryKeyStore(options.key === false ? {} : { [faux.provider.id]: "test-key" });
 	const gateway = new ModelGateway({

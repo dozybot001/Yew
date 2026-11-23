@@ -3,7 +3,8 @@ import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
-import { SUMMARY_HEADING } from "../src/server/agent/context.ts";
+import { SUMMARY_HEADING, YEW_NOTE } from "../src/server/agent/context.ts";
+import { SUMMARY_PROMPT } from "../src/server/agent/prompt.ts";
 import { questionFrom } from "../src/server/agent/reply-question.ts";
 import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.ts";
 import { choicesFrom } from "../src/server/tools/misc.ts";
@@ -726,8 +727,12 @@ describe("agent loop", () => {
 			});
 		}
 		store.setContextTokens(session.id, 60_000);
+		const asked: { context: string; cache: unknown }[] = [];
 		faux.setResponses([
-			fauxAssistantMessage("The person asked about history."),
+			(context, options) => {
+				asked.push({ context: textOf(context), cache: options?.cacheRetention });
+				return fauxAssistantMessage("The person asked about history.");
+			},
 			capture(fauxAssistantMessage("Continuing.")),
 		]);
 		agents.send(session.id, "继续");
@@ -736,10 +741,184 @@ describe("agent loop", () => {
 			.listEntries(session.id, { limit: 50 })
 			.entries.find((entry) => entry.role === "compaction");
 		assert.ok(compaction?.role === "compaction");
+		// The last reply is old, so the provider holds no prompt cache: the history goes as a transcript,
+		// and nothing is written to the cache for a prompt that is not sent again.
+		assert.equal(asked.length, 1);
+		assert.ok(asked[0]?.context.includes(SUMMARY_PROMPT.slice(0, 60)));
+		assert.match(asked[0]?.context ?? "", /## Person\\n历史记录/);
+		assert.equal(asked[0]?.cache, "none");
 		const messages = contexts[0]?.messages.filter((m) => m.role !== "system") ?? [];
 		assert.match(textOf(messages[0]), new RegExp(SUMMARY_HEADING.slice(1, 20)));
 		assert.match(textOf(messages.at(-1)), /继续/);
 		assert.ok(store.getSession(session.id).contextTokens < 10_000);
+	});
+
+	/**
+	 * A first turn with a long message and a fresh reply, then a context that is due for a summary. The
+	 * model reads a cached prompt at a tenth of the price of input, unless `cost` says otherwise.
+	 */
+	async function dueForSummary(
+		first: Parameters<ReturnType<typeof setup>["capture"]>[0],
+		cost = { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+	) {
+		const made = setup({ cost });
+		const { faux, store, agents, session, capture } = made;
+		store.updateSession(session.id, { options: { compactAt: 10_000 } });
+		faux.setResponses([capture(first)]);
+		agents.send(session.id, `读一下这些记录：${"历史记录 ".repeat(15_000)}`);
+		await agents.whenIdle(session.id);
+		store.setContextTokens(session.id, 60_000);
+		return made;
+	}
+
+	test("while the session's prompt cache is fresh, the summary is asked for in its own conversation", async () => {
+		const { faux, store, agents, session, contexts, capture } = await dueForSummary(
+			fauxAssistantMessage("读完了，一共一万五千条。"),
+		);
+		const options: { cacheRetention?: string; sessionId?: string }[] = [];
+		faux.setResponses([
+			(context, asked) => {
+				contexts.push(structuredClone(context) as (typeof contexts)[number]);
+				options.push({ ...asked });
+				return fauxAssistantMessage("<summary>\nThe person had 15,000 records read.\n</summary>");
+			},
+			capture(fauxAssistantMessage("接着做。")),
+		]);
+		agents.send(session.id, "继续");
+		await agents.whenIdle(session.id);
+
+		const [first, summary, next] = contexts;
+		// The same prompt and tools, and the same conversation with what came after it: a prefix the
+		// provider has in its cache. Only the last message is new.
+		assert.equal(textOf(summary?.messages[0]), textOf(first?.messages[0]));
+		assert.equal(textOf(summary?.messages[1]), textOf(first?.messages[1]));
+		assert.deepEqual(
+			summary?.messages.map((m) => m.role),
+			["system", "user", "assistant", "user", "user"],
+		);
+		const ask = String(summary?.messages.at(-1)?.content);
+		assert.ok(ask.startsWith(`${YEW_NOTE} Yew is about to remove the earlier part`));
+		assert.match(ask, /call no tool/);
+		assert.equal(options[0]?.cacheRetention, "short");
+		assert.equal(options[0]?.sessionId, session.id);
+
+		const entries = store.listEntries(session.id, { limit: 50 }).entries;
+		const compaction = entries.find((entry) => entry.role === "compaction");
+		assert.ok(compaction?.role === "compaction");
+		assert.equal(compaction.compaction.summary, "The person had 15,000 records read.");
+		// The instruction was part of that one request only: it is not in the record or the next request.
+		assert.ok(!entries.some((entry) => textOf(entry).includes("Yew is about to remove")));
+		const after = next?.messages.filter((m) => m.role !== "system") ?? [];
+		assert.match(textOf(after[0]), /The person had 15,000 records read\./);
+		assert.match(textOf(after.at(-1)), /继续/);
+		assert.ok(!textOf(after).includes("Yew is about to remove"));
+	});
+
+	test("a reply that goes on with the work is no summary: the history then goes as a transcript", async () => {
+		const goingOn = [
+			toolUse(fauxToolCall("read", { path: "records.txt" }, { id: "r1" })),
+			fauxAssistantMessage("我接着读 records.txt。"),
+		];
+		for (const reply of goingOn) {
+			const { faux, store, agents, session, contexts, capture } = await dueForSummary(
+				fauxAssistantMessage("读完了，一共一万五千条。"),
+			);
+			const caches: unknown[] = [];
+			const noting =
+				(answer: ReturnType<typeof fauxAssistantMessage>) =>
+				(context: unknown, options: { cacheRetention?: string } | undefined) => {
+					contexts.push(structuredClone(context) as (typeof contexts)[number]);
+					caches.push(options?.cacheRetention);
+					return answer;
+				};
+			faux.setResponses([
+				noting(reply),
+				noting(fauxAssistantMessage("The person had 15,000 records read.")),
+				capture(fauxAssistantMessage("接着做。")),
+			]);
+			agents.send(session.id, "继续");
+			await agents.whenIdle(session.id);
+
+			const [, inPlace, transcript] = contexts;
+			assert.match(String(inPlace?.messages.at(-1)?.content), /Yew is about to remove/);
+			assert.ok(textOf(transcript?.messages[0]).includes(SUMMARY_PROMPT.slice(0, 60)));
+			assert.match(textOf(transcript?.messages[1]), /## Person\\n读一下这些记录/);
+			assert.deepEqual(caches, ["short", "none"]);
+			const entries = store.listEntries(session.id, { limit: 50 }).entries;
+			const compaction = entries.find((entry) => entry.role === "compaction");
+			assert.ok(compaction?.role === "compaction");
+			assert.equal(compaction.compaction.summary, "The person had 15,000 records read.");
+			// What that reply said or called did not run and left nothing in the record.
+			assert.ok(!entries.some((entry) => entry.role === "toolResult"));
+			assert.ok(!textOf(entries).includes("records.txt"));
+			assert.equal(store.getSession(session.id).status, "idle");
+		}
+	});
+
+	test("a model without a lower price for cached prompts gets the shorter transcript", async () => {
+		const { faux, store, agents, session, contexts, capture } = await dueForSummary(
+			fauxAssistantMessage("读完了，一共一万五千条。"),
+			{ input: 5, output: 25, cacheRead: 0, cacheWrite: 0 },
+		);
+		faux.setResponses([
+			capture(fauxAssistantMessage("The person had 15,000 records read.")),
+			capture(fauxAssistantMessage("接着做。")),
+		]);
+		agents.send(session.id, "继续");
+		await agents.whenIdle(session.id);
+		assert.equal(contexts.length, 3, "one request for the summary");
+		assert.ok(textOf(contexts[1]?.messages[0]).includes(SUMMARY_PROMPT.slice(0, 60)));
+		assert.equal(store.getSession(session.id).status, "idle");
+	});
+
+	test("the brief for a renewed context is asked for in the session's conversation too", async () => {
+		const { faux, store, agents, session, contexts, capture } = setup({
+			cost: { input: 5, output: 25, cacheRead: 0.5, cacheWrite: 6.25 },
+		});
+		faux.setResponses([
+			capture(fauxAssistantMessage("好，以后都写中文。")),
+			capture(fauxAssistantMessage("<summary>- 约定：回复和文档都写中文</summary>")),
+		]);
+		agents.send(session.id, "以后回复和文档都写中文");
+		await agents.whenIdle(session.id);
+		assert.equal(await agents.renewNow(session.id, true), "done");
+		const [first, brief] = contexts;
+		assert.equal(textOf(brief?.messages[0]), textOf(first?.messages[0]));
+		assert.deepEqual(
+			brief?.messages.map((m) => m.role),
+			["system", "user", "assistant", "user"],
+		);
+		assert.ok(
+			String(brief?.messages.at(-1)?.content).startsWith(
+				`${YEW_NOTE} The person is renewing this session's context`,
+			),
+		);
+		const renewed = store.contextEntries(session.id)[0];
+		assert.ok(renewed?.role === "compaction");
+		assert.equal(renewed.compaction.kind, "renew");
+		assert.equal(renewed.compaction.summary, "- 约定：回复和文档都写中文");
+	});
+
+	test("a context the provider refuses as too long is summarized from a transcript at once", async () => {
+		const { faux, store, agents, session, contexts, capture } = await dueForSummary(
+			fauxAssistantMessage("读完了，一共一万五千条。"),
+		);
+		// Below the session's own threshold, so only the provider's refusal shortens it.
+		store.setContextTokens(session.id, 1000);
+		faux.setResponses([
+			fauxAssistantMessage([], {
+				stopReason: "error",
+				errorMessage: "prompt is too long: 213462 tokens > 200000 maximum",
+			}),
+			capture(fauxAssistantMessage("The person had 15,000 records read.")),
+			capture(fauxAssistantMessage("接着做。")),
+		]);
+		agents.send(session.id, "继续");
+		await agents.whenIdle(session.id);
+		const [, transcript, next] = contexts;
+		assert.ok(textOf(transcript?.messages[0]).includes(SUMMARY_PROMPT.slice(0, 60)));
+		assert.match(textOf(next?.messages.filter((m) => m.role !== "system")[0]), /15,000 records/);
+		assert.equal(store.getSession(session.id).status, "idle");
 	});
 
 	test("after a restart, a call that was running gets an honest result when the person continues", async () => {

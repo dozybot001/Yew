@@ -82,10 +82,12 @@ export interface ModelRequest {
 	/** Called before each wait when a request failed in a way that may pass and is tried again. */
 	onRetry?: (retry: RetryNote) => void;
 	/**
-	 * A request beside the conversation whose prompt is not sent again, such as naming a session: no
-	 * prompt cache is written for it, and a failure that may pass is tried again once at most.
+	 * False for a prompt that is not sent again, such as the one that names a session: no prompt cache
+	 * is written for it.
 	 */
-	side?: boolean;
+	cache?: boolean;
+	/** The most times a failure that may pass is tried again; the gateway's own number when not given. */
+	retries?: number;
 }
 
 /** A failed request that will be tried again: which retry of how many, after how long, and why. */
@@ -503,9 +505,6 @@ export function plainError(text: string): string {
 /** How long a connection test may take. */
 const PING_MS = 30_000;
 
-/** How many times a request beside the conversation is tried again. */
-const SIDE_RETRIES = 1;
-
 export class ModelGateway {
 	readonly #models: MutableModels;
 	readonly #keys: KeyStore;
@@ -650,12 +649,10 @@ export class ModelGateway {
 		};
 		// One layer of retries, the one below that the person can see: the provider SDKs' own are off.
 		const options: SimpleStreamOptions = {
-			cacheRetention: request.side ? "none" : "short",
+			cacheRetention: request.cache === false ? "none" : "short",
 			maxRetries: 0,
 		};
-		const retries = request.side
-			? Math.min(this.#retry.maxRetries, SIDE_RETRIES)
-			: this.#retry.maxRetries;
+		const retries = Math.min(this.#retry.maxRetries, request.retries ?? this.#retry.maxRetries);
 		if (request.sessionId) options.sessionId = request.sessionId;
 		if (model.reasoning && request.thinking !== "off") {
 			const level = clampThinkingLevel(model, request.thinking);

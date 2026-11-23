@@ -39,7 +39,7 @@ import { ReadState } from "../tools/read-state.ts";
 import { ALL_TOOLS, specs, toolsFor } from "../tools/registry.ts";
 import type { Roles, ToolDefinition } from "../tools/types.ts";
 import { type Answer, Calls, failure, type Live } from "./calls.ts";
-import { ContextKeeper, notice } from "./compaction.ts";
+import { ContextKeeper, notice, type RequestShape } from "./compaction.ts";
 import {
 	clip,
 	hookNote,
@@ -218,6 +218,7 @@ export class Agents {
 			home: this.#home,
 			placement: (session) => this.#placement(session),
 			extras: () => this.#extras(),
+			request: (session, model, snapshot) => this.#requestOf(session, model, snapshot),
 		});
 		// Folders the person keeps from sessions are refused like credential locations.
 		this.#permissions.hidden = () => this.#store.getSetting<string[]>("hiddenFolders", []);
@@ -660,6 +661,7 @@ export class Agents {
 							model,
 							signal,
 							true,
+							true,
 						);
 						if (shortened === "done") continue;
 						if (signal.aborted) break;
@@ -775,13 +777,33 @@ export class Agents {
 		}
 	}
 
+	/** What a request to the session's model is made of: its prompt, the conversation and its tools. */
+	async #requestOf(
+		session: Session,
+		model: ModelInfo,
+		snapshot: ContextSnapshot,
+	): Promise<RequestShape> {
+		const messages = await prepareModelMessages(
+			this.#store.contextEntries(session.id),
+			(entry) =>
+				this.attachments.hydrateUserMessage(entry, {
+					acceptsImages: model.input.includes("image"),
+				}),
+			snapshot.prunedBeforeSeq ?? 0,
+		);
+		return {
+			systemPrompt: systemPrompt(session, snapshot, this.#groupName(session)),
+			messages,
+			tools: specs(this.#toolsOf(session)),
+		};
+	}
+
 	async #ask(
 		session: Session,
 		model: ModelInfo,
 		snapshot: ContextSnapshot,
 		signal: AbortSignal,
 	): Promise<AssistantMessage> {
-		const tools = this.#toolsOf(session);
 		let last = 0;
 		let pending: ReturnType<typeof setTimeout> | null = null;
 		let latest: AssistantMessage | null = null;
@@ -791,22 +813,12 @@ export class Agents {
 			if (latest) this.#store.live(session.id, { type: "draft", draft: slimDraft(latest) });
 		};
 		try {
-			const messages = await prepareModelMessages(
-				this.#store.contextEntries(session.id),
-				(entry) =>
-					this.attachments.hydrateUserMessage(entry, {
-						acceptsImages: model.input.includes("image"),
-					}),
-				snapshot.prunedBeforeSeq ?? 0,
-			);
 			return await this.#gateway.stream(
 				{
 					provider: session.provider,
 					model: model.id,
 					thinking: session.thinking,
-					systemPrompt: systemPrompt(session, snapshot, this.#groupName(session)),
-					messages,
-					tools: specs(tools),
+					...(await this.#requestOf(session, model, snapshot)),
 					signal,
 					sessionId: session.id,
 					onRetry: (retry) => {

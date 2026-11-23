@@ -388,18 +388,40 @@ export function systemPrompt(
 	return parts.join("\n\n");
 }
 
-export const SUMMARY_PROMPT = `You write the summary that lets a working session continue after its earlier history is removed. You will get the transcript to summarize. Write, in the language of the conversation:
-- what the person wants, with their constraints and preferences;
+const SUMMARY_POINTS = `- what the person wants, with their constraints and preferences;
 - decisions made and why;
 - what has been done: files read or changed, commands run and their results;
 - problems still open, and what was about to happen next.
-Keep exact names: file paths, functions, commands, error messages, numbers. Include only what the transcript shows. Do not add a preamble.`;
+Keep exact names: file paths, functions, commands, error messages, numbers.`;
 
-export const RENEW_PROMPT = `The person is renewing this standing session's context window in place so it can start fresh without losing important long-term context. Distill the conversation below into a concise carry-over brief in the language of the conversation:
-- lasting decisions, conventions, and preferences the person established;
+/** Asks for the summary of a session's history, given as one transcript. */
+export const SUMMARY_PROMPT = `You write the summary that lets a working session continue after its earlier history is removed. You will get the transcript to summarize. Write, in the language of the conversation:
+${SUMMARY_POINTS} Include only what the transcript shows. Do not add a preamble.`;
+
+/**
+ * Asks a session for the same summary inside its own conversation, as the last message of a request
+ * that is otherwise the one it sent last, so the provider reads the history from its prompt cache.
+ * The tags tell a summary from a reply that went on with the work instead (summaryIn).
+ */
+export const SUMMARY_ASK = `Yew is about to remove the earlier part of this conversation to make room in the context. Do not go on with the work in this reply, and call no tool. Write the summary that lets you continue once the earlier history is gone, between <summary> and </summary>, in the language of the conversation:
+${SUMMARY_POINTS} Include only what the conversation shows. The last few steps stay in the context as they are, after your summary.`;
+
+/** The summary in a reply to SUMMARY_ASK or RENEW_ASK; null when the reply does not hold one. */
+export function summaryIn(reply: string): string | null {
+	return /<summary>([\s\S]*)<\/summary>/.exec(reply)?.[1]?.trim() || null;
+}
+
+const RENEW_POINTS = `- lasting decisions, conventions, and preferences the person established;
 - ongoing work streams, their current status, and exact file paths or identifiers;
 - open commitments or unresolved items still waiting on this session or others.
-Be brief, concrete, and factual. Include only what the transcript shows. Do not add a preamble.`;
+Be brief, concrete, and factual.`;
+
+export const RENEW_PROMPT = `The person is renewing this standing session's context window in place so it can start fresh without losing important long-term context. Distill the conversation below into a concise carry-over brief in the language of the conversation:
+${RENEW_POINTS} Include only what the transcript shows. Do not add a preamble.`;
+
+/** Asks a session for the carry-over brief inside its own conversation, like SUMMARY_ASK. */
+export const RENEW_ASK = `The person is renewing this session's context, so that it starts fresh without losing what matters in the long term. Do not go on with the work in this reply, and call no tool. Write a concise carry-over brief between <summary> and </summary>, in the language of the conversation:
+${RENEW_POINTS} Include only what the conversation shows. Nothing of the conversation stays in the context but your brief.`;
 
 /**
  * What a helper is told: one task, tools that only look, nobody to ask, and that its reply goes back

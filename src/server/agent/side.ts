@@ -13,11 +13,14 @@ export interface SideCall {
 	signal?: AbortSignal;
 }
 
+/** How many times a request beside the conversation is tried again when it fails in a way that may pass. */
+const SIDE_RETRIES = 1;
+
 /**
  * One request beside a session's conversation, such as naming it. The provider's small model answers
  * when the provider has one, and the session's own model when it has none or the small one did not
- * give a complete answer. What it costs counts as the session's. Returns what the model wrote, or
- * null when no complete answer came.
+ * give a complete answer. Its prompt is not sent again, so no prompt cache is written for it. What it
+ * costs counts as the session's. Returns what the model wrote, or null when no complete answer came.
  */
 export async function sideCall(call: SideCall): Promise<string | null> {
 	const { store, gateway, session } = call;
@@ -33,7 +36,8 @@ export async function sideCall(call: SideCall): Promise<string | null> {
 			systemPrompt: call.systemPrompt,
 			messages: [{ role: "user", content: call.content, timestamp: Date.now() }],
 			tools: [],
-			side: true,
+			cache: false,
+			retries: SIDE_RETRIES,
 			...(call.signal ? { signal: call.signal } : {}),
 		});
 		store.addUsage(session.id, usageTotals(reply), store.getSession(session.id).contextTokens);

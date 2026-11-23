@@ -2,7 +2,13 @@
  * Keeps what the model is sent in bounds while a session works: a system prompt that stays the same
  * between turns, and a transcript that is summarized when it nears the model's context window.
  */
-import { type JsonObject, messageText, type Notice } from "../../shared/messages.ts";
+import {
+	type AssistantMessage,
+	type JsonObject,
+	type ModelMessage,
+	messageText,
+	type Notice,
+} from "../../shared/messages.ts";
 import {
 	defaultCompactAt,
 	type Entry,
@@ -10,7 +16,7 @@ import {
 	permissionModeOf,
 	type Session,
 } from "../../shared/types.ts";
-import type { ModelGateway, ModelInfo } from "../model/gateway.ts";
+import type { ModelGateway, ModelInfo, ToolSpec } from "../model/gateway.ts";
 import type { Store } from "../store.ts";
 import {
 	estimateTokens,
@@ -20,6 +26,7 @@ import {
 	toolResultTokens,
 	transcriptForSummary,
 	usageTotals,
+	YEW_NOTE,
 } from "./context.ts";
 import {
 	type ContextSnapshot,
@@ -28,10 +35,13 @@ import {
 	MAIN_ROLE,
 	PERMISSION_MODE,
 	type Placement,
+	RENEW_ASK,
 	RENEW_PROMPT,
 	renderInstructions,
 	type SessionRef,
+	SUMMARY_ASK,
 	SUMMARY_PROMPT,
+	summaryIn,
 	type Told,
 	takeSnapshot,
 	today,
@@ -40,6 +50,29 @@ import {
 const KEEP_RECENT_TOKENS = 20_000;
 /** Layer-1 tool-result folding succeeds when it brings context down to at most this share of the threshold. */
 const L1_TARGET_RATIO = 0.75;
+
+/**
+ * How long after a session's last request its prompt cache is taken to be there still. Providers keep
+ * one for about five minutes from the start of the last request that used it.
+ */
+const CACHE_FRESH_MS = 4.5 * 60_000;
+
+/** What a session's request to its model is made of, which is what its prompt cache was written for. */
+export interface RequestShape {
+	systemPrompt: string;
+	messages: ModelMessage[];
+	tools: ToolSpec[];
+}
+
+/** The two ways a summary is asked for: inside the session's conversation, or over a transcript of it. */
+interface SummaryAsk {
+	/** The last message of a request that is otherwise the session's own. */
+	inPlace: string;
+	/** The system prompt of a request that carries the history as one transcript. */
+	prompt: string;
+	/** The history for that transcript. */
+	entries: Entry[];
+}
 
 /** What an attempt to shorten the context came to. "nothing": there was nothing older to summarize. */
 export type Compacted = "done" | "nothing" | "failed";
@@ -104,6 +137,15 @@ export interface ContextKeeperOptions {
 	placement: (session: Session) => Placement;
 	/** Memory folders and where the person's own skills and instructions are. */
 	extras: () => InstructionExtras;
+	/**
+	 * What the session's next request would send, built from the snapshot its prompt reads. Without it
+	 * a summary is always asked for over a transcript.
+	 */
+	request?: (
+		session: Session,
+		model: ModelInfo,
+		snapshot: ContextSnapshot,
+	) => Promise<RequestShape>;
 }
 
 export class ContextKeeper {
@@ -112,6 +154,7 @@ export class ContextKeeper {
 	readonly #home: string;
 	readonly #placement: (session: Session) => Placement;
 	readonly #extras: () => InstructionExtras;
+	readonly #request: ContextKeeperOptions["request"];
 
 	constructor(options: ContextKeeperOptions) {
 		this.#store = options.store;
@@ -119,6 +162,26 @@ export class ContextKeeper {
 		this.#home = options.home;
 		this.#placement = options.placement;
 		this.#extras = options.extras;
+		this.#request = options.request;
+	}
+
+	/**
+	 * A saved snapshot as the system prompt reads it. Snapshots from before a field existed learn it
+	 * quietly; the prompt reads the same either way.
+	 */
+	#promptOf(session: Session, saved: ContextSnapshot, placement: Placement): ContextSnapshot {
+		const { told: _told, ...prompt } = {
+			...saved,
+			// Snapshots from before 1.7 name the earlier modes ("auto", "manual"): both read as default.
+			permissionMode:
+				normalizePermissionMode(saved.permissionMode) ?? permissionModeOf(session.options),
+			main: saved.main === undefined ? null : saved.main,
+			parent: saved.parent === undefined ? placement.parent : saved.parent,
+			name: saved.name ?? session.name,
+			team: saved.team === undefined ? (placement.team ?? null) : saved.team,
+			role: saved.role ?? session.responsibility,
+		};
+		return prompt;
 	}
 
 	/**
@@ -153,28 +216,18 @@ export class ContextKeeper {
 			return snapshot;
 		}
 		const mode = permissionModeOf(session.options);
-		// Snapshots from before a field existed learn it quietly; the prompt reads the same either way.
 		const team = placement.team ?? null;
-		const { told: _told, ...prompt } = {
-			...saved,
-			// Snapshots from before 1.7 name the earlier modes ("auto", "manual"): both read as default.
-			permissionMode: normalizePermissionMode(saved.permissionMode) ?? mode,
-			main: saved.main === undefined ? null : saved.main,
-			parent: saved.parent === undefined ? placement.parent : saved.parent,
-			name: saved.name ?? session.name,
-			team: saved.team === undefined ? team : saved.team,
-			role: saved.role ?? session.responsibility,
-		};
+		const prompt = this.#promptOf(session, saved, placement);
 		const told: Told = saved.told ?? {
 			date: prompt.date,
 			instructions: prompt.instructions,
-			permissionMode: prompt.permissionMode,
-			main: prompt.main,
+			permissionMode: prompt.permissionMode ?? mode,
+			main: prompt.main ?? null,
 		};
 		const toldName = told.name ?? prompt.name;
 		const toldTeam = told.team === undefined ? prompt.team : told.team;
 		const toldExtraDirs = told.extraDirs ?? prompt.extraDirs ?? [];
-		const toldRole = (told.role ?? prompt.role).trim();
+		const toldRole = (told.role ?? prompt.role ?? "").trim();
 		const role = session.responsibility.trim();
 		const currentExtraDirs = session.options.extraDirs ?? [];
 		const updates: string[] = [];
@@ -294,19 +347,103 @@ export class ContextKeeper {
 	}
 
 	/**
+	 * The session's request as it went out last, when sending it again is the cheaper way to a summary:
+	 * the provider reads a cached prompt for half the price of input or less, and is likely to hold this
+	 * one still, because the same model answered less than a few minutes ago from the same snapshot.
+	 * Null otherwise; a model without such a price, a local one for instance, gets the shorter transcript.
+	 */
+	async #lastRequest(session: Session, model: ModelInfo): Promise<RequestShape | null> {
+		if (!this.#request) return null;
+		const { cacheRead, input } = model.cost;
+		if (!(cacheRead > 0 && cacheRead * 2 <= input)) return null;
+		const saved = this.#store.getContextSnapshot<ContextSnapshot>(session.id);
+		if (!saved || saved.cwd !== session.cwd) return null;
+		const last = this.#store
+			.contextEntries(session.id)
+			.findLast((entry) => entry.role === "assistant");
+		if (last?.role !== "assistant") return null;
+		const { provider, model: id, timestamp } = last.message;
+		if (provider !== session.provider || id !== model.id) return null;
+		if (Date.now() - timestamp > CACHE_FRESH_MS) return null;
+		return this.#request(session, model, this.#promptOf(session, saved, this.#placement(session)));
+	}
+
+	/**
+	 * Asks the session's model for a summary of its history. While the provider still holds the prompt
+	 * cache of the session's last request, the request is that one again with the instruction as its
+	 * last message: the same prompt, tools, messages and thinking, so the history is read from the
+	 * cache instead of being paid for in full. When that is not the cheaper way (#lastRequest), when
+	 * the context does not fit (`fits` false), or when the reply holds no summary, the history goes as
+	 * one transcript with its tool results cut short; that prompt is not sent again, so no cache is
+	 * written for it. Returns the summary, or an empty text with the provider's error when there is one.
+	 */
+	async #summarize(
+		session: Session,
+		model: ModelInfo,
+		signal: AbortSignal,
+		ask: SummaryAsk,
+		fits = true,
+	): Promise<{ text: string; error?: string }> {
+		const textOf = (reply: AssistantMessage) =>
+			reply.content
+				.filter((block) => block.type === "text")
+				.map((block) => block.text)
+				.join("\n")
+				.trim();
+		const last = fits ? await this.#lastRequest(session, model) : null;
+		if (last) {
+			const reply = await this.#gateway.stream({
+				provider: session.provider,
+				model: model.id,
+				thinking: session.thinking,
+				systemPrompt: last.systemPrompt,
+				messages: [
+					...last.messages,
+					{ role: "user", content: `${YEW_NOTE} ${ask.inPlace}`, timestamp: Date.now() },
+				],
+				tools: last.tools,
+				signal,
+				sessionId: session.id,
+			});
+			this.#store.addUsage(session.id, usageTotals(reply), session.contextTokens);
+			// A reply that calls a tool, or holds no summary between the tags, went on with the work instead.
+			const text = reply.stopReason === "stop" ? summaryIn(textOf(reply)) : null;
+			if (text) return { text };
+			if (signal.aborted) return { text: "" };
+		}
+		const reply = await this.#gateway.stream({
+			provider: session.provider,
+			model: model.id,
+			thinking: "off",
+			systemPrompt: ask.prompt,
+			messages: [
+				{ role: "user", content: transcriptForSummary(ask.entries), timestamp: Date.now() },
+			],
+			tools: [],
+			signal,
+			cache: false,
+		});
+		this.#store.addUsage(session.id, usageTotals(reply), session.contextTokens);
+		const text = textOf(reply);
+		if (reply.stopReason === "stop" && text) return { text };
+		return { text: "", ...(reply.errorMessage ? { error: reply.errorMessage } : {}) };
+	}
+
+	/**
 	 * Summarizes older history with the session's own model and keeps roughly the last 20,000 tokens
 	 * (less for a model with a small context window, so that what is kept fits well under the limit).
 	 * The kept part starts at a message or at a step of the model, never at a tool result, so a tool
 	 * call is never separated from its result (prior-art 4.4). A turn of hundreds of steps after one
 	 * message is cut inside the turn; the message being worked on is then carried over word for word,
 	 * because a summary only paraphrases it and loses its constraints. The next prompt is built fresh,
-	 * with a new environment snapshot.
+	 * with a new environment snapshot. `overflowed`: the provider just refused the context as too long.
 	 */
 	async compact(
 		session: Session,
 		model: ModelInfo,
 		signal: AbortSignal,
 		force: boolean,
+		overflowed = false,
 	): Promise<Compacted> {
 		const entries = this.#store.contextEntries(session.id);
 		const keep = Math.min(KEEP_RECENT_TOKENS, Math.floor(compactAt(session, model) / 4));
@@ -338,38 +475,18 @@ export class ContextKeeper {
 		}
 
 		this.#store.live(session.id, { type: "draftCleared" });
-		const summary = await this.#gateway.stream({
-			provider: session.provider,
-			model: model.id,
-			thinking: "off",
-			systemPrompt: SUMMARY_PROMPT,
-			messages: [
-				{
-					role: "user",
-					content: transcriptForSummary(older),
-					timestamp: Date.now(),
-				},
-			],
-			tools: [],
+		const { text, error } = await this.#summarize(
+			session,
+			model,
 			signal,
-		});
-		this.#store.addUsage(session.id, usageTotals(summary), session.contextTokens);
-		const text = summary.content
-			.filter((block) => block.type === "text")
-			.map((block) => block.text)
-			.join("\n")
-			.trim();
-		if (summary.stopReason !== "stop" || !text) {
+			{ inPlace: SUMMARY_ASK, prompt: SUMMARY_PROMPT, entries: older },
+			!overflowed,
+		);
+		if (!text) {
 			if (!signal.aborted)
-				notice(
-					this.#store,
-					session.id,
-					"error",
-					summary.errorMessage ?? "The summary came back empty.",
-					{
-						code: "compact-failed",
-					},
-				);
+				notice(this.#store, session.id, "error", error ?? "The summary came back empty.", {
+					code: "compact-failed",
+				});
 			return "failed";
 		}
 		this.#store.tx(() => {
@@ -431,34 +548,18 @@ export class ContextKeeper {
 		if (summarize) {
 			if (!model) return "failed";
 			this.#store.live(session.id, { type: "draftCleared" });
-			const summary = await this.#gateway.stream({
-				provider: session.provider,
-				model: model.id,
-				thinking: "off",
-				systemPrompt: RENEW_PROMPT,
-				messages: [
-					{
-						role: "user",
-						content: transcriptForSummary(entries),
-						timestamp: Date.now(),
-					},
-				],
-				tools: [],
-				signal,
+			const { text, error } = await this.#summarize(session, model, signal, {
+				inPlace: RENEW_ASK,
+				prompt: RENEW_PROMPT,
+				entries,
 			});
-			this.#store.addUsage(session.id, usageTotals(summary), session.contextTokens);
-			const text = summary.content
-				.filter((block) => block.type === "text")
-				.map((block) => block.text)
-				.join("\n")
-				.trim();
-			if (summary.stopReason !== "stop" || !text) {
+			if (!text) {
 				if (!signal.aborted) {
 					notice(
 						this.#store,
 						session.id,
 						"error",
-						summary.errorMessage ?? "The carry-over summary came back empty.",
+						error ?? "The carry-over summary came back empty.",
 						{ code: "compact-failed" },
 					);
 				}
