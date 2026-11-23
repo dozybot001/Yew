@@ -31,20 +31,17 @@ export function questionFrom(text: string): Question | null {
 	return { question: clip(question, MAX_QUESTION_CHARS), ...(choicesFrom(text) ?? {}) };
 }
 
-/** What the session is told when its question became a card, so it knows where the answer comes from. */
-export function cardNote(question: Question): string {
-	const options = (question.options ?? []).map((option, index) => {
-		const detail = option.detail ? ` (${option.detail})` : "";
-		return `"${option.label}"${detail}${index === question.recommended ? ", chosen to start with" : ""}`;
-	});
-	return [
-		`Your last reply left the person a question, so Yew put it in their approval center as a card: "${question.question}"`,
-		options.length > 0
-			? `The card offers these answers: ${options.join("; ")}. The person can also write their own.`
-			: "The card has no fixed answers: the person writes one.",
-		"Their answer arrives as their next message to you. If they write to you first, the card is withdrawn.",
-	].join("\n");
-}
+/**
+ * What the session is told when its question became a card, so it knows where the answer comes from.
+ * The words are fixed. The entry is a system message, and the question and the answers on the card
+ * were written by a model from a reply that may repeat a page or a file: put in here, such text
+ * would reach the session with the weight of a system message.
+ */
+export const CARD_NOTE = [
+	"Your last reply left the person a question, so Yew put it in their approval center as a card.",
+	"They pick one of the answers Yew wrote for it or write their own, and what they answer arrives as their next message to you.",
+	"If they write to you first, the card is withdrawn.",
+].join(" ");
 
 export interface ReplyQuestionsOptions {
 	store: Store;
@@ -141,7 +138,7 @@ export class ReplyQuestions {
 			// Yew's word to the session, like a change of its name: not the person's, and no client shows it as theirs.
 			this.#store.appendEntry(session.id, {
 				role: "system",
-				message: { role: "system", content: cardNote(question), timestamp: Date.now() },
+				message: { role: "system", content: CARD_NOTE, timestamp: Date.now() },
 			});
 			this.#store.setStatus(session.id, "waiting", null);
 		});

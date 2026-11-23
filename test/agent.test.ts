@@ -5,7 +5,7 @@ import { join } from "node:path";
 import { describe, test } from "node:test";
 import { SUMMARY_HEADING, YEW_NOTE } from "../src/server/agent/context.ts";
 import { SUMMARY_PROMPT } from "../src/server/agent/prompt.ts";
-import { questionFrom } from "../src/server/agent/reply-question.ts";
+import { CARD_NOTE, questionFrom } from "../src/server/agent/reply-question.ts";
 import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.ts";
 import { choicesFrom } from "../src/server/tools/misc.ts";
 import { ALL_TOOLS } from "../src/server/tools/registry.ts";
@@ -449,8 +449,9 @@ describe("agent loop", () => {
 		const told = store.contextEntries(session.id).at(-1);
 		assert.equal(told?.role, "system");
 		const note = told?.role === "system" ? String(told.message.content) : "";
-		assert.match(note, /put it in their approval center as a card: "改好了，还没有推送。/);
-		assert.match(note, /"推送" \(推到两个仓库\), chosen to start with; "先不推"/);
+		// In fixed words: nothing the reading model wrote is in a system message.
+		assert.equal(note, CARD_NOTE);
+		assert.doesNotMatch(note, /推送|Gitee|推到两个仓库/);
 		agents.answer(card.id, { answers: [{ choices: [0] }] });
 		await agents.whenIdle(session.id);
 		const next = contexts[1]?.messages ?? [];
@@ -492,10 +493,7 @@ describe("agent loop", () => {
 			fromReply: true,
 		});
 		const told = store.contextEntries(session.id).at(-1);
-		assert.match(
-			told?.role === "system" ? String(told.message.content) : "",
-			/The card has no fixed answers: the person writes one\./,
-		);
+		assert.equal(told?.role === "system" ? told.message.content : "", CARD_NOTE);
 		agents.answer(card.id, { answers: [{ choices: [], text: "官网" }] });
 		await agents.whenIdle(session.id);
 		assert.match(textOf(contexts[0]?.messages.at(-1)), /官网/);
