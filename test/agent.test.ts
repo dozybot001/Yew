@@ -4,7 +4,7 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { SUMMARY_HEADING, YEW_NOTE } from "../src/server/agent/context.ts";
-import { SUMMARY_PROMPT } from "../src/server/agent/prompt.ts";
+import { instructionsUpdate, SUMMARY_PROMPT } from "../src/server/agent/prompt.ts";
 import { CARD_NOTE, questionFrom } from "../src/server/agent/reply-question.ts";
 import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.ts";
 import { choicesFrom } from "../src/server/tools/misc.ts";
@@ -977,10 +977,31 @@ describe("agent loop", () => {
 			.entries.filter((e) => e.role === "system");
 		assert.equal(updates.length, 1);
 		assert.match(textOf(updates[0]), /Always answer in prose/);
+		// Only the file that changed is sent again.
+		assert.doesNotMatch(textOf(updates[0]), /file="CLAUDE\.md"/);
 		// The prompt stays the same for every step until the next compaction, not only the first one.
 		assert.equal(textOf(contexts[1]?.messages[0]), system);
 		assert.equal(textOf(contexts[2]?.messages[0]), system);
 		assert.equal(readFileSync(join(cwd, "AGENTS.md"), "utf8"), "Always answer in prose.\n");
+	});
+
+	test("an instruction update carries the new and changed files and names the removed ones", () => {
+		const file = (path: string, content: string) => ({ path, content });
+		const told = [
+			file("/w/AGENTS.md", "a"),
+			file("/w/docs/AGENTS.md", "b"),
+			file("/h/own.md", "c"),
+		];
+		assert.equal(instructionsUpdate(told, told, "/w"), null);
+		const update = instructionsUpdate(
+			told,
+			[file("/w/AGENTS.md", "a2"), file("/h/own.md", "c"), file("/w/new/AGENTS.md", "d")],
+			"/w",
+		);
+		assert.match(update ?? "", /<instructions file="AGENTS\.md">\na2\n/);
+		assert.match(update ?? "", /<instructions file="new\/AGENTS\.md">\nd\n/);
+		assert.doesNotMatch(update ?? "", /own\.md/);
+		assert.match(update ?? "", /removed and no longer apply: docs\/AGENTS\.md\./);
 	});
 
 	test("a changed permission mode arrives as an update; the prompt stays the same", async () => {

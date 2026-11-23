@@ -237,6 +237,36 @@ export function renderInstructions(files: InstructionFile[], cwd: string | null)
 }
 
 /**
+ * What a session is told when its instruction files differ from the ones it was last given: only
+ * the files that are new or changed, and the paths of those that are gone. Null when nothing differs.
+ */
+export function instructionsUpdate(
+	told: InstructionFile[],
+	current: InstructionFile[],
+	cwd: string | null,
+): string | null {
+	const before = new Map(told.map((file) => [file.path, file.content]));
+	const changed = current.filter((file) => before.get(file.path) !== file.content);
+	const kept = new Set(current.map((file) => file.path));
+	const removed = told.filter((file) => !kept.has(file.path));
+	if (changed.length === 0 && removed.length === 0) return null;
+	const shown = (path: string) =>
+		cwd && isInside(path, cwd) ? relative(cwd, path).split(sep).join("/") : path;
+	const parts: string[] = [];
+	if (changed.length > 0) {
+		parts.push(
+			`These instruction files are new or changed. Each replaces the earlier version of the same file; the other instruction files stand as they were.\n\n${renderInstructions(changed, cwd)}`,
+		);
+	}
+	if (removed.length > 0) {
+		parts.push(
+			`These instruction files were removed and no longer apply: ${removed.map((file) => shown(file.path)).join(", ")}.`,
+		);
+	}
+	return parts.join("\n\n");
+}
+
+/**
  * What the session's permission mode means for the model, in the words of the settings. Each text
  * stands on its own: it is also what a session is told when the mode
  * changes, and what a scheduled run is told about its own mode. Where Yew asks, the person's answer

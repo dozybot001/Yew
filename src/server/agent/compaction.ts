@@ -31,13 +31,13 @@ import {
 import {
 	type ContextSnapshot,
 	type InstructionExtras,
+	instructionsUpdate,
 	loadInstructions,
 	MAIN_ROLE,
 	PERMISSION_MODE,
 	type Placement,
 	RENEW_ASK,
 	RENEW_PROMPT,
-	renderInstructions,
 	type SessionRef,
 	SUMMARY_ASK,
 	SUMMARY_PROMPT,
@@ -236,13 +236,8 @@ export class ContextKeeper {
 		const date = today();
 		if (date !== told.date) updates.push(`Today's date is now ${date}.`);
 		const current = loadInstructions(session.cwd, this.#home, this.#extras());
-		if (JSON.stringify(current) !== JSON.stringify(told.instructions)) {
-			updates.push(
-				current.length > 0
-					? `The instruction files changed. These are the current versions; they replace the earlier ones.\n\n${renderInstructions(current, session.cwd)}`
-					: "The instruction files were removed.",
-			);
-		}
+		const instructions = instructionsUpdate(told.instructions, current, session.cwd);
+		if (instructions) updates.push(instructions);
 		if (told.permissionMode !== mode) {
 			updates.push(`The person changed the permission mode. ${PERMISSION_MODE[mode]}`);
 		}
