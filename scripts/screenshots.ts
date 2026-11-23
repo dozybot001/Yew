@@ -4,8 +4,9 @@
  *
  * Every picture is Yew's real interface over local demo data. For each language the script sets up a
  * throwaway Yew in a temporary folder (YEW_HOME there, YEW_KEYCHAIN=off, YEW_MCP_BUILTIN=off): a
- * coordinator as the main conversation, Website and Backend in a Product team, Content in a Marketing
- * team, a small shop project in git, a few letters from earlier in the day (one from `yew send`), and
+ * coordinator as the main conversation, with Website, Backend and Content in one Product team (one
+ * team and no session outside it keep the sidebar's three lists in view at this window height), a
+ * small shop project in git, a few letters from earlier in the day (one from `yew send`), and
  * the scripted stand-in model (scripts/demo-model.ts) in place of a real one. Then, as the person, it
  * asks the coordinator to ship the home page redesign and fix being signed out on reload. Yew and the
  * stand-in do the rest: the coordinator writes to Website and Backend, Website edits the page, runs the

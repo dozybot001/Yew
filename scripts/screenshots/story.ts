@@ -10,7 +10,7 @@ interface LetterText {
 
 export interface Story {
 	names: { main: string; website: string; backend: string; content: string };
-	teams: { product: string; marketing: string };
+	teams: { product: string };
 	roles: { main: string; website: string; backend: string; content: string };
 	/** What the person asks the coordinator. */
 	kickoff: string;
@@ -40,7 +40,7 @@ const EN_HERO =
 export const STORIES: Record<Lang, Story> = {
 	zh: {
 		names: { main: "统筹", website: "网站", backend: "后端", content: "内容" },
-		teams: { product: "产品", marketing: "运营" },
+		teams: { product: "产品" },
 		roles: {
 			main: "我的主对话：把我交代的事分给合适的会话，跟进进度，汇总给我。",
 			website: "网站的页面、样式和前端测试。改完跑测试，通过后推送。",
@@ -115,7 +115,7 @@ export const STORIES: Record<Lang, Story> = {
 	},
 	en: {
 		names: { main: "Coordinator", website: "Website", backend: "Backend", content: "Content" },
-		teams: { product: "Product", marketing: "Marketing" },
+		teams: { product: "Product" },
 		roles: {
 			main: "My main conversation: hands what I ask for to the right sessions, follows up and sums up for me.",
 			website:

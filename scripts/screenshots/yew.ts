@@ -115,7 +115,6 @@ export function seed(
 	store.setSetting("mascot", false);
 	store.setSetting("workspaces", [{ id: randomUUID(), name: "acme-shop", path: cwd }]);
 	const product = store.createGroup(story.teams.product);
-	const marketing = store.createGroup(story.teams.marketing);
 	const session = (name: string, role: string, groupId: string | null, workspace: string | null) =>
 		store.createSession({
 			name,
@@ -129,10 +128,10 @@ export function seed(
 			options: { permissionMode: "default" },
 		});
 	const { names, roles } = story;
-	const content = session(names.content, roles.content, marketing.id, null);
+	const content = session(names.content, roles.content, product.id, null);
 	const website = session(names.website, roles.website, product.id, cwd);
 	const backend = session(names.backend, roles.backend, product.id, cwd);
-	const main = session(names.main, roles.main, null, null);
+	const main = session(names.main, roles.main, product.id, null);
 	store.setSetting("mainSessionId", main.id);
 
 	// Earlier in the day: the coordinator asked Content about feedback and had its report; Backend told
