@@ -461,13 +461,11 @@ function ModelRoles() {
 					busy={side.busy}
 					onChange={(value) => void side.run(value)}
 				/>
-				<span className="hint" role="status">
-					{!chosen
-						? t("sideModelFollowHint")
-						: at && (at.hasKey || !at.keyRequired)
-							? t("sideModelSends", { provider: name })
-							: t("sideModelNoKey", { provider: name })}
-				</span>
+				{chosen && !(at && (at.hasKey || !at.keyRequired)) && (
+					<span className="hint" role="status">
+						{t("sideModelNoKey", { provider: name })}
+					</span>
+				)}
 				<ErrorBox error={side.error} />
 			</Field>
 			<Field label={t("observerModel")} info={t("observerHelp")}>
@@ -477,13 +475,11 @@ function ModelRoles() {
 					none={t("observerOff")}
 					onChange={(value) => void observer.run(value)}
 				/>
-				<span className="hint" role="status">
-					{!watcher
-						? t("observerOffHint")
-						: watcherAt && (watcherAt.hasKey || !watcherAt.keyRequired)
-							? t("observerSends", { provider: watcherName })
-							: t("observerNoKey", { provider: watcherName })}
-				</span>
+				{watcher && !(watcherAt && (watcherAt.hasKey || !watcherAt.keyRequired)) && (
+					<span className="hint" role="status">
+						{t("observerNoKey", { provider: watcherName })}
+					</span>
+				)}
 				<ErrorBox error={observer.error} />
 			</Field>
 		</>

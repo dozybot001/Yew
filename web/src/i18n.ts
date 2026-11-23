@@ -496,18 +496,12 @@ const zh = {
 	mainModel: "主路模型",
 	sideModel: "旁路模型",
 	sideModelFollow: "跟随主模型",
-	sideModelFollowHint: "每个会话用自己的模型做这两件事。选一个便宜的小模型可以省钱。",
-	sideModelSends:
-		"起名时会话开头的一段、读回复时回复的最后 3000 个字，会发给 {provider}，适用它的隐私政策。",
 	sideModelNoKey: "{provider} 没有密钥，这两件事现在由各会话自己的模型来做。",
 	observerModel: "旁观模型",
 	observerOff: "不旁观",
-	observerOffHint: "选一个模型后，Yew 在你发起的每一轮结束时看一遍，有话就在回复下面说一句。",
-	observerSends:
-		"每轮结束后，你的上一条消息、会话这一轮每个操作的名称和参数（每个一行）和它的回复（各有长度上限）会发给 {provider}，适用它的隐私政策。费用记在该会话上。",
 	observerNoKey: "{provider} 没有密钥，Yew 现在不旁观。",
 	observerHelp:
-		"Yew 只看、不动手：她说的话不进入会话的上下文，不记到下一轮，只评工作。只看你发起的那一轮，会话之间来往的信不看。可以在会话设置里对单个会话关掉。她的人设写在数据目录的 persona.md 里，没有这个文件时用自带的人设。",
+		"选了模型后，你发起的每一轮结束时 Yew 看一遍，有话就在回复下面说一句。你的上一条消息、这一轮每个操作的名称和参数（每个一行）和会话的回复（各有长度上限）会发给这个模型的服务商，适用它的隐私政策；费用记在该会话上。她只评工作，说的话不进会话的上下文。可以在会话设置里对单个会话关掉；人设可以写在数据目录的 persona.md 里。",
 	observeSection: "旁观",
 	observe: "让 Yew 旁观这个会话",
 	observeHint: "在设置里选了旁观模型后生效；关掉后这个会话的内容不发给旁观模型",
@@ -591,7 +585,7 @@ const zh = {
 	mainModelHelp:
 		"新建会话时默认选这个服务商、模型和思考强度；已有的会话不受影响，每个会话可以单独改。",
 	sideModelHelp:
-		"对话之外的两件小事用它：给新会话起名，读一条回复的末尾是不是给你留了问题（留了就放进审批中心）。「跟随主模型」时每个会话用自己的模型。选了模型后，所有会话的这两件事都交给它，不论价格；它没给出完整回答，或它的服务商没有密钥时，由会话自己的模型来做。",
+		"给新会话起名、读回复末尾是不是给你留了问题，这两件小事用它。「跟随主模型」时每个会话用自己的模型。另选模型后，起名用的会话开头和回复的最后 3000 个字会发给它的服务商，适用它的隐私政策；它没答完整或没有密钥时，由会话自己的模型来做。",
 	deleteProviderBody:
 		"删除自定义服务商 {name}？它的配置和钥匙串里的 API Key 都会删除，用它的会话将无法请求模型。",
 	err_network: "连不上 Yew Harness 服务。确认 yew serve 还在运行，然后重试。",
@@ -1750,20 +1744,12 @@ const en: Record<MessageKey, string> = {
 	mainModel: "Main model",
 	sideModel: "Side model",
 	sideModelFollow: "Same as the session",
-	sideModelFollowHint:
-		"Each session does these two jobs with its own model. Choosing a cheap small model costs less.",
-	sideModelSends:
-		"The start of a session, when it is named, and the last 3,000 characters of a reply, when it is read, go to {provider}; its privacy policy applies.",
 	sideModelNoKey: "{provider} has no key, so each session's own model does these two jobs for now.",
 	observerModel: "Observer model",
 	observerOff: "Not observing",
-	observerOffHint:
-		"With a model chosen, Yew reads each turn you start when it ends and, if she has something to say, says it under the reply.",
-	observerSends:
-		"After each turn, your last message, the name and arguments of each call the session made in it (one line each) and its reply (each up to a length limit) are sent to {provider}, under its privacy policy. The cost counts as the session's.",
 	observerNoKey: "{provider} has no key, so Yew is not observing for now.",
 	observerHelp:
-		"Yew only watches: what she says does not enter the session's context, she keeps nothing for the next turn, and she talks about the work only. She reads the turns you start, not the letters sessions send each other. You can turn her off for one session in its settings. Her character is in persona.md in the data folder; without that file she uses the built-in one.",
+		"With a model chosen, Yew reads each turn you start when it ends and, if she has something to say, says it under the reply. Your last message, the name and arguments of each call in the turn (one line each) and the session's reply (each up to a length limit) go to this model's provider, under its privacy policy; the cost counts as the session's. She talks about the work only, and what she says does not enter the session's context. You can turn her off for one session in its settings, and write her character in persona.md in the data folder.",
 	observeSection: "Observing",
 	observe: "Let Yew observe this session",
 	observeHint:
@@ -1850,7 +1836,7 @@ const en: Record<MessageKey, string> = {
 	mainModelHelp:
 		"New sessions start with this provider, model and thinking level; existing sessions keep theirs, and each session can change its own.",
 	sideModelHelp:
-		"Two small jobs beside a conversation use it: naming a new session, and reading whether the end of a reply leaves you a question (one that does goes to the approval center). With “Same as the session”, each session uses its own model. A model you choose does both jobs for every session, whatever it costs; when it gives no complete answer, or its provider has no key, the session's own model does them.",
+		"Two small jobs use it: naming a new session, and reading whether the end of a reply leaves you a question. With “Same as the session”, each session uses its own model. With a model chosen, the start of the session (for the name) and the last 3,000 characters of the reply go to its provider, under its privacy policy; when it gives no complete answer or has no key, the session's own model does the job.",
 	deleteProviderBody:
 		"Delete the custom provider {name}? Its settings and its API key in the keychain are removed, and sessions using it will not be able to reach the model.",
 	err_network:
