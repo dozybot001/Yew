@@ -12,6 +12,7 @@ import {
 	RECEIVE_POLICIES,
 	type ReceivePolicy,
 	SCHEDULE_MODES,
+	type Schedule,
 	type ScheduleMode,
 	type Session,
 	THINKING_LEVELS,
@@ -73,6 +74,31 @@ function text(fields: Fields, key: string, max: number): string | undefined {
 	return value;
 }
 
+/**
+ * One passage of a longer text changed, instead of the whole text sent again: `old` is in `current`
+ * exactly once, so it is clear which passage is meant.
+ */
+function edited(fields: Fields, key: string, current: string, what: string): string | undefined {
+	const value = fields[key];
+	if (value === undefined) return undefined;
+	if (!value || typeof value !== "object" || Array.isArray(value)) {
+		throw invalid(`${key} must be an object with old and new.`, key);
+	}
+	const old = text(value as Fields, "old", 20_000);
+	const next = text(value as Fields, "new", 20_000);
+	if (!old || next === undefined) throw invalid(`${key} needs old and new.`, key);
+	const times = current.split(old).length - 1;
+	if (times === 0) {
+		throw invalid(`${key}.old is not in ${what}. Read it with list_sessions first.`, key);
+	}
+	if (times > 1) {
+		throw invalid(`${key}.old is in ${what} ${times} times. Give a longer passage.`, key);
+	}
+	const result = current.replace(old, () => next);
+	if (result.length > 20_000) throw invalid(`${what} would be longer than 20000 characters.`, key);
+	return result;
+}
+
 function oneOf<T extends string>(fields: Fields, key: string, values: readonly T[]): T | undefined {
 	const value = fields[key];
 	if (value === undefined) return undefined;
@@ -123,6 +149,11 @@ export class Manager {
 
 	constructor(deps: ManagerDeps) {
 		this.#deps = deps;
+	}
+
+	/** The scheduled tasks that write to a session. */
+	schedulesOf(sessionId: string): Schedule[] {
+		return this.#deps.schedules.list().filter((schedule) => schedule.sessionId === sessionId);
 	}
 
 	plan(by: Session, args: JsonObject): ManagePlan {
@@ -368,7 +399,13 @@ export class Manager {
 			const ref = text(change, "session", 200);
 			const name = text(change, "name", 200);
 			const teamValue = text(change, "team", 100);
-			const role = text(change, "role", 20_000);
+			let role = text(change, "role", 20_000);
+			if (change.role_edit !== undefined && (role !== undefined || ref === undefined)) {
+				throw invalid(
+					"role_edit changes a passage of an existing role; give role or role_edit.",
+					"role_edit",
+				);
+			}
 			const modelValue = text(change, "model", 300);
 			const thinking = oneOf(change, "thinking", THINKING_LEVELS) as ThinkingLevel | undefined;
 			const folderValue = text(change, "folder", 4096);
@@ -433,6 +470,7 @@ export class Manager {
 			}
 
 			const target = sessionRef(ref);
+			role ??= edited(change, "role_edit", target.responsibility, `the role of "${target.name}"`);
 			const archived = flag(change, "archived");
 			if (target.archivedAt !== null && archived !== false) {
 				throw invalid(
@@ -587,6 +625,21 @@ export class Manager {
 			const current = ref === undefined ? null : book.find(ref);
 			if (ref !== undefined && !current)
 				throw invalid(`There is no scheduled task "${ref}".`, "schedule");
+			if (change.message_edit !== undefined) {
+				if (!current || message !== undefined) {
+					throw invalid(
+						"message_edit changes a passage of an existing task's message; give message or message_edit.",
+						"message_edit",
+					);
+				}
+				const next = edited(
+					change,
+					"message_edit",
+					current.message,
+					`the message of "${current.name}"`,
+				);
+				if (next !== undefined) fields.message = next;
+			}
 			const values = book.values(fields, current);
 			const target = store.getSession(values.sessionId);
 			reach("configure");

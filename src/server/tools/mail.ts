@@ -1,4 +1,4 @@
-import type { Letter, TaskOutcome } from "../../shared/types.ts";
+import type { Letter, Schedule, Session, TaskOutcome } from "../../shared/types.ts";
 import { TASK_OUTCOMES, THINKING_LEVELS } from "../../shared/types.ts";
 import { YewError } from "../errors.ts";
 import { decisionReport, directoryLine, neutralize } from "../mail/envelope.ts";
@@ -152,28 +152,60 @@ function letterDetail(mail: MailContext, letter: Letter) {
 	};
 }
 
+/** One session in full: its line of the list, the rest of its settings, its role and its scheduled tasks. */
+function sessionDetail(session: Session, line: string, schedules: Schedule[]): string {
+	const options = session.options;
+	const more = [`thinking: ${session.thinking}`];
+	for (const dir of options.extraDirs ?? []) {
+		more.push(
+			`additional folder: ${dir.path} (${dir.access === "write" ? "read-write" : "read-only"})`,
+		);
+	}
+	if (options.allowedDomains?.length)
+		more.push(`sites without asking: ${options.allowedDomains.join(", ")}`);
+	const tasks = schedules.map(
+		(task) =>
+			`- ${task.name} · ${task.cron} · ${task.enabled ? "on" : "off"} · ${task.mode} · permission: ${task.permissionMode ?? "session"}\n<message>\n${task.message}\n</message>`,
+	);
+	const role = session.responsibility.trim();
+	return `${line}\n- ${more.join(" · ")}\n\nRole:\n${role ? `<role>\n${role}\n</role>` : "(none)"}\n\nScheduled tasks:\n${tasks.length > 0 ? tasks.join("\n") : "(none)"}`;
+}
+
 export const listSessionsTool: ToolDefinition = {
 	name: "list_sessions",
 	description:
-		"List the sessions (id, name, kind, status, team, model, permission mode and the first line of each role), the teams and Yew's settings.",
-	parameters: { type: "object", properties: {}, additionalProperties: false },
+		"List the sessions (id, name, kind, status, team, model, permission mode and the first line of each role), the teams and Yew's settings. With session, that one session instead: its whole role, its settings and the scheduled tasks that write to it with their messages.",
+	parameters: {
+		type: "object",
+		properties: { session: { type: "string", description: "A session, by name or id." } },
+		additionalProperties: false,
+	},
 	readOnly: true,
 	needsFolder: false,
 	subject() {
 		return { kind: "none" };
 	},
-	async run(_args, ctx): Promise<ToolResult> {
+	async run(args, ctx): Promise<ToolResult> {
 		const post = ctx.mail.post;
 		const { sessions, groups } = post.directory();
 		const main = post.mainSessionId();
-		const lines = sessions.map((session) =>
+		const line = (session: Session) =>
 			directoryLine(session, {
 				you: session.id === ctx.session.id,
 				main: session.id === main,
 				parentName: session.parentId ? nameOf(ctx.mail, session.parentId) : null,
 				group: session.groupId ? (groups.get(session.groupId) ?? null) : null,
-			}),
-		);
+			});
+		const ref = str(args, "session");
+		if (ref) {
+			const one = sessions.find((session) => session.id === ref || session.name === ref);
+			if (!one)
+				return errorResult(
+					`There is no session "${ref}". Call list_sessions without session for the names.`,
+				);
+			return { content: [text(sessionDetail(one, line(one), ctx.mail.schedules(one.id)))] };
+		}
+		const lines = sessions.map(line);
 		const teams = [...groups].map(([id, name]) => `- ${id} · ${name}`);
 		const settings = post.settings();
 		const workspaces = settings.workspaces.map((workspace) => workspace.path).join(", ");
@@ -376,6 +408,15 @@ const TEXT = { type: "string" } as const;
  * manage_yew: the model changes Yew itself. One call, all changes; Yew plans it
  * to rank how far it reaches and to show the person every change, then applies all or none.
  */
+/** One passage of a role or a task's message, changed without sending the whole text again. */
+const PASSAGE = {
+	type: "object",
+	description: "Change one passage and keep the rest: old is in the text exactly once.",
+	properties: { old: TEXT, new: TEXT },
+	required: ["old", "new"],
+	additionalProperties: false,
+} as const;
+
 export const manageYewTool: ToolDefinition = {
 	name: "manage_yew",
 	description:
@@ -404,6 +445,7 @@ export const manageYewTool: ToolDefinition = {
 						name: TEXT,
 						team: { type: "string", description: 'A team, or "none".' },
 						role: TEXT,
+						role_edit: PASSAGE,
 						model: { type: "string", description: '"provider/model".' },
 						thinking: { type: "string", enum: [...THINKING_LEVELS] },
 						folder: { type: "string", description: 'Its working folder, or "none" for a chat.' },
@@ -469,6 +511,7 @@ export const manageYewTool: ToolDefinition = {
 						},
 						session: { type: "string", description: "The standing session the letter goes to." },
 						message: { type: "string", description: "The letter: what to do each time." },
+						message_edit: PASSAGE,
 						permission: {
 							type: "string",
 							enum: ["session", "default", "review", "skip"],

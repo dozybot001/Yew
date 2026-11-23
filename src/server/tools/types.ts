@@ -3,6 +3,7 @@ import type {
 	Letter,
 	PermissionRequest,
 	QuestionRequest,
+	Schedule,
 	Session,
 	SessionStatus,
 	TaskOutcome,
@@ -91,6 +92,8 @@ export interface MailContext {
 	finish(outcome: TaskOutcome): Session;
 	/** Applies a manage_yew call, all of it or none; returns what changed, one line each. */
 	manage(args: JsonObject): string[];
+	/** The scheduled tasks that write to a session. */
+	schedules(sessionId: string): Schedule[];
 }
 
 /**

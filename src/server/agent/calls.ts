@@ -671,6 +671,7 @@ export class Calls {
 				}
 				return this.#manager.apply(by, args);
 			},
+			schedules: (id) => this.#manager.schedulesOf(id),
 		};
 	}
 }
