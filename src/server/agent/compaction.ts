@@ -74,6 +74,12 @@ function mainUpdate(session: Session, before: SessionRef | null, now: SessionRef
 	return "The person has no main conversation now. When something needs the person's decision, ask them with ask_user.";
 }
 
+/** What a session is told when its role changes. */
+function roleUpdate(before: string, now: string): string {
+	if (!now) return "Your role was removed. You have no written role now.";
+	return `${before ? "Your role changed. This is the current one; it replaces the earlier one." : "You were given a role."}\n${now}`;
+}
+
 /** A line in the record for the person, not for the model. */
 export function notice(
 	store: Store,
@@ -117,9 +123,10 @@ export class ContextKeeper {
 
 	/**
 	 * Keeps the system prompt the same between turns. The environment and instruction files are saved at the
-	 * first turn; when the files, the date, the approval mode or the main conversation change later, an
-	 * update is appended to the transcript instead, and the prompt keeps its saved inputs until the next
-	 * compaction, so the provider's prompt cache stays valid (prior-art 4.5).
+	 * first turn; when the files, the date, the approval mode, the main conversation or the session's
+	 * name, team or role change later, an update is appended to the transcript instead, and the prompt
+	 * keeps its saved inputs until the next compaction, so the provider's prompt cache stays valid
+	 * (prior-art 4.5).
 	 */
 	refresh(session: Session): ContextSnapshot {
 		const placement = this.#placement(session);
@@ -156,6 +163,7 @@ export class ContextKeeper {
 			parent: saved.parent === undefined ? placement.parent : saved.parent,
 			name: saved.name ?? session.name,
 			team: saved.team === undefined ? team : saved.team,
+			role: saved.role ?? session.responsibility,
 		};
 		const told: Told = saved.told ?? {
 			date: prompt.date,
@@ -166,6 +174,8 @@ export class ContextKeeper {
 		const toldName = told.name ?? prompt.name;
 		const toldTeam = told.team === undefined ? prompt.team : told.team;
 		const toldExtraDirs = told.extraDirs ?? prompt.extraDirs ?? [];
+		const toldRole = (told.role ?? prompt.role).trim();
+		const role = session.responsibility.trim();
 		const currentExtraDirs = session.options.extraDirs ?? [];
 		const updates: string[] = [];
 		const date = today();
@@ -187,6 +197,7 @@ export class ContextKeeper {
 		if (team !== toldTeam) {
 			updates.push(team ? `You now belong to the team "${team}".` : "You are no longer in a team.");
 		}
+		if (role !== toldRole) updates.push(roleUpdate(toldRole, role));
 		if (JSON.stringify(currentExtraDirs) !== JSON.stringify(toldExtraDirs)) {
 			updates.push(
 				currentExtraDirs.length > 0
@@ -210,6 +221,7 @@ export class ContextKeeper {
 				name: session.name,
 				team,
 				extraDirs: currentExtraDirs,
+				role: session.responsibility,
 			},
 		};
 		if (JSON.stringify(next) !== JSON.stringify(saved)) {

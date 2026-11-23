@@ -32,6 +32,8 @@ export interface ContextSnapshot {
 	/** The session's name and team when the snapshot was taken; absent in older snapshots. */
 	name?: string;
 	team?: string | null;
+	/** The session's role when the snapshot was taken; absent in older snapshots. */
+	role?: string;
 	/**
 	 * What the model was told after the snapshot, through updates in the transcript. The prompt itself
 	 * keeps the snapshot, so it stays the same until the next compaction (prompt caching).
@@ -51,6 +53,8 @@ export interface Told {
 	name?: string;
 	team?: string | null;
 	extraDirs?: ExtraDir[];
+	/** Absent in what was told before a change of role became an update. */
+	role?: string;
 }
 
 export interface SessionRef {
@@ -218,6 +222,7 @@ export function takeSnapshot(
 		parent: placement.parent,
 		name: session.name,
 		team: placement.team ?? null,
+		role: session.responsibility,
 	};
 }
 
@@ -336,15 +341,14 @@ export function systemPrompt(
 	group: string | null = null,
 ): string {
 	const parts: string[] = [];
-	// The name and team as saved with the snapshot: a later change arrives as an update instead.
+	// The name, team and role as saved with the snapshot: a later change arrives as an update instead.
 	const name = snapshot.name ?? session.name;
 	const team = snapshot.team === undefined ? group : snapshot.team;
+	const role = (snapshot.role ?? session.responsibility).trim();
 	parts.push(
 		`You are "${name}", one of the agent sessions that make up the person's organization in Yew. The person runs their work with a group of sessions; each has a name, a role, and its own working folder, model and permissions.${team ? ` You belong to the team "${team}".` : ""}`,
 	);
-	if (session.responsibility.trim()) {
-		parts.push(`Your role, as the person wrote it:\n${session.responsibility.trim()}`);
-	}
+	if (role) parts.push(`Your role, as the person wrote it:\n${role}`);
 	parts.push(
 		session.kind === "standing"
 			? `You are a standing session: this role is yours for the long term. Earlier parts of the conversation may be summarized to save space; your name and role stay.${snapshot.cwd ? " Keep what must last, such as decisions and conventions, in files in your working folder, not only in the conversation." : ""}`

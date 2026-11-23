@@ -220,6 +220,41 @@ describe("organizing sessions", () => {
 		assert.match(update, /You now belong to the team \\"平台\\"/);
 	});
 
+	test("a session whose role changes hears it as an update; its prompt stays the same", async () => {
+		const { store, agents, make, script, seen, said } = harness();
+		const x = make("文档", { responsibility: "整理文档" });
+		script(x, [
+			fauxAssistantMessage("第一轮"),
+			fauxAssistantMessage("第二轮"),
+			fauxAssistantMessage("第三轮"),
+		]);
+		agents.send(x.id, "开始");
+		await until(() => said(x).length === 1);
+		await agents.whenIdle(x.id);
+		store.updateSession(x.id, { responsibility: "整理文档，并写发布说明" });
+		agents.send(x.id, "继续");
+		await until(() => said(x).length === 2);
+		await agents.whenIdle(x.id);
+		store.updateSession(x.id, { responsibility: "" });
+		agents.send(x.id, "再继续");
+		await until(() => said(x).length === 3);
+		const [first, second, third] = seen.get("文档") ?? [];
+		const prompt = String(first?.messages[0]?.content);
+		assert.match(prompt, /Your role, as the person wrote it:\n整理文档\n/);
+		assert.equal(second?.messages[0]?.content, prompt, "same system prompt");
+		assert.equal(third?.messages[0]?.content, prompt, "same system prompt");
+		const updates = (context: typeof first) =>
+			textOf(context?.messages.filter((m) => m.role === "system").slice(1));
+		assert.equal(updates(first), "[]");
+		assert.match(
+			updates(second),
+			/Your role changed\. This is the current one; it replaces the earlier one\.\\n整理文档，并写发布说明/,
+		);
+		assert.match(updates(third), /Your role was removed\. You have no written role now\./);
+		// Told once: the first change is not repeated with the second.
+		assert.equal(updates(third).split("Your role changed").length, 2);
+	});
+
 	test("a session started from the home page gets a short name after its first turn", async () => {
 		const { store, agents, make, script, said } = harness();
 		const x = make("帮我看看这个仓库里有哪些地方需要…", {

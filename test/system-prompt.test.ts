@@ -35,6 +35,23 @@ describe("system prompt", () => {
 		assert.match(text, /Permission mode: default\..*set "confirm": true/);
 	});
 
+	test("the prompt keeps the name, team and role saved with the snapshot", () => {
+		const text = systemPrompt(
+			{ ...base, kind: "standing", name: "新名", responsibility: "新职责" } as Session,
+			{ ...snapshot("/tmp/demo"), name: "产品", team: "Tenon", role: "负责 Yew 的产品设计。" },
+			"别的团队",
+		);
+		assert.match(text, /^You are "产品"/);
+		assert.match(text, /You belong to the team "Tenon"\./);
+		assert.match(text, /Your role, as the person wrote it:\n负责 Yew 的产品设计。\n/);
+		assert.doesNotMatch(text, /新名|新职责|别的团队/);
+		const none = systemPrompt({ ...base, kind: "standing" } as Session, {
+			...snapshot("/tmp/demo"),
+			role: "",
+		});
+		assert.doesNotMatch(none, /Your role, as the person wrote it/);
+	});
+
 	test("a task session ends with a report; a chat without team or role mentions neither", () => {
 		const text = systemPrompt(
 			{ ...base, kind: "task", responsibility: "", cwd: null } as Session,
