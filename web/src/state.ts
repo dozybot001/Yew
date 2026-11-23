@@ -37,6 +37,8 @@ export interface Settings {
 	workspaces: Workspace[];
 	mainSessionId: string | null;
 	decisionLog: string | null;
+	/** The folder each standing session's role is written into, one Markdown file each. */
+	rolesFolder: string | null;
 	/** Phones reach this Mac through the relay. */
 	remote: { enabled: boolean; relayUrl: string };
 	/** The most all sessions together may spend in a day, in US dollars. */
@@ -76,6 +78,14 @@ export const THEME_KEY = "yew.theme";
 
 export const NOTIFY_KINDS = ["waiting", "error", "task", "budget"] as const;
 export type NotifyKind = (typeof NOTIFY_KINDS)[number];
+
+/** What is in the roles folder, and whether its changes are committed. */
+export interface RolesFolderState {
+	folder: string | null;
+	files: number;
+	commits: "on" | "none" | "linked" | "sandbox";
+	problem: { code: "folder" | "taken" | "busy" | "commit"; detail: string } | null;
+}
 
 /** What PATCH /api/settings takes: `notify` may name some kinds, the relay may be null for the default. */
 export type SettingsPatch = Partial<Omit<Settings, "notify" | "remote">> & {

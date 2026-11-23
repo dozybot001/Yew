@@ -9,6 +9,7 @@ import {
 	type PhonesState,
 	type PingResult,
 	type ProviderSummary,
+	type RolesFolderState,
 	type SearchServiceView,
 	type Settings,
 	type SettingsPatch,
@@ -170,6 +171,8 @@ export async function revokeDevice(id: string): Promise<void> {
 /** What was spent today, in US dollars: in all and by session. */
 export const spentToday = () =>
 	api<{ day: string; total: number; sessions: Record<string, number> }>("GET", "/api/usage/today");
+
+export const loadRolesFolder = () => api<RolesFolderState>("GET", "/api/settings/roles-folder");
 
 export async function saveSettings(patch: SettingsPatch): Promise<void> {
 	const settings = await api<Settings>("PATCH", "/api/settings", patch);

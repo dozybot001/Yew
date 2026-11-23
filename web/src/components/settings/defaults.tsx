@@ -1,8 +1,8 @@
 import { useEffect, useId, useState } from "react";
 import { PERMISSION_MODES, type PermissionMode } from "../../../../src/shared/types.ts";
-import { saveSettings, spentToday } from "../../actions/settings.ts";
+import { loadRolesFolder, saveSettings, spentToday } from "../../actions/settings.ts";
 import { formatCost, permissionHint, t, useLang } from "../../i18n.ts";
-import { useAppState } from "../../state.ts";
+import { getState, type RolesFolderState, useAppState } from "../../state.ts";
 import { Dialog } from "../dialog.tsx";
 import { cleanAmount } from "../dialogs.tsx";
 import { CheckIcon } from "../icons.tsx";
@@ -11,9 +11,21 @@ import { Select } from "../select.tsx";
 import { Button, ErrorBox, Field, SettingRow, Switch, useAction } from "../ui.tsx";
 
 /**
- * Defaults for new sessions (the model and the permission rules), and where decisions are logged;
- * saved together.
+ * Defaults for new sessions (the model and the permission rules), and where decisions are logged
+ * and roles are written; saved together.
  */
+
+/** What the settings say under the roles folder: what is in it, or why something did not go through. */
+function rolesFolderLines(state: RolesFolderState | null): { hint?: string; error?: string } {
+	if (!state?.folder) return {};
+	const { problem } = state;
+	if (problem?.code === "folder") return { error: t("rolesFolderProblemFolder", problem) };
+	const hint = t(`rolesFolder_${state.commits}`, { n: state.files });
+	if (!problem) return { hint };
+	if (problem.code === "taken") return { hint, error: t("rolesFolderProblemTaken", problem) };
+	if (problem.code === "busy") return { hint, error: t("rolesFolderProblemBusy") };
+	return { hint, error: t("rolesFolderProblemCommit", problem) };
+}
 export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	useLang();
 	const settings = useAppState((state) => state.settings);
@@ -26,6 +38,17 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	const workspaceId = useId();
 	const [log, setLog] = useState(settings?.decisionLog ?? "");
 	const logId = useId();
+	const savedRoles = settings?.rolesFolder ?? "";
+	const [roles, setRoles] = useState(savedRoles);
+	const [rolesState, setRolesState] = useState<RolesFolderState | null>(null);
+	useEffect(() => {
+		loadRolesFolder()
+			.then(setRolesState)
+			.catch(() => {});
+	}, []);
+	const rolesId = useId();
+	const rolesErrorId = useId();
+	const rolesLines = rolesFolderLines(roles.trim() === savedRoles ? rolesState : null);
 	const savedBudget = settings?.dailyBudget ? String(settings.dailyBudget) : "";
 	const [budget, setBudget] = useState(savedBudget);
 	const [spent, setSpent] = useState<number | null>(null);
@@ -79,8 +102,16 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 				: {}),
 			...(traceMain !== savedTraceMain ? { reviewTraceMain: traceMain } : {}),
 			decisionLog: log.trim() || null,
+			...(roles.trim() !== savedRoles ? { rolesFolder: roles.trim() || null } : {}),
 			...(budget !== savedBudget ? { dailyBudget: Number(budget) || null } : {}),
 		});
+		if (roles.trim() !== savedRoles && roles.trim()) {
+			// The roles were written while saving: when that did not go through, the dialog stays to say so.
+			const state = await loadRolesFolder();
+			setRolesState(state);
+			setRoles(getState().settings?.rolesFolder ?? "");
+			if (state.problem) return;
+		}
 		onClose();
 	});
 	const dirty =
@@ -88,6 +119,7 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 		mode !== savedMode ||
 		workspace !== savedWorkspace ||
 		log.trim() !== (settings?.decisionLog ?? "") ||
+		roles.trim() !== savedRoles ||
 		budget !== savedBudget ||
 		memory !== savedMemory ||
 		hidden !== savedHidden ||
@@ -176,6 +208,24 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 					value={log}
 					onChange={(event) => setLog(event.target.value)}
 				/>
+			</Field>
+			<Field
+				label={t("rolesFolder")}
+				htmlFor={rolesId}
+				info={t("rolesFolderHelp")}
+				error={rolesLines.error ?? null}
+				errorId={rolesErrorId}
+			>
+				<input
+					id={rolesId}
+					className="input"
+					spellCheck={false}
+					placeholder={t("rolesFolderPlaceholder")}
+					value={roles}
+					aria-describedby={rolesLines.error ? rolesErrorId : undefined}
+					onChange={(event) => setRoles(event.target.value)}
+				/>
+				{rolesLines.hint && <span className="hint">{rolesLines.hint}</span>}
 			</Field>
 			<Field label={t("memoryDirs")} htmlFor={memoryId} info={t("memoryDirsHelp")}>
 				<textarea

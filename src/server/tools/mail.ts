@@ -180,6 +180,7 @@ export const listSessionsTool: ToolDefinition = {
 		const yew = [
 			`- default model: ${settings.defaultModel.provider}/${settings.defaultModel.model} (${settings.defaultModel.thinking})`,
 			`- decision log: ${settings.decisionLog ?? "none"}`,
+			`- roles folder: ${settings.rolesFolder ? `${settings.rolesFolder} (written by Yew from the sessions' roles; editing a file there does not change a role)` : "none"}`,
 			`- daily budget for all sessions: ${settings.dailyBudget ? `$${settings.dailyBudget}` : "none"}`,
 			`- workspaces: ${workspaces || "none"}`,
 			`- theme: ${settings.theme}; language: ${settings.language}`,

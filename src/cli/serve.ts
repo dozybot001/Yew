@@ -325,6 +325,10 @@ export function serveCommand(): Command {
 					});
 				},
 			});
+			// The roles folder follows the sessions' roles; it is brought up to date now.
+			const { RoleFiles } = await import("../server/role-files.ts");
+			const roleFiles = new RoleFiles({ store, bus, log });
+			void roleFiles.sync();
 			// Scheduled tasks run from the service, whether or not a page is open.
 			const scheduler = new Scheduler(store, agents.post, agents.schedules, log);
 			const app = createApp({
@@ -347,6 +351,7 @@ export function serveCommand(): Command {
 				search,
 				system: systemControl({ home, env: io.env }),
 				updates,
+				roleFiles,
 			});
 			handle = async (request, device) => app.fetch(request, { device });
 
@@ -407,6 +412,7 @@ export function serveCommand(): Command {
 					clearInterval(remoteSweep);
 					if (sitesSweep) clearInterval(sitesSweep);
 					scheduler.stop();
+					roleFiles.close();
 					notifier.stop();
 					updates.stop();
 					mcp.stop();

@@ -10,6 +10,7 @@ import type { AttachmentStore } from "../attachments.ts";
 import type { EventBus } from "../events.ts";
 import { PostOffice } from "../mail/post.ts";
 import type { ModelGateway } from "../model/gateway.ts";
+import type { RoleFiles } from "../role-files.ts";
 import { activeSandbox } from "../sandbox.ts";
 import type { Scheduler } from "../schedules.ts";
 import type { Store } from "../store.ts";
@@ -78,6 +79,8 @@ export interface AppOptions {
 	system?: SystemControl;
 	/** Versions and updates (updates.ts). */
 	updates?: Updates;
+	/** Writes the roles folder (role-files.ts). */
+	roleFiles?: RoleFiles;
 }
 
 const NOT_BUILT = `<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><title>Yew Harness</title>
@@ -131,6 +134,7 @@ export function createApp(options: AppOptions): Hono<AppEnv> {
 							void options.mcp?.hub.refresh().catch((e: Error) => log(`mcp: ${e.message}`)),
 					}
 				: {}),
+			...(options.roleFiles ? { roleFiles: options.roleFiles } : {}),
 		}),
 	);
 	app.route("/api", deviceRoutes(store, options.remote));

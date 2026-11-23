@@ -1,4 +1,4 @@
-import { existsSync } from "node:fs";
+import { existsSync, mkdirSync } from "node:fs";
 import { homedir } from "node:os";
 import { Hono } from "hono";
 import { RELAY_URL } from "../../remote/protocol.ts";
@@ -25,6 +25,7 @@ import { pickFolder } from "../folder-picker.ts";
 import { resolveWorkingFolder } from "../paths.ts";
 import { canonical, isSecretPath, secretLocations } from "../permissions/paths.ts";
 import { openLocalFile, type RunCommand } from "../reveal.ts";
+import type { RoleFiles, RoleFilesState } from "../role-files.ts";
 import {
 	BROWSER_MODES,
 	type DefaultModel,
@@ -35,6 +36,7 @@ import {
 	readSettings,
 	resolveHiddenFolder,
 	resolveLogFile,
+	resolveRolesFolder,
 	type Workspace,
 } from "../settings.ts";
 import { findSkills, resolveMemoryDir } from "../skills.ts";
@@ -79,6 +81,8 @@ export interface ApiDeps {
 	onRemoteChanged?: () => void;
 	/** The built-in browser server is to drive another browser: it is started again. */
 	onBrowserChanged?: () => void;
+	/** Writes the roles folder (role-files.ts). */
+	roleFiles?: RoleFiles;
 }
 
 const RULE_EFFECTS = ["allow", "ask", "deny"] as const;
@@ -504,6 +508,12 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 
 	app.get("/settings", (c) => c.json(readSettings(store)));
 
+	// What is in the roles folder, and whether its changes are committed.
+	app.get("/settings/roles-folder", (c) => {
+		const none: RoleFilesState = { folder: null, files: 0, commits: "none", problem: null };
+		return c.json(deps.roleFiles?.state() ?? none);
+	});
+
 	app.patch("/settings", async (c) => {
 		const fields = await readJson(c);
 		const defaultModel = optObject(fields, "defaultModel");
@@ -571,6 +581,28 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 		}
 		const log = optNullableString(fields, "decisionLog", 4096);
 		if (log !== undefined) store.setSetting("decisionLog", log ? resolveLogFile(log) : null);
+		const roles = optNullableString(fields, "rolesFolder", 4096);
+		if (roles !== undefined) {
+			const folder = roles?.trim()
+				? resolveRolesFolder(roles, deps.yewHome ?? "/nonexistent-yew-home")
+				: null;
+			if (folder !== readSettings(store).rolesFolder) {
+				// Made here, by the person's own word; afterwards only what is inside it is written.
+				if (folder) {
+					try {
+						mkdirSync(folder, { recursive: true });
+					} catch (error) {
+						throw invalid(
+							`The folder could not be made: ${(error as Error).message}`,
+							"rolesFolder",
+						);
+					}
+				}
+				store.setSetting("rolesFolder", folder);
+				// The roles are written before the answer, so the settings can say how it went.
+				await deps.roleFiles?.sync();
+			}
+		}
 		const remote = optObject(fields, "remote");
 		if (remote) {
 			// Remote access is changed on the Mac only.

@@ -12,6 +12,7 @@ import {
 	gitInternals,
 	snapshotRepositories,
 } from "../src/server/repositories.ts";
+import { RoleFiles } from "../src/server/role-files.ts";
 import {
 	activeSandbox,
 	appWebData,
@@ -28,7 +29,7 @@ import {
 } from "../src/server/sandbox.ts";
 import { type RunningCommand, startCommand } from "../src/server/tools/process.ts";
 import type { Session } from "../src/shared/types.ts";
-import { tempDir } from "./helpers/store.ts";
+import { newStore, sessionInput, tempDir } from "./helpers/store.ts";
 
 /**
  * The system sandbox: its configuration, and everyday work in it. Whether it holds against a command
@@ -334,6 +335,39 @@ describe("everyday work in the sandbox", { skip }, () => {
 		assert.equal(result.code, 0, result.output);
 		assert.match(result.output, /\?\? note\.txt/);
 		assert.match(result.output, /First note/);
+	});
+
+	test("the roles folder: Yew Harness's own git commits its changes from inside the sandbox", async () => {
+		const repo = folder("roles");
+		execFileSync("git", ["init", "-q", "-b", "main"], { cwd: repo });
+		execFileSync("git", ["config", "user.name", "Yew"], { cwd: repo });
+		execFileSync("git", ["config", "user.email", "yew@example.com"], { cwd: repo });
+		const { store } = newStore();
+		const roles = join(repo, "docs", "roles");
+		store.setSetting("rolesFolder", roles);
+		store.setSetting("language", "en");
+		const session = store.createSession({
+			...sessionInput("总办"),
+			responsibility: "Runs the office.",
+		});
+		const files = new RoleFiles({ store, watch: false });
+		assert.deepEqual(await files.sync(), {
+			folder: roles,
+			files: 1,
+			commits: "on",
+			problem: null,
+		});
+		store.updateSession(session.id, { responsibility: "Runs the office and the mail." });
+		assert.equal((await files.sync()).problem, null);
+		const log = execFileSync("git", ["log", "--format=%s"], { cwd: repo, encoding: "utf8" });
+		assert.deepEqual(log.trim().split("\n"), [
+			'Update the role of "总办"',
+			"Update the role files (2 changes)",
+		]);
+		assert.equal(
+			execFileSync("git", ["status", "--porcelain"], { cwd: repo, encoding: "utf8" }),
+			"",
+		);
 	});
 
 	test("npm: install a local package and run a script", async () => {

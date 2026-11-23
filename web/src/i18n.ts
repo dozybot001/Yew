@@ -1020,7 +1020,21 @@ const zh = {
 	decisionLog: "审批记录文件",
 	decisionLogHelp:
 		"每做一个决定，Yew Harness 在这个 Markdown 文件末尾加一行，不改已有内容。留空就不同步。",
-	decisionLogPlaceholder: "例如 ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications
+	decisionLogPlaceholder: "例如 ~/notes/decisions.md",
+	rolesFolder: "职责文件夹",
+	rolesFolderHelp:
+		"Yew Harness 把每个常设会话的职责写成这个文件夹里的一个 Markdown 文件，职责一改就更新。文件夹在 git 仓库里时，每次更新提交一次，仓库里看得到职责的历史。职责仍在 Yew Harness 里改：在这里改文件不会改职责，文件会被改回去。留空就不写。",
+	rolesFolderPlaceholder: "例如 ~/company/docs/roles",
+	rolesFolder_on: "文件夹里有 {n} 个会话的职责，改动提交到所在的 git 仓库。",
+	rolesFolder_none: "文件夹里有 {n} 个会话的职责。它不在 git 仓库里，改动不留历史。",
+	rolesFolder_linked:
+		"文件夹里有 {n} 个会话的职责。它在附加的工作树或子模块里，Yew Harness 不在这里提交。",
+	rolesFolder_sandbox: "文件夹里有 {n} 个会话的职责。系统沙箱没有打开，Yew Harness 不提交改动。",
+	rolesFolderProblemFolder: "写不了这个文件夹：{detail}",
+	rolesFolderProblemTaken:
+		"这些文件不是 Yew Harness 写的，没有覆盖，对应的职责还没写进来：{detail}",
+	rolesFolderProblemBusy: "仓库正在合并、变基，或不在分支上；职责文件等它结束后再更新和提交。",
+	rolesFolderProblemCommit: "没能提交：{detail}", // settings: search services, MCP servers, relay, defaults, startup, notifications
 	modelProviders: "模型服务商",
 	searchServices: "搜索服务",
 	searchHelp:
@@ -2251,7 +2265,24 @@ const en: Record<MessageKey, string> = {
 	decisionLog: "Approval log file",
 	decisionLogHelp:
 		"Yew Harness adds a line to the end of this Markdown file for each decision and leaves the rest alone. Leave it empty to turn this off.",
-	decisionLogPlaceholder: "e.g. ~/notes/decisions.md", // settings: search services, MCP servers, relay, defaults, startup, notifications
+	decisionLogPlaceholder: "e.g. ~/notes/decisions.md",
+	rolesFolder: "Roles folder",
+	rolesFolderHelp:
+		"Yew Harness writes each standing session's role into a Markdown file in this folder and updates it whenever the role changes. When the folder is in a git repository, each update is committed, so the repository shows the history of the roles. Roles are still changed in Yew Harness: editing a file here does not change a role, and the file is put back. Leave it empty to turn this off.",
+	rolesFolderPlaceholder: "e.g. ~/company/docs/roles",
+	rolesFolder_on: "Roles in the folder: {n}. Changes are committed to its git repository.",
+	rolesFolder_none:
+		"Roles in the folder: {n}. It is not in a git repository, so changes leave no history.",
+	rolesFolder_linked:
+		"Roles in the folder: {n}. It is in a linked working tree or a submodule, where Yew Harness does not commit.",
+	rolesFolder_sandbox:
+		"Roles in the folder: {n}. The system sandbox is off, so Yew Harness does not commit the changes.",
+	rolesFolderProblemFolder: "This folder cannot be written: {detail}",
+	rolesFolderProblemTaken:
+		"These files were not written by Yew Harness and were left as they are, so the roles they stand for are not in the folder yet: {detail}",
+	rolesFolderProblemBusy:
+		"The repository is in the middle of a merge or a rebase, or not on a branch; the role files are updated and committed once it is done.",
+	rolesFolderProblemCommit: "Could not commit: {detail}", // settings: search services, MCP servers, relay, defaults, startup, notifications
 	modelProviders: "Model providers",
 	searchServices: "Search services",
 	searchHelp:

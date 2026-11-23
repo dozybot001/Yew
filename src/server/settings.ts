@@ -48,6 +48,8 @@ export const SETTING_DEFAULTS = {
 	mainSessionId: null as string | null,
 	/** A Markdown file each decision is added to. */
 	decisionLog: null as string | null,
+	/** A folder Yew writes each standing session's role into, one Markdown file each (role-files.ts). */
+	rolesFolder: null as string | null,
 	/** Phones reach this Mac through the relay. */
 	remote: { enabled: false, relayUrl: DEFAULT_RELAY_URL } as RemoteSettings,
 	/** The most all sessions together may spend in a day, in US dollars. */
@@ -119,6 +121,7 @@ export function readSettings(store: Store): Settings {
 		workspaces,
 		mainSessionId: store.getSetting("mainSessionId", SETTING_DEFAULTS.mainSessionId),
 		decisionLog: store.getSetting("decisionLog", SETTING_DEFAULTS.decisionLog),
+		rolesFolder: store.getSetting("rolesFolder", SETTING_DEFAULTS.rolesFolder),
 		remote: { ...SETTING_DEFAULTS.remote, ...store.getSetting("remote", SETTING_DEFAULTS.remote) },
 		dailyBudget: store.getSetting("dailyBudget", SETTING_DEFAULTS.dailyBudget),
 		memoryDirs: store.getSetting("memoryDirs", SETTING_DEFAULTS.memoryDirs),
@@ -160,6 +163,31 @@ export function resolveHiddenFolder(path: string, userHome = homedir()): string 
 	const resolved = canonical(resolve(expanded));
 	if (resolved === "/" || resolved === canonical(userHome)) {
 		throw invalid(`${path} would hide everything; name a folder inside it.`, "hiddenFolders");
+	}
+	return resolved;
+}
+
+/**
+ * The roles folder, as saved: absolute, `~` expanded, links resolved where it exists. It may not
+ * exist yet. The root and the home folder are refused, where one file for each session would land
+ * among everything else, and so is Yew's own data folder.
+ */
+export function resolveRolesFolder(path: string, dataHome: string, userHome = homedir()): string {
+	const trimmed = path.trim();
+	const expanded =
+		trimmed === "~" || trimmed.startsWith("~/") ? join(userHome, trimmed.slice(2)) : trimmed;
+	if (!isAbsolute(expanded)) {
+		throw invalid("The roles folder must be an absolute path.", "rolesFolder");
+	}
+	const resolved = canonical(resolve(expanded));
+	if (resolved === "/" || resolved === canonical(userHome)) {
+		throw invalid(`${path} is no place for role files; name a folder inside it.`, "rolesFolder");
+	}
+	if (isInside(resolved, canonical(dataHome))) {
+		throw invalid("The roles folder cannot be in Yew Harness's own data folder.", "rolesFolder");
+	}
+	if (existsSync(resolved) && !statSync(resolved).isDirectory()) {
+		throw invalid(`${path} is not a folder.`, "rolesFolder");
 	}
 	return resolved;
 }
