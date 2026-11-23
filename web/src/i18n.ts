@@ -504,7 +504,7 @@ const zh = {
 	observerOff: "不旁观",
 	observerOffHint: "选一个模型后，Yew 在你发起的每一轮结束时看一遍，有话就在回复下面说一句。",
 	observerSends:
-		"每轮结束后，你的上一条消息、会话做过的操作和它的回复（各有长度上限）会发给 {provider}，适用它的隐私政策。费用记在该会话上。",
+		"每轮结束后，你的上一条消息、会话这一轮每个操作的名称和参数（每个一行）和它的回复（各有长度上限）会发给 {provider}，适用它的隐私政策。费用记在该会话上。",
 	observerNoKey: "{provider} 没有密钥，Yew 现在不旁观。",
 	observerHelp:
 		"Yew 只看、不动手：她说的话不进入会话的上下文，不记到下一轮，只评工作。只看你发起的那一轮，会话之间来往的信不看。可以在会话设置里对单个会话关掉。她的人设写在数据目录的 persona.md 里，没有这个文件时用自带的人设。",
@@ -1760,7 +1760,7 @@ const en: Record<MessageKey, string> = {
 	observerOffHint:
 		"With a model chosen, Yew reads each turn you start when it ends and, if she has something to say, says it under the reply.",
 	observerSends:
-		"After each turn, your last message, what the session did and its reply (each up to a length limit) are sent to {provider}, under its privacy policy. The cost counts as the session's.",
+		"After each turn, your last message, the name and arguments of each call the session made in it (one line each) and its reply (each up to a length limit) are sent to {provider}, under its privacy policy. The cost counts as the session's.",
 	observerNoKey: "{provider} has no key, so Yew is not observing for now.",
 	observerHelp:
 		"Yew only watches: what she says does not enter the session's context, she keeps nothing for the next turn, and she talks about the work only. She reads the turns you start, not the letters sessions send each other. You can turn her off for one session in its settings. Her character is in persona.md in the data folder; without that file she uses the built-in one.",
