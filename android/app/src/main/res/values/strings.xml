@@ -303,5 +303,7 @@
     <string name="risky_step">Risky step</string>
     <string name="renew_divider">Fresh context below</string>
     <string name="renew_brief">Carry-over brief</string>
+    <string name="expanded">Expanded</string>
+    <string name="collapsed">Collapsed</string>
     <string name="done">Done</string>
 </resources>

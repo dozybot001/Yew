@@ -340,6 +340,18 @@ final class AppModel {
 		return bytes
 	}
 
+	private struct Unsent: Codable, Sendable { let text: String }
+
+	/// What was typed to a session and not sent, as the Mac keeps it; nil when it could not be read.
+	func unsent(of sessionId: String) async -> String? {
+		try? await client?.get("/api/unsent/\(sessionId)", as: Unsent.self).text
+	}
+
+	/// Keeps what is in a session's message field on the Mac, so it is there on every device.
+	func keepUnsent(_ text: String, of sessionId: String) async {
+		_ = try? await client?.put("/api/unsent/\(sessionId)", Unsent(text: text))
+	}
+
 	/// Stops what the session is doing; your next message sets it going again.
 	func stop(_ sessionId: String) async {
 		await attempt { try await $0.post("/api/sessions/\(sessionId)/stop", [String: String]()) }

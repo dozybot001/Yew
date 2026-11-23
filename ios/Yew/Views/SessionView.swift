@@ -18,6 +18,9 @@ struct SessionView: View {
 	@State private var staged: [StagedPhoto] = []
 	@State private var uploading = false
 	@State private var lightbox: AttachmentRef?
+	/// The field's text as the Mac last has it, and the save that waits for typing to pause.
+	@State private var kept = ""
+	@State private var keeping: Task<Void, Never>?
 
 	struct StagedPhoto: Identifiable {
 		let id: String
@@ -71,6 +74,30 @@ struct SessionView: View {
 			Task { await handlePicked(items) }
 		}
 		.task { await follow() }
+		.task {
+			if let text = await model.unsent(of: session.id), message.isEmpty {
+				kept = text
+				message = text
+			}
+		}
+		.onChange(of: message) { _, text in keep(text, after: text.isEmpty ? 0 : 500) }
+		.onDisappear { keep(message, after: 0) }
+	}
+
+	/// Saves the field's text on the Mac once typing pauses; an emptied field and leaving save at once.
+	private func keep(_ text: String, after milliseconds: Int) {
+		keeping?.cancel()
+		guard text != kept else { return }
+		let model = model
+		let id = session.id
+		keeping = Task {
+			if milliseconds > 0 {
+				try? await Task.sleep(for: .milliseconds(milliseconds))
+				if Task.isCancelled { return }
+			}
+			kept = text
+			await model.keepUnsent(text, of: id)
+		}
 	}
 
 	private var trimmed: String { message.trimmingCharacters(in: .whitespacesAndNewlines) }
@@ -368,16 +395,7 @@ struct StepView: View {
 			.frame(maxWidth: .infinity, alignment: .trailing)
 			.padding(.leading, 40)
 		case .letter(_, let letter):
-			VStack(alignment: .leading, spacing: 6) {
-				Label(LetterKind.line(from: letter.sender, kind: letter.kind), systemImage: "envelope")
-					.font(.footnote)
-					.foregroundStyle(.secondary)
-				Text(letter.body)
-					.textSelection(.enabled)
-			}
-			.padding(12)
-			.frame(maxWidth: .infinity, alignment: .leading)
-			.overlay(RoundedRectangle(cornerRadius: 14).stroke(Color.yewControl))
+			LetterFoldView(letter: letter)
 		case .answer(let entry):
 			AnswerText(text: entry.text)
 		case .tools(_, let names, let reviewed, let risky):
@@ -401,6 +419,53 @@ struct StepView: View {
 				.multilineTextAlignment(.center)
 				.frame(maxWidth: .infinity)
 		}
+	}
+}
+
+/// A letter the session received, as one line: who it is from, its kind and its summary. Tapping
+/// the line opens the letter under it.
+private struct LetterFoldView: View {
+	let letter: LetterRef
+	@State private var open = false
+
+	private var summary: String {
+		letter.summary.isEmpty ? letter.body : letter.summary
+	}
+
+	var body: some View {
+		VStack(alignment: .leading, spacing: 8) {
+			Button {
+				open.toggle()
+			} label: {
+				HStack(spacing: 6) {
+					Image(systemName: "envelope")
+					Text(LetterKind.line(from: letter.sender, kind: letter.kind))
+						.layoutPriority(1)
+					Text(summary)
+						.foregroundStyle(.tertiary)
+					Spacer(minLength: 0)
+					Image(systemName: "chevron.right")
+						.font(.caption2)
+						.rotationEffect(.degrees(open ? 90 : 0))
+				}
+				.lineLimit(1)
+				.font(.footnote)
+				.foregroundStyle(.secondary)
+				.frame(minHeight: 28)
+				.contentShape(Rectangle())
+			}
+			.buttonStyle(.plain)
+			.accessibilityValue(open ? Text("Expanded") : Text("Collapsed"))
+			if open {
+				Text(letter.body)
+					.textSelection(.enabled)
+					.padding(.leading, 12)
+					.overlay(alignment: .leading) {
+						Rectangle().fill(Color.yewControl).frame(width: 2)
+					}
+			}
+		}
+		.frame(maxWidth: .infinity, alignment: .leading)
 	}
 }
 

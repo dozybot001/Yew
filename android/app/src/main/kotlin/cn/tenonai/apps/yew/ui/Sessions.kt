@@ -9,7 +9,6 @@ import androidx.activity.result.PickVisualMediaRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +42,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,6 +52,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
@@ -61,6 +62,7 @@ import androidx.compose.ui.res.pluralStringResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
@@ -72,6 +74,7 @@ import cn.tenonai.apps.yew.Page
 import cn.tenonai.apps.yew.R
 import cn.tenonai.apps.yew.api.AttachmentRef
 import cn.tenonai.apps.yew.api.Entry
+import cn.tenonai.apps.yew.api.LetterRef
 import cn.tenonai.apps.yew.api.MessageText
 import cn.tenonai.apps.yew.api.PermissionNote
 import cn.tenonai.apps.yew.api.SessionSummary
@@ -202,6 +205,30 @@ fun SessionScreen(model: AppModel, session: SessionSummary, close: () -> Unit) {
             } finally {
                 uploading = false
             }
+        }
+    }
+
+    // The field's text as the computer last has it. What is typed is saved there once typing pauses;
+    // an emptied field and leaving the screen save at once.
+    var kept by remember { mutableStateOf("") }
+    LaunchedEffect(session.id, model.client) {
+        val text = model.unsent(session.id) ?: return@LaunchedEffect
+        if (message.isEmpty()) {
+            kept = text
+            message = text
+        }
+    }
+    LaunchedEffect(message) {
+        if (message == kept) return@LaunchedEffect
+        if (message.isNotEmpty()) delay(500)
+        val text = message
+        kept = text
+        model.keepUnsent(text, session.id)
+    }
+    DisposableEffect(session.id) {
+        onDispose {
+            val text = message
+            if (text != kept) model.go { model.keepUnsent(text, session.id) }
         }
     }
 
@@ -490,19 +517,7 @@ private fun StepView(model: AppModel, step: Step, onOpenImage: (AttachmentRef) -
                 )
             }
         }
-        is Step.Letter -> Column(
-            Modifier.fillMaxWidth().border(1.dp, colors.control, RoundedCornerShape(14.dp)).padding(12.dp),
-            verticalArrangement = Arrangement.spacedBy(6.dp),
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                Icon(Icons.Letters, null, Modifier.size(16.dp), tint = colors.soft)
-                Text(
-                    letterLine(senderName(step.letter.fromKind, step.letter.fromName), step.letter.kind),
-                    color = colors.soft, style = MaterialTheme.typography.bodySmall,
-                )
-            }
-            Text(step.letter.body)
-        }
+        is Step.Letter -> LetterFold(step.letter)
         is Step.Answer -> AnswerText(step.entry.text)
         is Step.Tools -> Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(6.dp)) {
@@ -521,6 +536,39 @@ private fun StepView(model: AppModel, step: Step, onOpenImage: (AttachmentRef) -
             step.entry.text, color = colors.soft, style = MaterialTheme.typography.bodySmall,
             textAlign = TextAlign.Center, modifier = Modifier.fillMaxWidth(),
         )
+    }
+}
+
+/**
+ * A letter the session received, as one line: who it is from, its kind and its summary. Tapping the
+ * line opens the letter under it.
+ */
+@Composable
+private fun LetterFold(letter: LetterRef) {
+    var open by remember { mutableStateOf(false) }
+    val state = stringResource(if (open) R.string.expanded else R.string.collapsed)
+    Column(Modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth().heightIn(min = 32.dp).clickable { open = !open }.semantics { stateDescription = state },
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(6.dp),
+        ) {
+            Icon(Icons.Letters, null, Modifier.size(16.dp), tint = colors.soft)
+            Text(
+                letterLine(senderName(letter.fromKind, letter.fromName), letter.kind),
+                color = colors.soft, style = MaterialTheme.typography.bodySmall, maxLines = 1,
+            )
+            Text(
+                letter.summary.ifEmpty { letter.body },
+                modifier = Modifier.weight(1f),
+                color = colors.soft.copy(alpha = 0.7f), style = MaterialTheme.typography.bodySmall,
+                maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Icon(Icons.Forward, null, Modifier.size(14.dp).rotate(if (open) 90f else 0f), tint = colors.soft)
+        }
+        if (open) {
+            Text(letter.body, Modifier.padding(start = 12.dp))
+        }
     }
 }
 

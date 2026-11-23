@@ -425,6 +425,15 @@ class AppModel(private val context: Context) {
         return decoded
     }
 
+    /** What was typed to a session and not sent, as the computer keeps it; null when it could not be read. */
+    suspend fun unsent(sessionId: String): String? =
+        runCatching { client?.get("/api/unsent/$sessionId")?.str("text") }.getOrNull()
+
+    /** Keeps what is in a session's message field on the computer, so it is there on every device. */
+    suspend fun keepUnsent(text: String, sessionId: String) {
+        runCatching { client?.put("/api/unsent/$sessionId", buildJsonObject { put("text", text) }) }
+    }
+
     /** Stops what the session is doing; your next message sets it going again. */
     suspend fun stop(sessionId: String) {
         attempt { it.post("/api/sessions/$sessionId/stop") }

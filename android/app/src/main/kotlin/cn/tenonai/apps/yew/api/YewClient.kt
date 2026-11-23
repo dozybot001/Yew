@@ -89,6 +89,8 @@ class YewClient(val transport: Transport) {
 
     suspend fun patch(path: String, payload: JsonElement): String = call("PATCH", path, payload.toString())
 
+    suspend fun put(path: String, payload: JsonElement): String = call("PUT", path, payload.toString())
+
     suspend fun delete(path: String) {
         call("DELETE", path, null)
     }
