@@ -19,6 +19,7 @@ export function Select({
 	labelledBy,
 	disabled,
 	busy,
+	placeholder,
 }: {
 	value: string;
 	options: Option[];
@@ -27,6 +28,8 @@ export function Select({
 	labelledBy?: string;
 	disabled?: boolean;
 	busy?: boolean;
+	/** What the trigger says while no option is chosen. */
+	placeholder?: string;
 }) {
 	const [open, setOpen] = useState(false);
 	const [active, setActive] = useState(0);
@@ -123,7 +126,7 @@ export function Select({
 				{...press}
 				onKeyDown={onKeyDown}
 			>
-				<span>{selected?.label ?? value}</span>
+				<span>{selected?.label ?? placeholder ?? value}</span>
 			</button>
 			<div
 				ref={list}

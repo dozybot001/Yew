@@ -321,7 +321,7 @@ describe("api: providers and keys", () => {
 		assert.equal((await call("PUT", "/api/providers/nope/key", { key: "x" })).status, 404);
 	});
 
-	test("the model for jobs beside a conversation is saved, checked and set back to automatic", async () => {
+	test("the model for jobs beside a conversation is saved, checked and cleared", async () => {
 		const { call } = await providerSetup();
 		assert.equal((await (await call("GET", "/api/settings")).json()).sideModel, null);
 		const side = { provider: "deepseek", model: "deepseek-flash" };
@@ -336,8 +336,8 @@ describe("api: providers and keys", () => {
 			(await (await call("PATCH", "/api/settings", { theme: "dark" })).json()).sideModel,
 			side,
 		);
-		const automatic = await (await call("PATCH", "/api/settings", { sideModel: null })).json();
-		assert.equal(automatic.sideModel, null);
+		const cleared = await (await call("PATCH", "/api/settings", { sideModel: null })).json();
+		assert.equal(cleared.sideModel, null);
 		// The list of models says which one is the provider's small model: the picker starts from it.
 		const models = await (await call("GET", "/api/providers/deepseek/models")).json();
 		assert.deepEqual(

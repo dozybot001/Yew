@@ -164,9 +164,9 @@ export interface SideModelChoice {
 }
 
 /**
- * The model for the jobs beside every conversation: left to each session's own provider, or one
- * model at a provider that can be used. These requests are sent without thinking, so no level is
- * chosen.
+ * The model for the jobs beside every conversation: one model at a provider that can be used.
+ * Until one is chosen the picker says so. These requests are sent without thinking, so no level
+ * is chosen.
  */
 export function SideModelPicker({
 	value,
@@ -174,7 +174,7 @@ export function SideModelPicker({
 	busy,
 }: {
 	value: SideModelChoice | null;
-	onChange: (value: SideModelChoice | null) => void;
+	onChange: (value: SideModelChoice) => void;
 	busy?: boolean;
 }) {
 	useLang();
@@ -192,10 +192,10 @@ export function SideModelPicker({
 				<Select
 					labelledBy={ids.provider}
 					value={value?.provider ?? ""}
-					options={[{ value: "", label: t("sideModelAuto") }, ...providerChoices(usable)]}
+					options={providerChoices(usable)}
+					placeholder={t("sideModelUnset")}
 					busy={busy}
 					onChange={async (provider) => {
-						if (!provider) return onChange(null);
 						const list = await loadModels(provider);
 						const first = list.find((item) => item.small) ?? list[0];
 						if (first) onChange({ provider, model: first.id });
