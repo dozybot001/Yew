@@ -2,14 +2,15 @@ import { messageText, plainLine } from "../../shared/messages.ts";
 import type { Entry } from "../../shared/types.ts";
 import type { ModelGateway } from "../model/gateway.ts";
 import { type Store, validateSessionName } from "../store.ts";
-import { clip, usageTotals } from "./context.ts";
+import { clip } from "./context.ts";
 import { freeName } from "./mailroom.ts";
 import { type ContextSnapshot, NAMING_PROMPT } from "./prompt.ts";
+import { sideCall } from "./side.ts";
 
 /**
  * A session started from the home page is named after the start of its first message. After its
- * first turn its own model gives it a short name, once; a name the person or the main conversation
- * chose is kept.
+ * first turn a model gives it a short name, once: the provider's small model when it has one, else
+ * the session's own. A name the person or the main conversation chose is kept.
  */
 export async function nameAfterFirstTurn(
 	store: Store,
@@ -19,8 +20,6 @@ export async function nameAfterFirstTurn(
 	const session = store.getSession(sessionId);
 	if (!session.options.autoName) return;
 	store.updateSession(sessionId, { options: { autoName: false } });
-	const model = gateway.model(session.provider, session.model);
-	if (!model) return;
 	const entries = store.contextEntries(sessionId);
 	const asked = entries.find((entry) => entry.role === "user");
 	const replied = entries.find((entry) => entry.role === "assistant");
@@ -36,33 +35,21 @@ export async function nameAfterFirstTurn(
 	};
 	const first = clip(textOf(asked), 2000);
 	if (!first) return;
-	const reply = await gateway.stream({
-		provider: session.provider,
-		model: model.id,
-		thinking: "off",
+	const said = await sideCall({
+		store,
+		gateway,
+		session,
 		systemPrompt: NAMING_PROMPT,
-		messages: [
-			{
-				role: "user",
-				content: `The person's first message:\n${first}\n\nThe start of the reply:\n${clip(textOf(replied), 500)}`,
-				timestamp: Date.now(),
-			},
-		],
-		tools: [],
-		signal: new AbortController().signal,
+		content: `The person's first message:\n${first}\n\nThe start of the reply:\n${clip(textOf(replied), 500)}`,
 	});
+	if (said === null) return;
 	const now = store.getSession(sessionId);
-	store.addUsage(sessionId, usageTotals(reply), now.contextTokens);
-	const said = reply.content
-		.map((block) => (block.type === "text" ? block.text : ""))
-		.join("")
-		.trim();
-	const name = plainLine(said)
+	const name = plainLine(said.trim())
 		.replace(/^["'“”‘’「」『』《》]+|["'“”‘’「」『』《》]+$/g, "")
 		.replace(/[。.!！?？]+$/, "")
 		.trim();
 	// Renamed meanwhile, or nothing usable came back: keep the name it has.
-	if (reply.stopReason !== "stop" || !name || now.name !== session.name) return;
+	if (!name || now.name !== session.name) return;
 	let chosen: string;
 	try {
 		chosen = freeName(store, validateSessionName(clip(name, 40)));

@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { describe, test } from "node:test";
 import { YewError } from "../src/server/errors.ts";
 import { MemoryKeyStore } from "../src/server/keys.ts";
-import { ModelGateway } from "../src/server/model/gateway.ts";
+import { ModelGateway, SMALL_MODELS } from "../src/server/model/gateway.ts";
 import { fauxAssistantMessage, fauxProvider } from "../src/server/model/testing.ts";
 
 const base = { thinking: "off" as const, systemPrompt: "You are a test.", tools: [] };
@@ -153,5 +153,61 @@ describe("model gateway", () => {
 		} finally {
 			server.close();
 		}
+	});
+});
+
+describe("small models", () => {
+	test("every listed small model is a current model of its provider, with a price", () => {
+		const gateway = new ModelGateway({ keys: new MemoryKeyStore(), version: "0.0.0" });
+		for (const [provider, id] of Object.entries(SMALL_MODELS)) {
+			const model = gateway.model(provider, id);
+			assert.ok(model, `${provider} has ${id}`);
+			assert.equal(model.latest, true, `${id} is a current model`);
+			assert.ok(model.cost.input > 0 && model.cost.output > 0, `${id} has a price`);
+		}
+	});
+
+	test("a session's small model is the provider's listed one, when it costs less", () => {
+		const gateway = new ModelGateway({ keys: new MemoryKeyStore(), version: "0.0.0" });
+		assert.equal(gateway.small("deepseek", "deepseek-v4-pro")?.id, "deepseek-flash");
+		assert.equal(gateway.small("deepseek", "deepseek-flash"), undefined, "it is the small one");
+		assert.equal(gateway.small("deepseek", "nope"), undefined, "an unknown model");
+		assert.equal(gateway.small("moonshotai-cn", "kimi-k3"), undefined, "no small model is listed");
+		assert.equal(gateway.small("google", "gemma-4-31b-it"), undefined, "its own model costs less");
+	});
+
+	test("a request beside the conversation writes no prompt cache and is tried again once", async () => {
+		const faux = fauxProvider();
+		const gateway = new ModelGateway({
+			keys: new MemoryKeyStore({ [faux.provider.id]: "test-key" }),
+			version: "0.0.0",
+			providers: [faux.provider],
+			retry: { maxRetries: 5, baseDelayMs: 1 },
+		});
+		const caches: unknown[] = [];
+		const overloaded = (_context: unknown, options: { cacheRetention?: string } | undefined) => {
+			caches.push(options?.cacheRetention);
+			return fauxAssistantMessage([], { stopReason: "error", errorMessage: "529 overloaded" });
+		};
+		const request = {
+			...base,
+			provider: faux.provider.id,
+			model: faux.getModel().id,
+			messages: [{ role: "user" as const, content: "hi", timestamp: 1 }],
+		};
+		faux.setResponses([overloaded, overloaded, overloaded]);
+		const failed = await gateway.stream({ ...request, side: true });
+		assert.equal(failed.stopReason, "error");
+		assert.deepEqual(caches, ["none", "none"], "the request and one more try");
+
+		const own: unknown[] = [];
+		faux.setResponses([
+			(_context, options) => {
+				own.push(options?.cacheRetention);
+				return fauxAssistantMessage("hello");
+			},
+		]);
+		await gateway.stream(request);
+		assert.deepEqual(own, ["short"], "a session's own request keeps its prompt cache");
 	});
 });

@@ -81,6 +81,11 @@ export interface ModelRequest {
 	sessionId?: string;
 	/** Called before each wait when a request failed in a way that may pass and is tried again. */
 	onRetry?: (retry: RetryNote) => void;
+	/**
+	 * A request beside the conversation whose prompt is not sent again, such as naming a session: no
+	 * prompt cache is written for it, and a failure that may pass is tried again once at most.
+	 */
+	side?: boolean;
 }
 
 /** A failed request that will be tried again: which retry of how many, after how long, and why. */
@@ -186,6 +191,26 @@ const HIDDEN_PROVIDERS = new Set([
 	"cloudflare-workers-ai",
 	"cloudflare-ai-gateway",
 ]);
+
+/**
+ * The small model of each provider, for jobs beside a conversation such as naming a session. A fixed
+ * list, not "the provider's cheapest model": the cheapest may be a batch or trial variant that comes
+ * with other terms. It is the provider's own current small model, so the request goes where the
+ * session's own requests go. A provider that is not listed has none.
+ */
+export const SMALL_MODELS: Readonly<Record<string, string>> = {
+	"ant-ling": "Ling-2.6-flash",
+	anthropic: "claude-haiku-5-5",
+	deepseek: "deepseek-flash",
+	google: "gemini-flash-lite-latest",
+	minimax: "MiniMax-M3.1-Flash",
+	"minimax-cn": "MiniMax-M3.1-Flash",
+	mistral: "mistral-small-latest",
+	openai: "gpt-6-luna",
+	xiaomi: "mimo-v2.6-flash",
+	zai: "glm-5.3-flash",
+	"zai-coding-cn": "glm-5.3-flash",
+};
 
 /** Sent to keyless local servers, which ignore it; the OpenAI client needs some value. */
 const KEYLESS = "yew-no-key";
@@ -439,6 +464,8 @@ export interface GatewayOptions {
 	providers?: Provider[];
 	retry?: RetryOptions;
 	idleMs?: number;
+	/** Replaces the list of small models by provider; tests name one of the faux provider's here. */
+	small?: Record<string, string>;
 }
 
 /** What one short request to a provider came to. */
@@ -476,15 +503,20 @@ export function plainError(text: string): string {
 /** How long a connection test may take. */
 const PING_MS = 30_000;
 
+/** How many times a request beside the conversation is tried again. */
+const SIDE_RETRIES = 1;
+
 export class ModelGateway {
 	readonly #models: MutableModels;
 	readonly #keys: KeyStore;
 	readonly #custom = new Map<string, CustomProviderConfig>();
 	readonly #retry: RetryOptions;
 	readonly #idleMs: number;
+	readonly #small: Readonly<Record<string, string>>;
 
 	constructor(options: GatewayOptions) {
 		this.#keys = options.keys;
+		this.#small = options.small ?? SMALL_MODELS;
 		this.#retry = options.retry ?? DEFAULT_RETRY;
 		this.#idleMs = options.idleMs ?? DEFAULT_IDLE_MS;
 		this.#models = createModels({
@@ -549,6 +581,21 @@ export class ModelGateway {
 		return this.models(provider).find((item) => item.id === id);
 	}
 
+	/**
+	 * The provider's small model for a job beside a session that runs `id`, such as naming it, when
+	 * the provider has one (SMALL_MODELS) and it costs less than the session's own model. Undefined
+	 * otherwise: the session's own model does the job then.
+	 */
+	small(provider: string, id: string): ModelInfo | undefined {
+		const small = this.#small[provider];
+		if (!small || small === id) return undefined;
+		const own = this.model(provider, id);
+		const model = this.model(provider, small);
+		if (!own || !model) return undefined;
+		const price = (item: ModelInfo) => item.cost.input + item.cost.output;
+		return price(model) < price(own) ? model : undefined;
+	}
+
 	/** Throws a 400 error when the provider or model is unknown. */
 	check(provider: string, id: string): void {
 		if (!this.#models.getProvider(provider)) {
@@ -602,7 +649,13 @@ export class ModelGateway {
 			tools: request.tools,
 		};
 		// One layer of retries, the one below that the person can see: the provider SDKs' own are off.
-		const options: SimpleStreamOptions = { cacheRetention: "short", maxRetries: 0 };
+		const options: SimpleStreamOptions = {
+			cacheRetention: request.side ? "none" : "short",
+			maxRetries: 0,
+		};
+		const retries = request.side
+			? Math.min(this.#retry.maxRetries, SIDE_RETRIES)
+			: this.#retry.maxRetries;
 		if (request.sessionId) options.sessionId = request.sessionId;
 		if (model.reasoning && request.thinking !== "off") {
 			const level = clampThinkingLevel(model, request.thinking);
@@ -612,7 +665,7 @@ export class ModelGateway {
 			const message = await this.#once(model, context, options, request.signal, onDraft);
 			if (
 				message.stopReason !== "error" ||
-				attempt > this.#retry.maxRetries ||
+				attempt > retries ||
 				isContextOverflow(message, model.contextWindow) ||
 				!isRetryableAssistantError(message)
 			) {
@@ -624,7 +677,7 @@ export class ModelGateway {
 			);
 			request.onRetry?.({
 				attempt,
-				of: this.#retry.maxRetries,
+				of: retries,
 				delayMs,
 				error: message.errorMessage ?? "",
 			});

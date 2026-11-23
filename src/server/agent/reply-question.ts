@@ -2,8 +2,8 @@ import type { Approval, QuestionRequest, Session } from "../../shared/types.ts";
 import type { ModelGateway } from "../model/gateway.ts";
 import type { Store } from "../store.ts";
 import { choicesFrom } from "../tools/misc.ts";
-import { usageTotals } from "./context.ts";
 import { CHOICES_PROMPT } from "./prompt.ts";
+import { sideCall } from "./side.ts";
 
 /** Words a reply uses to offer a next step instead of asking outright. */
 const OFFER =
@@ -86,8 +86,9 @@ export class ReplyQuestions {
 	}
 
 	/**
-	 * Gives a question taken from a reply its choices, so the person answers with one click. The
-	 * session's own model writes them from the end of the reply. The card is there meanwhile, and
+	 * Gives a question taken from a reply its choices, so the person answers with one click. A model
+	 * writes them from the end of the reply: the provider's small one when it has one, else the
+	 * session's own. The card is there meanwhile, and
 	 * stays as it is when this fails, when the question has no fixed answers, or when the person has
 	 * answered by then.
 	 */
@@ -98,27 +99,15 @@ export class ReplyQuestions {
 		said: string,
 		signal: AbortSignal,
 	): Promise<void> {
-		const model = this.#gateway.model(session.provider, session.model);
-		if (!model) return;
-		const reply = await this.#gateway.stream({
-			provider: session.provider,
-			model: model.id,
-			thinking: "off",
+		const wrote = await sideCall({
+			store: this.#store,
+			gateway: this.#gateway,
+			session,
 			systemPrompt: CHOICES_PROMPT,
-			messages: [
-				{
-					role: "user",
-					content: `The end of the reply:\n${said.slice(-3000)}\n\nThe question:\n${asked}`,
-					timestamp: Date.now(),
-				},
-			],
-			tools: [],
+			content: `The end of the reply:\n${said.slice(-3000)}\n\nThe question:\n${asked}`,
 			signal,
 		});
-		const now = this.#store.getSession(session.id);
-		this.#store.addUsage(session.id, usageTotals(reply), now.contextTokens);
-		const wrote = reply.content.map((block) => (block.type === "text" ? block.text : "")).join("");
-		const choices = choicesFrom(wrote);
+		const choices = wrote === null ? null : choicesFrom(wrote);
 		if (!choices || signal.aborted) return;
 		this.#store.amendApproval(approvalId, {
 			questions: [{ question: asked, ...choices }],

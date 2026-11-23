@@ -2,6 +2,12 @@
 
 本文件记录 Yew Harness（原名 Jig，1.3.0、1.4.0 叫 Yew）各版本中用户能感知的变化。格式参照 [Keep a Changelog 1.1.0](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循[语义化版本 2.0.0](https://semver.org/lang/zh-CN/)。
 
+## [未发布]
+
+### 变更
+
+- 给会话起名字、给回复末尾的问题写选项，改由服务商的小模型来做，原来用会话自己的模型。小模型按服务商写定：DeepSeek 用 DeepSeek V4.1 Flash，MiniMax 用 MiniMax-M3.1-Flash，Z.AI 用 GLM-5.3-Flash，Xiaomi 用 MiMo-V2.6-Flash，Ant Ling 用 Ling 2.6 Flash，Anthropic 用 Claude Haiku 5.5，OpenAI 用 GPT-6 Luna，Google 用 Gemini Flash-Lite，Mistral 用 Mistral Small。请求照旧发给会话所用的服务商，用同一个 API Key；小模型没答出来时，会话自己的模型再答一次。别的服务商和自定义服务商没有写定小模型，会话的模型本来就比小模型便宜的也一样，照旧用会话自己的模型。费用照旧记在这个会话的用量里。
+
 ## [1.11.0] - 2026-11-22
 
 ### 新增
