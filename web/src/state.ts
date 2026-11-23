@@ -32,6 +32,8 @@ export interface MascotReaction {
 
 export interface Settings {
 	defaultModel: { provider: string; model: string; thinking: ThinkingLevel };
+	/** The model for the jobs beside every conversation; null leaves them to each session's provider. */
+	sideModel: { provider: string; model: string } | null;
 	theme: "system" | "light" | "dark";
 	language: "system" | "zh" | "en";
 	workspaces: Workspace[];
@@ -152,7 +154,7 @@ export interface SearchServiceView {
 	hasKey: boolean;
 	/** The one web search uses now. */
 	active: boolean;
-	/** It uses this model provider's key, set under Providers and keys. */
+	/** It uses this model provider's key, set with the model providers. */
 	provider: string | null;
 }
 
@@ -227,6 +229,8 @@ export interface ModelInfo {
 	input: ("text" | "image")[];
 	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
 	latest?: boolean;
+	/** The provider's small model. */
+	small?: boolean;
 }
 
 export interface TranscriptState {

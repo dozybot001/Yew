@@ -145,7 +145,7 @@ describe("settings: search services", () => {
 			row("search-bocha", "Bocha web search", "cn", false, false),
 			row("search-tavily", "Tavily search", "global", true, true),
 			row("search-brave", "Brave Search", "global", false, false),
-			// Built in with the model's DeepSeek key, which is set under Providers and keys.
+			// Built in with the model's DeepSeek key, which is set with the model providers.
 			{ ...row("search-deepseek", "DeepSeek search", "cn", false, false), provider: "deepseek" },
 		]);
 		assert.doesNotMatch(listed.text, /tvly-test-value/);

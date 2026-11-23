@@ -7,6 +7,7 @@ import {
 	saveCustomProvider,
 	saveKey,
 	saveSearchKey,
+	saveSettings,
 	testProvider,
 } from "../../actions/settings.ts";
 import { hasMessage, t, useLang } from "../../i18n.ts";
@@ -14,12 +15,14 @@ import {
 	type PingResult,
 	type ProviderSummary,
 	type SearchServiceView,
+	type Settings,
 	useAppState,
 } from "../../state.ts";
 import { Dialog } from "../dialog.tsx";
 import { ConfirmDialog } from "../dialogs.tsx";
 import { CheckIcon, KeyIcon, PlusIcon, PulseIcon, TrashIcon } from "../icons.tsx";
-import { Button, ErrorBox, Switch, useAction } from "../ui.tsx";
+import { ModelPicker, SideModelPicker } from "../model-picker.tsx";
+import { Button, ErrorBox, Field, Switch, useAction } from "../ui.tsx";
 
 /**
  * One service that takes an API key: its name and whether a key is saved, with save, replace and
@@ -231,7 +234,7 @@ function SearchServices() {
 						key={service.id}
 						name={searchName(service)}
 						note={[
-							// DeepSeek's search uses the model's key: it is saved under Providers and keys.
+							// DeepSeek's search uses the model's key: it is saved with the model providers.
 							service.provider
 								? t(service.hasKey ? "searchUsesProviderKey" : "searchNeedsProviderKey", {
 										provider: providerName(service.provider),
@@ -266,7 +269,7 @@ function SearchServices() {
 const KEY_TABS = ["models", "search"] as const;
 
 /**
- * Providers and keys: the model providers on one tab and the search services on the other, so the
+ * Models and keys: the model providers on one tab and the search services on the other, so the
  * three search services are not under the long list of providers.
  */
 export function ProvidersDialog({ onClose }: { onClose: () => void }) {
@@ -417,12 +420,59 @@ function CustomProviderForm() {
 	);
 }
 
+/**
+ * The two models sessions start from: the one new sessions use, and the one that does the jobs
+ * beside every conversation. A choice is saved as it is made, like the keys below.
+ */
+function ModelRoles() {
+	useLang();
+	const settings = useAppState((state) => state.settings);
+	const providers = useAppState((state) => state.providers);
+	const main = useAction((value: Settings["defaultModel"]) =>
+		saveSettings({ defaultModel: value }),
+	);
+	const side = useAction((value: Settings["sideModel"]) => saveSettings({ sideModel: value }));
+	if (!settings) return null;
+	const chosen = settings.sideModel;
+	const at = chosen ? providers.find((provider) => provider.id === chosen.provider) : undefined;
+	const name = at?.name ?? chosen?.provider ?? "";
+	return (
+		<>
+			<Field label={t("mainModel")} info={t("mainModelHelp")}>
+				<ModelPicker
+					{...settings.defaultModel}
+					layout="grid"
+					busy={main.busy}
+					onChange={(patch) => void main.run({ ...settings.defaultModel, ...patch })}
+				/>
+				<ErrorBox error={main.error} />
+			</Field>
+			<Field label={t("sideModel")} info={t("sideModelHelp")}>
+				<SideModelPicker
+					value={chosen}
+					busy={side.busy}
+					onChange={(value) => void side.run(value)}
+				/>
+				<span className="hint" role="status">
+					{!chosen
+						? t("sideModelAutoHint")
+						: at && (at.hasKey || !at.keyRequired)
+							? t("sideModelSends", { provider: name })
+							: t("sideModelNoKey", { provider: name })}
+				</span>
+				<ErrorBox error={side.error} />
+			</Field>
+		</>
+	);
+}
+
 function Providers() {
 	useLang();
 	const providers = useAppState((state) => state.providers);
 	const regions = ["cn", "custom", "global"] as const;
 	return (
 		<section className="settings-section" aria-label={t("providers")}>
+			<ModelRoles />
 			<p className="hint">{t("keyHelp")}</p>
 			{regions.map((region) => {
 				const list = providers

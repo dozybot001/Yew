@@ -6,13 +6,12 @@ import { getState, type RolesFolderState, useAppState } from "../../state.ts";
 import { Dialog } from "../dialog.tsx";
 import { cleanAmount } from "../dialogs.tsx";
 import { CheckIcon } from "../icons.tsx";
-import { ModelPicker } from "../model-picker.tsx";
 import { Select } from "../select.tsx";
 import { Button, ErrorBox, Field, SettingRow, Switch, useAction } from "../ui.tsx";
 
 /**
- * Defaults for new sessions (the model and the permission rules), and where decisions are logged
- * and roles are written; saved together.
+ * Defaults for new sessions (the permission rules and the workspace), and where decisions are logged
+ * and roles are written; saved together. The default model is under the providers.
  */
 
 /** What the settings say under the roles folder: what is in it, or why something did not go through. */
@@ -29,7 +28,6 @@ function rolesFolderLines(state: RolesFolderState | null): { hint?: string; erro
 export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	useLang();
 	const settings = useAppState((state) => state.settings);
-	const [model, setModel] = useState(settings?.defaultModel);
 	const savedMode = settings?.defaultPermissionMode ?? "default";
 	const [mode, setMode] = useState<PermissionMode>(savedMode);
 	const modeId = useId();
@@ -73,7 +71,6 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	const sandbox = useAppState((state) => state.health?.sandbox ?? "none");
 	const save = useAction(async () => {
 		await saveSettings({
-			...(model ? { defaultModel: model } : {}),
 			...(mode !== savedMode ? { defaultPermissionMode: mode } : {}),
 			...(workspace !== savedWorkspace ? { defaultWorkspaceId: workspace || null } : {}),
 			...(memory !== savedMemory
@@ -115,7 +112,6 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 		onClose();
 	});
 	const dirty =
-		JSON.stringify(model) !== JSON.stringify(settings?.defaultModel) ||
 		mode !== savedMode ||
 		workspace !== savedWorkspace ||
 		log.trim() !== (settings?.decisionLog ?? "") ||
@@ -150,15 +146,6 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 				</>
 			}
 		>
-			{model && (
-				<Field label={t("defaultModel")} info={t("defaultModelHelp")}>
-					<ModelPicker
-						{...model}
-						layout="grid"
-						onChange={(patch) => setModel((current) => current && { ...current, ...patch })}
-					/>
-				</Field>
-			)}
 			<Field
 				label={t("defaultPermission")}
 				labelId={modeId}

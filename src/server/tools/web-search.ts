@@ -19,7 +19,7 @@ export interface SearchService {
 	/** The name its key is saved under: `yew key set search-bocha`. */
 	id: string;
 	/**
-	 * A model provider whose key it uses, saved under Providers and keys (`yew key set deepseek`):
+	 * A model provider whose key it uses, saved with the model providers (`yew key set deepseek`):
 	 * the search settings neither save nor delete it.
 	 */
 	provider?: string;

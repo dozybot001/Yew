@@ -48,7 +48,7 @@ const zh = {
 	showArchived: "显示已归档",
 	hideArchived: "隐藏已归档",
 	settings: "设置",
-	providersMenu: "服务商与密钥",
+	providersMenu: "模型与服务商",
 	defaultsMenu: "默认设置",
 	phonesMenu: "手机访问",
 	phones: "手机访问",
@@ -465,7 +465,7 @@ const zh = {
 	compactAt: "压缩阈值（token）",
 	compactAtHelp: "上下文达到这个数时压缩较早的记录。留空用默认值：模型上限的 80%，最多 30 万。",
 	// settings
-	providers: "服务商与密钥",
+	providers: "模型与服务商",
 	about: "关于 Yew Harness",
 	theme: "主题",
 	theme_system: "跟随系统",
@@ -493,7 +493,14 @@ const zh = {
 	mascot_on: "显示",
 	mascot_off: "隐藏",
 	language_system: "跟随系统",
-	defaultModel: "新会话的默认模型",
+	mainModel: "主路模型",
+	sideModel: "旁路模型",
+	sideModelAuto: "自动",
+	sideModelAutoHint:
+		"用会话所在服务商的小模型；那家没有，或它不比会话自己的模型便宜时，用会话自己的模型。",
+	sideModelSends:
+		"起名时会话开头的一段、读回复时回复的最后 3000 个字，会发给 {provider}，适用它的隐私政策。",
+	sideModelNoKey: "{provider} 没有密钥，这两件事现在由各会话自己的模型来做。",
 	region_cn: "国内",
 	region_global: "境外",
 	region_custom: "自定义",
@@ -568,7 +575,10 @@ const zh = {
 	template_docs_role:
 		"阅读工作区里的资料，按要求整理成结构清楚的文档；引用原文时注明出自哪个文件。",
 	template_chat: "聊天",
-	defaultModelHelp: "新建会话时默认选这个服务商和模型；已有的会话不受影响。",
+	mainModelHelp:
+		"新建会话时默认选这个服务商、模型和思考强度；已有的会话不受影响，每个会话可以单独改。",
+	sideModelHelp:
+		"对话之外的两件小事用它：给新会话起名，读一条回复的末尾是不是给你留了问题（留了就放进审批中心）。「自动」用会话所在服务商的小模型，它比会话自己的模型便宜时才用。选了模型后，所有会话的这两件事都交给它，不论价格；它没给出完整回答，或它的服务商没有密钥时，由会话自己的模型来做。",
 	deleteProviderBody:
 		"删除自定义服务商 {name}？它的配置和钥匙串里的 API Key 都会删除，用它的会话将无法请求模型。",
 	err_network: "连不上 Yew Harness 服务。确认 yew serve 还在运行，然后重试。",
@@ -593,7 +603,7 @@ const zh = {
 	err_field_rules: "每条规则都要选效果和工具。",
 	err_field_model: "找不到这个服务商或模型。",
 	err_missingKey:
-		"没有 {provider} 的 API Key。在「设置 → 服务商与密钥」里填写，或在终端运行 yew key set {provider}。",
+		"没有 {provider} 的 API Key。在「设置 → 模型与服务商」里填写，或在终端运行 yew key set {provider}。",
 	err_sessionBusy: "会话正在干活，等它停下再试。",
 	err_sessionArchived: "这个会话已归档，先恢复它。",
 	err_scheduleBusy: "上一轮还没结束，这次没有寄出。",
@@ -1041,8 +1051,8 @@ const zh = {
 		"有 DeepSeek 的密钥就能联网搜索，用的是 DeepSeek 自己的搜索，不用另配；也可以存博查、Tavily、Brave 的密钥，几家都有时用排在前面的那家。搜索时只把搜索词发给这家服务。DeepSeek 搜索按次收费，记在你的 DeepSeek 账上。",
 	searchName_bocha: "博查",
 	searchName_deepseek: "DeepSeek 搜索",
-	searchUsesProviderKey: "用「服务商与密钥」里的 {provider} 密钥",
-	searchNeedsProviderKey: "在「服务商与密钥」里存上 {provider} 的密钥就能用",
+	searchUsesProviderKey: "用「模型服务商」里的 {provider} 密钥",
+	searchNeedsProviderKey: "在「模型服务商」里存上 {provider} 的密钥就能用",
 	searchName_tavily: "Tavily",
 	searchName_brave: "Brave Search",
 	search_cn: "由国内公司提供",
@@ -1266,7 +1276,7 @@ const en: Record<MessageKey, string> = {
 	showArchived: "Show archived",
 	hideArchived: "Hide archived",
 	settings: "Settings",
-	providersMenu: "Providers and keys",
+	providersMenu: "Models and keys",
 	defaultsMenu: "Defaults",
 	phonesMenu: "Phone access",
 	phones: "Phone access",
@@ -1688,7 +1698,7 @@ const en: Record<MessageKey, string> = {
 	compactAt: "Compaction threshold (tokens)",
 	compactAtHelp:
 		"Older messages are summarized when the context reaches this size. Empty uses the default: 80% of the model's limit, at most 300,000.",
-	providers: "Providers and keys",
+	providers: "Models and keys",
 	about: "About Yew Harness",
 	theme: "Theme",
 	theme_system: "Match system",
@@ -1717,7 +1727,14 @@ const en: Record<MessageKey, string> = {
 	mascot_on: "Show",
 	mascot_off: "Hide",
 	language_system: "Match system",
-	defaultModel: "Default model for new sessions",
+	mainModel: "Main model",
+	sideModel: "Side model",
+	sideModelAuto: "Automatic",
+	sideModelAutoHint:
+		"Uses the small model of the session's own provider; where there is none, or it costs no less than the session's own model, the session's own model.",
+	sideModelSends:
+		"The start of a session, when it is named, and the last 3,000 characters of a reply, when it is read, go to {provider}; its privacy policy applies.",
+	sideModelNoKey: "{provider} has no key, so each session's own model does these two jobs for now.",
 	region_cn: "Chinese providers",
 	region_global: "Other providers",
 	region_custom: "Custom",
@@ -1794,8 +1811,10 @@ const en: Record<MessageKey, string> = {
 	template_docs_role:
 		"Read the material in the workspace and organize it into clearly structured documents as asked; when quoting, name the file it came from.",
 	template_chat: "Chat",
-	defaultModelHelp:
-		"New sessions start with this provider and model; existing sessions keep theirs.",
+	mainModelHelp:
+		"New sessions start with this provider, model and thinking level; existing sessions keep theirs, and each session can change its own.",
+	sideModelHelp:
+		"Two small jobs beside a conversation use it: naming a new session, and reading whether the end of a reply leaves you a question (one that does goes to the approval center). Automatic uses the small model of the session's own provider, when it costs less than the session's own model. A model you choose does both jobs for every session, whatever it costs; when it gives no complete answer, or its provider has no key, the session's own model does them.",
 	deleteProviderBody:
 		"Delete the custom provider {name}? Its settings and its API key in the keychain are removed, and sessions using it will not be able to reach the model.",
 	err_network:
@@ -1827,7 +1846,7 @@ const en: Record<MessageKey, string> = {
 	err_field_rules: "Every rule needs an effect and a tool.",
 	err_field_model: "This provider or model does not exist.",
 	err_missingKey:
-		"There is no API key for {provider}. Add one in Settings → Providers and keys, or run yew key set {provider} in a terminal.",
+		"There is no API key for {provider}. Add one in Settings → Models and keys, or run yew key set {provider} in a terminal.",
 	err_sessionBusy: "The session is working. Try again when it stops.",
 	err_sessionArchived: "This session is archived. Restore it first.",
 	err_scheduleBusy: "The last run is not finished yet, so nothing was sent.",
@@ -2289,8 +2308,8 @@ const en: Record<MessageKey, string> = {
 		"With a DeepSeek key, sessions can search the web through DeepSeek's own search, with nothing more to set up; you can also save a key for Bocha, Tavily or Brave, and when several have a key the first in this list is used. A search sends only the query to that service. DeepSeek charges each search to your DeepSeek account.",
 	searchName_bocha: "Bocha",
 	searchName_deepseek: "DeepSeek search",
-	searchUsesProviderKey: "Uses the {provider} key from Providers and keys",
-	searchNeedsProviderKey: "Works once a {provider} key is saved under Providers and keys",
+	searchUsesProviderKey: "Uses the {provider} key from Model providers",
+	searchNeedsProviderKey: "Works once a {provider} key is saved under Model providers",
 	searchName_tavily: "Tavily",
 	searchName_brave: "Brave Search",
 	search_cn: "Run by a company in China",

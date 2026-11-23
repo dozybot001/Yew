@@ -23,6 +23,12 @@ export interface DefaultModel {
 	thinking: ThinkingLevel;
 }
 
+/** The model the person set for the jobs beside every conversation (agent/side.ts). */
+export interface SideModel {
+	provider: string;
+	model: string;
+}
+
 /** A saved working folder, offered first when you pick a folder for a session. */
 export interface Workspace {
 	id: string;
@@ -41,6 +47,11 @@ export const SETTING_DEFAULTS = {
 		model: "deepseek-v4-pro",
 		thinking: "medium",
 	} as DefaultModel,
+	/**
+	 * The model that does the jobs beside every conversation, such as naming it. Null leaves them to
+	 * the small model of each session's own provider.
+	 */
+	sideModel: null as SideModel | null,
 	theme: "system" as "system" | "light" | "dark",
 	language: "system" as "system" | "zh" | "en",
 	workspaces: [] as Workspace[],
@@ -116,6 +127,7 @@ export function readSettings(store: Store): Settings {
 	);
 	return {
 		defaultModel: store.getSetting("defaultModel", SETTING_DEFAULTS.defaultModel),
+		sideModel: store.getSetting("sideModel", SETTING_DEFAULTS.sideModel),
 		theme: store.getSetting("theme", SETTING_DEFAULTS.theme),
 		language: store.getSetting("language", SETTING_DEFAULTS.language),
 		workspaces,

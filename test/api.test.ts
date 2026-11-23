@@ -321,6 +321,33 @@ describe("api: providers and keys", () => {
 		assert.equal((await call("PUT", "/api/providers/nope/key", { key: "x" })).status, 404);
 	});
 
+	test("the model for jobs beside a conversation is saved, checked and set back to automatic", async () => {
+		const { call } = await providerSetup();
+		assert.equal((await (await call("GET", "/api/settings")).json()).sideModel, null);
+		const side = { provider: "deepseek", model: "deepseek-flash" };
+		const saved = await call("PATCH", "/api/settings", { sideModel: side });
+		assert.equal(saved.status, 200);
+		assert.deepEqual((await saved.json()).sideModel, side);
+		const unknown = { provider: "deepseek", model: "nope" };
+		assert.equal((await call("PATCH", "/api/settings", { sideModel: unknown })).status, 400);
+		assert.equal((await call("PATCH", "/api/settings", { sideModel: "deepseek" })).status, 400);
+		// Another setting leaves it as it is.
+		assert.deepEqual(
+			(await (await call("PATCH", "/api/settings", { theme: "dark" })).json()).sideModel,
+			side,
+		);
+		const automatic = await (await call("PATCH", "/api/settings", { sideModel: null })).json();
+		assert.equal(automatic.sideModel, null);
+		// The list of models says which one is the provider's small model: the picker starts from it.
+		const models = await (await call("GET", "/api/providers/deepseek/models")).json();
+		assert.deepEqual(
+			models.items
+				.filter((item: { small?: boolean }) => item.small)
+				.map((item: { id: string }) => item.id),
+			["deepseek-flash"],
+		);
+	});
+
 	test("custom OpenAI-compatible providers can be added, used for sessions and removed", async () => {
 		const { store, call } = await providerSetup();
 		const body = {

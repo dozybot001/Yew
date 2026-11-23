@@ -37,6 +37,7 @@ import {
 	resolveHiddenFolder,
 	resolveLogFile,
 	resolveRolesFolder,
+	type SideModel,
 	type Workspace,
 } from "../settings.ts";
 import { findSkills, resolveMemoryDir } from "../skills.ts";
@@ -525,6 +526,19 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 			};
 			deps.checkModel?.(value.provider, value.model);
 			store.setSetting("defaultModel", value);
+		}
+		// null goes back to the small model of each session's own provider.
+		if (fields.sideModel === null) store.setSetting("sideModel", null);
+		else {
+			const sideModel = optObject(fields, "sideModel");
+			if (sideModel) {
+				const value: SideModel = {
+					provider: reqString(sideModel, "provider", 100),
+					model: reqString(sideModel, "model", 200),
+				};
+				deps.checkModel?.(value.provider, value.model);
+				store.setSetting("sideModel", value);
+			}
 		}
 		const theme = optEnum(fields, "theme", ["system", "light", "dark"] as const);
 		if (theme) store.setSetting("theme", theme);

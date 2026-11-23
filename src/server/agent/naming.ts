@@ -9,8 +9,8 @@ import { sideCall } from "./side.ts";
 
 /**
  * A session started from the home page is named after the start of its first message. After its
- * first turn a model gives it a short name, once: the provider's small model when it has one, else
- * the session's own. A name the person or the main conversation chose is kept.
+ * first turn a model gives it a short name, once: the model for jobs beside a conversation
+ * (side.ts), else the session's own. A name the person or the main conversation chose is kept.
  */
 export async function nameAfterFirstTurn(
 	store: Store,

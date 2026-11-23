@@ -61,6 +61,8 @@ export interface ModelInfo {
 	cost: { input: number; output: number; cacheRead: number; cacheWrite: number };
 	/** True for active latest-generation models (shown above the divider in the model picker). */
 	latest?: boolean;
+	/** True for the provider's small model (SMALL_MODELS). */
+	small?: boolean;
 }
 
 export interface ToolSpec {
@@ -562,7 +564,10 @@ export class ModelGateway {
 	}
 
 	models(provider?: string): ModelInfo[] {
-		const list = this.#models.getModels(provider).map(toInfo);
+		const list = this.#models
+			.getModels(provider)
+			.map(toInfo)
+			.map((item) => (this.#small[item.provider] === item.id ? { ...item, small: true } : item));
 		if (provider) return enrichProviderModels(list);
 		const byProvider = new Map<string, ModelInfo[]>();
 		for (const item of list) {

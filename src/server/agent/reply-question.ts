@@ -85,11 +85,11 @@ export class ReplyQuestions {
 
 	/**
 	 * A code session ended its turn with a reply that nobody else reads. A model reads the end of it,
-	 * the provider's small one when it has one, and says whether it asks the person something: no list
-	 * of words decides that. A question goes to the approval center with the likely answers as its
-	 * choices, the session shows that it waits, and the session is told that the card is there. The
-	 * latest such question replaces an older one; the person's next message, or continuing, takes it
-	 * away.
+	 * the one for jobs beside a conversation (side.ts), and says whether it asks the person
+	 * something: no list of words decides that. A question goes to the approval center with the
+	 * likely answers as its choices, the session shows that it waits, and the session is told that
+	 * the card is there. The latest such question replaces an older one; the person's next message,
+	 * or continuing, takes it away.
 	 */
 	ask(session: Session, said: string): void {
 		if (!this.#enabled) return;
