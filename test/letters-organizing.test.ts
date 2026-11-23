@@ -4,6 +4,10 @@ import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.
 import type { PermissionRequest, Session } from "../src/shared/types.ts";
 import { harness, lastTool, textOf, toolUse, until } from "./helpers/letters.ts";
 
+/** An update Yew adds to the conversation; the faux model takes no system message there, so it goes as Yew's note. */
+const isUpdate = (m: { content: unknown }) =>
+	typeof m.content === "string" && m.content.startsWith("[From Yew, not from the person]");
+
 describe("organizing sessions", () => {
 	test("the main conversation organizes sessions in one call; a bad call is refused before anyone is asked", async () => {
 		const { store, agents, make, script, seen, said } = harness();
@@ -215,7 +219,7 @@ describe("organizing sessions", () => {
 		await until(() => said(x).length === 2);
 		const [first, second] = seen.get("旧名") ?? [];
 		assert.equal(first?.messages[0]?.content, second?.messages[0]?.content, "same system prompt");
-		const update = textOf(second?.messages.filter((m) => m.role === "system").slice(1));
+		const update = textOf(second?.messages.filter(isUpdate));
 		assert.match(update, /Your name is now \\"新名\\"/);
 		assert.match(update, /You now belong to the team \\"平台\\"/);
 	});
@@ -243,8 +247,7 @@ describe("organizing sessions", () => {
 		assert.match(prompt, /Your role, as the person wrote it:\n整理文档\n/);
 		assert.equal(second?.messages[0]?.content, prompt, "same system prompt");
 		assert.equal(third?.messages[0]?.content, prompt, "same system prompt");
-		const updates = (context: typeof first) =>
-			textOf(context?.messages.filter((m) => m.role === "system").slice(1));
+		const updates = (context: typeof first) => textOf(context?.messages.filter(isUpdate));
 		assert.equal(updates(first), "[]");
 		assert.match(
 			updates(second),

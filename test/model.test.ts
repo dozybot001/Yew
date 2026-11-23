@@ -4,7 +4,7 @@ import type { AddressInfo } from "node:net";
 import { describe, test } from "node:test";
 import { YewError } from "../src/server/errors.ts";
 import { MemoryKeyStore } from "../src/server/keys.ts";
-import { ModelGateway, SMALL_MODELS } from "../src/server/model/gateway.ts";
+import { inPlace, ModelGateway, SMALL_MODELS } from "../src/server/model/gateway.ts";
 import { fauxAssistantMessage, fauxProvider } from "../src/server/model/testing.ts";
 
 const base = { thinking: "off" as const, systemPrompt: "You are a test.", tools: [] };
@@ -152,6 +152,36 @@ describe("model gateway", () => {
 			}
 		} finally {
 			server.close();
+		}
+	});
+});
+
+describe("system messages in the middle of a conversation", () => {
+	const messages = [
+		{ role: "user" as const, content: "你好", timestamp: 1 },
+		{ role: "system" as const, content: "Today's date is now 2026-11-23.", timestamp: 2 },
+	];
+	const model = (api: string, supports?: boolean) =>
+		({ api, compat: { supportsMidConvoSystemMessages: supports } }) as never;
+
+	test("stay as they are for a model that accepts them there", () => {
+		assert.equal(inPlace(model("openai-completions", true), messages), messages);
+	});
+
+	test("go as a message from Yew at the same place for the others", () => {
+		for (const other of [
+			model("openai-completions"),
+			model("anthropic-messages", false),
+			model("google-generative-ai", true),
+			model("bedrock-converse-stream", true),
+		]) {
+			const sent = inPlace(other, messages);
+			assert.equal(sent[0], messages[0]);
+			assert.deepEqual(sent[1], {
+				role: "user",
+				content: "[From Yew, not from the person] Today's date is now 2026-11-23.",
+				timestamp: 2,
+			});
 		}
 	});
 });

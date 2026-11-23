@@ -26,6 +26,7 @@ import { openAICompletionsApi } from "@earendil-works/pi-ai/api/openai-completio
 import { builtinProviders } from "@earendil-works/pi-ai/providers/all";
 import type { AssistantMessage, JsonObject, ModelMessage } from "../../shared/messages.ts";
 import type { ThinkingLevel } from "../../shared/types.ts";
+import { YEW_NOTE } from "../agent/context.ts";
 import { invalid, YewError } from "../errors.ts";
 import type { KeyStore } from "../keys.ts";
 
@@ -291,6 +292,25 @@ function customProvider(config: CustomProviderConfig): Provider {
 		),
 		api: openAICompletionsApi(),
 	});
+}
+
+/**
+ * The messages as this model can take them without losing its prompt cache. A system message in the
+ * middle of a conversation stays where it is only for models that accept one there; for the others
+ * the library joins every system message into the first, which changes the start of the request and
+ * so costs the whole cache each time one is added. For those it goes as a message from Yew at the
+ * same place instead.
+ */
+export function inPlace(model: Model<Api>, messages: ModelMessage[]): ModelMessage[] {
+	const compat = model.compat as { supportsMidConvoSystemMessages?: boolean } | undefined;
+	// The Google and Bedrock adapters join them whatever the model says.
+	if (compat?.supportsMidConvoSystemMessages === true && !/^(google|bedrock)/.test(model.api))
+		return messages;
+	return messages.map((message) =>
+		message.role === "system" && typeof message.content === "string"
+			? { role: "user", content: `${YEW_NOTE} ${message.content}`, timestamp: message.timestamp }
+			: message,
+	);
 }
 
 function toInfo(model: Model<Api>): ModelInfo {
@@ -639,7 +659,7 @@ export class ModelGateway {
 		}
 		const context: Context = {
 			systemPrompt: request.systemPrompt,
-			messages: request.messages,
+			messages: inPlace(model, request.messages),
 			tools: request.tools,
 		};
 		// One layer of retries, the one below that the person can see: the provider SDKs' own are off.
