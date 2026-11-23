@@ -18,7 +18,15 @@ Sessions' commands and the MCP servers you add run in a system sandbox. It is An
 
 git runs the programs a repository names, its hooks and some of its settings, when you use git outside the sandbox. So in the folders a command may write, the hooks and settings of the repositories that are there are closed to it, in submodules, worktrees and bare repositories too, together with the files that send git elsewhere for them (`commondir`, `gitdir`, a `.git` file); on macOS a folder that holds a repository cannot be renamed or moved either. A command cannot leave a repository of its own behind: when it ends, Yew Harness looks through those folders and moves aside what was not there before, a `.git` (to `.git.blocked-by-yew`), the `HEAD` of a new git folder, or hooks and settings added to a repository, and says so in the command's output. Renaming it back restores it. Who made it cannot be told, so a repository you make in those folders while a command is still running is moved too. Repositories, worktrees and submodule checkouts are therefore made outside the sandbox, which is a permission.
 
-This has limits. Before each command Yew Harness looks through at most 20,000 folders for at most 0.2 seconds, nearest first, and not into dependency and build folders such as `node_modules`, `.venv` and `target`, nor into temporary folders; on macOS it holds at most 100 repositories in place. Beyond that, on macOS hooks and settings are closed only while their folder is called `.git`, on Linux they are not closed, and what a command leaves there is not looked at. On macOS a program that a command leaves running is not stopped and can write after the check. And where you have set a repository to run files from the working folder (`core.hooksPath`, husky and the like), a command can change those files.
+This has limits, and they are known ones: Yew Harness narrows this path and does not claim to close it.
+
+- Before each command Yew Harness looks through at most 50,000 folders for at most 0.5 seconds, nearest first, dependency and build folders such as `node_modules` included, but not temporary folders; on macOS it holds at most 100 repositories in place. Beyond that, on macOS hooks and settings are closed only while their folder is called `.git`, on Linux they are not closed, and what a command leaves there is not looked at. When folders were left out, the command's output says how many and names some.
+- When a command ends, Yew Harness ends what is left of its process group before the check, so a program left running with `&` stops there. On macOS a program that took itself out of the group (`setsid`, a shell with job control) goes on and can write after the check.
+- If Yew Harness stops or restarts while a command is running, that command's folders are not checked.
+- The check is about hooks, settings and new repositories. Other files git reads in a repository that is in the middle of something, such as the list of steps of a rebase in progress, are not closed.
+- Where you have set a repository to run files from the working folder (`core.hooksPath`, husky and the like), a command can change those files.
+
+For the commands it runs outside the sandbox with your approval, Yew Harness tells git to run no hooks and no file system monitor and not to take a bare folder for a repository. Your own git in a terminal has no such settings: before using git by hand in a folder where sessions work, `git config --global safe.bareRepository explicit` gives it the last one.
 
 Yew Harness's own changes to the roles folder (Defaults → Roles folder) are made in the sandbox too: writing the role files and committing them with git, with write access to that folder or its repository only. Sessions' commands may work in the same repository, so Yew Harness runs no git on it outside the sandbox; while the sandbox is off, it writes the files and makes no commits.
 
@@ -42,7 +50,15 @@ Letters from other sessions, web pages, mail and what MCP servers return are onl
 
 你在沙箱外用 git 时，git 会执行仓库指定的程序：钩子和一部分设置。所以在命令可写的文件夹里，已有仓库的钩子和设置对命令是关着的，子模块、工作树和裸仓库的也一样，让 git 到别处去找它们的文件（`commondir`、`gitdir`、`.git` 文件）同样改不了；macOS 上，里面有仓库的文件夹也不能改名或移动。命令留不下自己做的仓库：命令结束时，Yew Harness 把这些文件夹看一遍，原来没有的 `.git`（改名为 `.git.blocked-by-yew`）、新出现的 git 目录的 `HEAD`、仓库里多出来的钩子和设置都会被挪开，并在命令的输出里写明，改回原名就恢复。分不清是谁做的，所以命令还在运行时你自己在这些文件夹里新建的仓库也会被挪开。因此新建仓库、工作树和子模块检出要在沙箱外做，这是一项授权。
 
-这有几处限度。每条命令之前，Yew Harness 最多看 20,000 个文件夹、最多花 0.2 秒，由近到远，不进 `node_modules`、`.venv`、`target` 这类依赖和构建目录，也不看临时文件夹；macOS 上最多把 100 个仓库固定在原处。超出的部分：macOS 上钩子和设置只在所在文件夹叫 `.git` 时关着，Linux 上不关，命令在那里留下什么也不检查。macOS 上命令留下的后台程序不会被停掉，检查之后还能写。你把仓库设成执行工作区里的文件时（`core.hooksPath`、husky 这类），命令改得了那些文件。
+这有几处限度，都是已知的：Yew Harness 把这条路收窄，不声称堵死。
+
+- 每条命令之前，Yew Harness 最多看 50,000 个文件夹、最多花 0.5 秒，由近到远，`node_modules` 这类依赖和构建目录也看，临时文件夹不看；macOS 上最多把 100 个仓库固定在原处。超出的部分：macOS 上钩子和设置只在所在文件夹叫 `.git` 时关着，Linux 上不关，命令在那里留下什么也不检查。有文件夹没看到时，命令的输出里写明有多少个，并列出几个。
+- 命令结束时，Yew Harness 先结束它的进程组里还在运行的程序，再检查，所以用 `&` 留下的后台程序到此为止。macOS 上自己脱离了进程组的程序（`setsid`、开了作业控制的 shell）还会继续运行，检查之后还能写。
+- 命令运行期间 Yew Harness 停止或重启的话，这条命令的文件夹不会被检查。
+- 检查的是钩子、设置和新出现的仓库。仓库做到一半时 git 还会读的其他文件，比如进行中的变基的步骤清单，没有关。
+- 你把仓库设成执行工作区里的文件时（`core.hooksPath`、husky 这类），命令改得了那些文件。
+
+经你同意在沙箱外运行的命令，Yew Harness 让 git 不执行钩子和文件系统监视程序，也不把裸仓库布局的文件夹当成仓库。你自己在终端里用的 git 没有这些设置：在会话工作过的文件夹里手动用 git 之前，可以用 `git config --global safe.bareRepository explicit` 补上最后一条。
 
 Yew Harness 自己改职责文件夹（默认设置 → 职责文件夹）也在沙箱里做：写职责文件、用 git 提交，只能写那个文件夹或它所在的仓库。会话的命令可能在同一个仓库里干活，所以 Yew Harness 不在沙箱外对它运行 git；沙箱关着时只写文件，不提交。
 

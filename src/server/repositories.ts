@@ -30,7 +30,11 @@ import { basename, dirname, join, sep } from "node:path";
  * (snapshotRepositories, checkRepositories): there a new repository is what the command is for.
  */
 
-/** Folders a walk for repositories skips: dependencies and build output, which hold none of the person's. */
+/**
+ * Folders the walk after an approved setup skips: dependencies and build output, which hold none
+ * of the person's. The walk around a sandboxed command skips none: a command can make a repository
+ * in any folder it may write.
+ */
 const NOT_REPOSITORIES = new Set([
 	"node_modules",
 	".venv",
@@ -134,7 +138,7 @@ export interface WalkLimits {
 	/** Folders a command made that are read after it. */
 	fresh: number;
 }
-const LIMITS: WalkLimits = { folders: 20_000, ms: 200, fresh: 50_000 };
+const LIMITS: WalkLimits = { folders: 50_000, ms: 500, fresh: 50_000 };
 /** How many folders are read at a time. */
 const WALK_WIDTH = 8;
 /** What a `.git` or `commondir` file is read up to: more than a path can be long. */
@@ -324,11 +328,11 @@ async function walk(folders: string[], limits: WalkLimits, before?: Repositories
 	const started = performance.now();
 	const queued = new Set<string>();
 	let fresh = 0;
-	let next: { dir: string; inner: boolean }[] = [];
-	const push = (dir: string, inner: boolean) => {
+	let next: string[] = [];
+	const push = (dir: string) => {
 		if (queued.has(dir) || before?.beyond.has(dir)) return;
 		queued.add(dir);
-		next.push({ dir, inner });
+		next.push(dir);
 	};
 	const git = (found: GitFolder) => {
 		if (walked.gits.has(found.id)) return;
@@ -338,10 +342,10 @@ async function walk(folders: string[], limits: WalkLimits, before?: Repositories
 		if (!within(found.dir)) return;
 		for (const name of ["modules", "worktrees"]) {
 			const dir = join(found.dir, name);
-			if (isFolder(dir)) push(dir, true);
+			if (isFolder(dir)) push(dir);
 		}
 	};
-	const visit = async ({ dir, inner }: { dir: string; inner: boolean }) => {
+	const visit = async (dir: string) => {
 		if (before) {
 			if (!before.read.has(dir) && ++fresh > limits.fresh) {
 				walked.unread++;
@@ -372,19 +376,18 @@ async function walk(folders: string[], limits: WalkLimits, before?: Repositories
 				const led = leadOf(path);
 				walked.entries.set(path, led);
 				if (led.git) git(led.git);
-			} else if (entry.isDirectory() && (inner || !NOT_REPOSITORIES.has(entry.name))) {
-				// The names skipped are folders of a project, not of a git folder's inside.
-				push(path, inner);
+			} else if (entry.isDirectory()) {
+				push(path);
 			}
 		}
 	};
-	for (const folder of folders) push(folder, false);
+	for (const folder of folders) push(folder);
 	while (next.length > 0) {
 		const level = next;
 		next = [];
 		let index = 0;
 		const worker = async () => {
-			while (index < level.length) await visit(level[index++] as { dir: string; inner: boolean });
+			while (index < level.length) await visit(level[index++] as string);
 		};
 		await Promise.all(Array.from({ length: WALK_WIDTH }, worker));
 	}
@@ -554,6 +557,12 @@ export async function settleRepositories(
 		);
 	}
 	if (notes.length > parts) notes.push(MAKE_OUTSIDE);
+	if (before.beyond.size > 0) {
+		const some = [...before.beyond].slice(0, 3).join(", ");
+		notes.push(
+			`The folders the command may write hold more folders than Yew Harness reads in the time it takes: ${before.beyond.size} were not looked through for repositories, such as ${some}.`,
+		);
+	}
 	if (walked.unread > 0) {
 		notes.push(
 			`The command made more folders than Yew Harness looks through for repositories: ${walked.unread} were not looked at.`,

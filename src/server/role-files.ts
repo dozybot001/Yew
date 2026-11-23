@@ -14,7 +14,7 @@ import { dirname, join } from "node:path";
 import type { Session } from "../shared/types.ts";
 import type { EventBus } from "./events.ts";
 import { canonical } from "./permissions/paths.ts";
-import { activeSandbox, OUTSIDE_GIT, quote, sandboxed } from "./sandbox.ts";
+import { activeSandbox, endGroup, OUTSIDE_GIT, quote, sandboxed } from "./sandbox.ts";
 import type { Store } from "./store.ts";
 
 /**
@@ -439,7 +439,8 @@ function runWith(
 			err += error.message;
 			end(false);
 		});
-		child.on("close", (code) => end(code === 0));
+		// Nothing the script started goes on after it.
+		child.on("close", (code) => void endGroup(child.pid).then(() => end(code === 0)));
 		// A script that ended early leaves nobody to read the plan.
 		child.stdin.on("error", () => {});
 		child.stdin.end(JSON.stringify(plan));

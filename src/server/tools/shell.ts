@@ -20,7 +20,7 @@ const DEFAULT_TIMEOUT = 120;
 const MAX_TIMEOUT = 600;
 
 const DESCRIPTION =
-	"Run a command with the user's login shell in the working folder. Standard input is closed, so commands must not wait for input. Output keeps the last 2000 lines or 50 KB; longer output is saved to a file named in the result. Times out after 120 seconds by default (timeout_seconds, up to 600). Set background to start a long-running command, such as a dev server, and check on it with shell_job.";
+	"Run a command with the user's login shell in the working folder. Standard input is closed, so commands must not wait for input. Output keeps the last 2000 lines or 50 KB; longer output is saved to a file named in the result. Times out after 120 seconds by default (timeout_seconds, up to 600). Set background to start a long-running command, such as a dev server, and check on it with shell_job; a process left running with & is ended when the command returns.";
 
 const PARAMETERS = {
 	command: { type: "string", description: "The command line to run." },

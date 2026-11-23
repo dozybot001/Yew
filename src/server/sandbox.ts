@@ -544,7 +544,8 @@ export interface Sandboxed {
 	/** Variables to leave out of it. */
 	unset: string[];
 	/**
-	 * Call once the command has ended: the files and sites the sandbox kept from it, and what was
+	 * Call once the command has ended and what is left of its process group has too (endGroup): the
+	 * files and sites the sandbox kept from it, and what was
 	 * moved aside of the repositories it left in its folders (settleRepositories), one line each.
 	 */
 	finish(): Promise<{ blocked: string[]; notes: string[] }>;
@@ -645,6 +646,25 @@ export async function sandboxed(
 }
 
 /**
+ * Ends what is left of a command's process group once the command itself has ended, and waits
+ * until it is gone: a process it left in the background would go on writing after the look at
+ * what the command left. `pid` is the process the command was started as, in its own group. One
+ * that moved itself out of the group is not reached.
+ */
+export async function endGroup(pid: number | undefined): Promise<void> {
+	if (pid === undefined) return;
+	for (let tries = 0; tries < 50; tries++) {
+		try {
+			process.kill(-pid, "SIGKILL");
+		} catch {
+			// Nobody is left in the group.
+			return;
+		}
+		await new Promise((resolve) => setTimeout(resolve, 10));
+	}
+}
+
+/**
  * A repository an approved setup made outside the sandbox: the commands running in the sandbox take
  * it as there before they started, so it is not moved aside when they end.
  */
@@ -661,12 +681,17 @@ export function quote(word: string): string {
 
 /**
  * Settings for a command the person approved to run outside the sandbox: git runs no hooks and no
- * file system monitor there, so one a command planted inside cannot come along with a push.
+ * file system monitor there and does not treat a bare folder as a repository, so a program a
+ * command planted inside cannot come along with a push.
  */
 export const OUTSIDE_GIT = {
-	GIT_CONFIG_COUNT: "2",
+	GIT_CONFIG_COUNT: "3",
 	GIT_CONFIG_KEY_0: "core.hooksPath",
 	GIT_CONFIG_VALUE_0: "/dev/null",
 	GIT_CONFIG_KEY_1: "core.fsmonitor",
 	GIT_CONFIG_VALUE_1: "false",
+	// A folder that only looks like the inside of a repository (HEAD, objects, refs, config) is not
+	// taken for one, so its config is not read.
+	GIT_CONFIG_KEY_2: "safe.bareRepository",
+	GIT_CONFIG_VALUE_2: "explicit",
 };

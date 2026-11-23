@@ -8,6 +8,7 @@ import { checkRepositories, snapshotRepositories } from "../repositories.ts";
 import {
 	activeSandbox,
 	admitSetup,
+	endGroup,
 	OUTSIDE_GIT,
 	quote,
 	type SiteQuestion,
@@ -223,6 +224,8 @@ export async function startCommand(options: {
 	}).then(async (result) => {
 		// When a command failed, what the sandbox kept from it goes after the output, so the session
 		// sees why.
+		// What a command in the sandbox left running in the background ends with it.
+		if (box) await endGroup(child.pid);
 		const { blocked, notes } = box ? await box.finish() : { blocked: [], notes: [] };
 		const auditNotes = gitAudit ? checkRepositories(gitAudit) : [];
 		// The repository an approved setup made is not one a command in the sandbox left behind.

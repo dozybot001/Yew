@@ -363,6 +363,8 @@ describe("the repositories in a command's folders", () => {
 			join(repo, "apart", ".git"),
 			join(repo, "kept", "git", "config"),
 			join(repo, "lib", ".git"),
+			join(repo, "node_modules", "dep", ".git", "config"),
+			join(repo, "node_modules", "dep", ".git", "hooks"),
 			join(repo, "store.git", "config"),
 			join(repo, "store.git", "hooks"),
 			join(repo, "tools", "inner", ".git", "config"),
@@ -378,6 +380,7 @@ describe("the repositories in a command's folders", () => {
 			join(repo, "apart", ".git"),
 			join(repo, "kept", "git", "config"),
 			join(repo, "lib", ".git"),
+			join(repo, "node_modules", "dep", ".git", "hooks"),
 			join(repo, "store.git", "config"),
 			join(repo, "store.git", "hooks"),
 			join(repo, "tools", "inner", ".git", "hooks"),
@@ -512,7 +515,7 @@ describe("the repositories in a command's folders", () => {
 		// And the one that led nowhere now leads somewhere.
 		layOut(join(work, "nowhere"));
 		await settleRepositories(before);
-		for (const name of ["cut", "linked", "long", "dangling"]) {
+		for (const name of ["cut", "linked", "long", "dangling", "node_modules"]) {
 			assert.ok(!existsSync(join(work, name, ".git")), name);
 			assert.ok(existsSync(join(work, name, `.git${ASIDE}`)), name);
 		}
@@ -525,7 +528,10 @@ describe("the repositories in a command's folders", () => {
 		assert.ok(before.beyond.has(join(work, "far")));
 		layOut(join(work, ".git"));
 		const limited = await settleRepositories(before);
-		assert.equal(limited.length, 2);
+		assert.equal(limited.length, 3);
+		// What was not looked through is said after the command.
+		const unseen = limited.at(-1) ?? "";
+		assert.match(unseen, /1 were not looked through for repositories, such as .*far\./);
 		assert.ok(existsSync(join(work, `.git${ASIDE}`)));
 		assert.ok(existsSync(join(work, "far", ".git", "HEAD")));
 		// A git init or clone the person approved while the command ran.
@@ -533,7 +539,7 @@ describe("the repositories in a command's folders", () => {
 		layOut(join(work, "mirror.git"));
 		admitRepository(before, join(work, "cloned"));
 		admitRepository(before, join(work, "mirror.git"));
-		assert.deepEqual(await settleRepositories(before), []);
+		assert.deepEqual(await settleRepositories(before), [unseen]);
 		assert.ok(existsSync(join(work, "cloned", ".git", "HEAD")));
 		assert.ok(existsSync(join(work, "mirror.git", "HEAD")));
 	});
@@ -606,6 +612,18 @@ describe("a command in the sandbox leaves git no program to run", { skip }, () =
 describe("everyday work in the sandbox", { skip }, () => {
 	test("it is the sandbox commands run in", () => {
 		assert.equal(activeSandbox(), process.platform === "darwin" ? "macos" : "linux");
+	});
+
+	// On Linux the command has its own process ids, which end with it.
+	const leftover = process.platform === "darwin" ? false : "process ids differ inside the sandbox";
+	test("what a command left running in the background ends with it", {
+		skip: leftover,
+	}, async () => {
+		const result = await run("sleep 60 > /dev/null 2>&1 & echo $!", folder("leftover"));
+		assert.equal(result.code, 0, result.output);
+		const pid = Number(/^(\d+)$/m.exec(result.output)?.[1]);
+		assert.ok(pid > 0, result.output);
+		assert.throws(() => process.kill(pid, 0), /ESRCH/);
 	});
 
 	test("git: status, add, commit and log in a repository", async () => {
