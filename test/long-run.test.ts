@@ -367,6 +367,52 @@ describe("a long turn", () => {
 		assert.equal(store.getSession(session.id).status, "idle");
 	});
 
+	test("below the threshold, older tool results are folded only once the prompt cache is gone", async () => {
+		const run = async (lastRequestAt: number) => {
+			const { faux, store, agents, session, contexts, capture } = setup();
+			store.updateSession(session.id, { options: { compactAt: 100_000 } });
+			store.appendEntry(session.id, {
+				role: "user",
+				message: { role: "user", content: "检查几份大文件", timestamp: 1 },
+			});
+			const result = (id: string, text: string) => {
+				const call = fauxToolCall("read", { path: `${id}.txt` }, { id });
+				store.appendEntry(session.id, {
+					role: "assistant",
+					message: { ...toolUse(call), timestamp: lastRequestAt },
+				});
+				store.appendEntry(session.id, {
+					role: "toolResult",
+					message: {
+						role: "toolResult",
+						toolCallId: call.id,
+						toolName: "read",
+						content: [{ type: "text", text }],
+						isError: false,
+						timestamp: lastRequestAt,
+					},
+				});
+			};
+			for (let i = 0; i < 12; i++) result(`big-${i}`, "x".repeat(16_000));
+			result("small", "tiny recent result");
+			store.setContextTokens(session.id, 50_000);
+			faux.setResponses([capture(fauxAssistantMessage("直接继续。"))]);
+			agents.continue(session.id);
+			await agents.whenIdle(session.id);
+			return {
+				sent: JSON.stringify(contexts[0]?.messages ?? []),
+				folded: notices(entriesOf(store, session.id)).some((n) => n.data?.tier === "prune"),
+			};
+		};
+		const stale = await run(Date.now() - 10 * 60_000);
+		assert.equal(stale.folded, true);
+		assert.match(stale.sent, /Earlier read result folded to save context/);
+		assert.match(stale.sent, /tiny recent result/);
+		const fresh = await run(Date.now());
+		assert.equal(fresh.folded, false);
+		assert.doesNotMatch(fresh.sent, /folded to save context/);
+	});
+
 	test("ends at the step limit and says so; continuing goes on", async () => {
 		const { faux, store, agents, session } = setup({ maxSteps: 5 });
 		let step = 0;

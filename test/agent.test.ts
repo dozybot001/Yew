@@ -703,11 +703,11 @@ describe("agent loop", () => {
 		assert.deepEqual(store.listQueue(session.id), []);
 	});
 
-	test("the default compaction threshold is 80% of the model's window, at most 300,000 tokens", () => {
+	test("the default compaction threshold is 80% of the model's window, at most 200,000 tokens", () => {
 		assert.equal(defaultCompactAt(128_000), 102_400);
 		assert.equal(defaultCompactAt(200_000), 160_000);
-		assert.equal(defaultCompactAt(375_000), 300_000);
-		assert.equal(defaultCompactAt(1_000_000), 300_000);
+		assert.equal(defaultCompactAt(375_000), 200_000);
+		assert.equal(defaultCompactAt(1_000_000), 200_000);
 	});
 
 	test("near the context limit, older history is summarized and the model sees the summary", async () => {

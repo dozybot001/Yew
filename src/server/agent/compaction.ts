@@ -56,6 +56,8 @@ const L1_TARGET_RATIO = 0.75;
  * one for about five minutes from the start of the last request that used it.
  */
 const CACHE_FRESH_MS = 4.5 * 60_000;
+/** The least a folding must save, in tokens, to be worth doing below the threshold. */
+const STALE_FOLD_MIN = 4_000;
 
 /** What a session's request to its model is made of, which is what its prompt cache was written for. */
 export interface RequestShape {
@@ -289,7 +291,13 @@ export class ContextKeeper {
 		signal: AbortSignal,
 	): Promise<Compacted> {
 		const threshold = compactAt(session, model);
-		if (session.contextTokens < threshold) return "nothing";
+		if (session.contextTokens < threshold) {
+			// The prompt cache is gone, so the next request pays for the whole context anyway: older
+			// tool results are folded first, which costs nothing while there is no cache to break.
+			const folded =
+				this.#cacheGone(session) && this.#tryPruneToolResults(session, threshold, true);
+			return folded ? "done" : "nothing";
+		}
 		// Layer 1 (zero LLM call, lossless to conversation flow): fold earlier large/image tool results.
 		if (this.#tryPruneToolResults(session, threshold)) return "done";
 		// Layer 2 (semantic summary): only when conversation & reasoning itself still exceed the limit.
@@ -299,9 +307,10 @@ export class ContextKeeper {
 	/**
 	 * Layer-1 compaction: folds older large or image-bearing tool results in one pulse batch once the
 	 * session crosses `threshold`, keeping recent turns and all user/assistant prose untouched. Stops
-	 * compaction when estimated tokens drop to at most `L1_TARGET_RATIO` of `threshold`.
+	 * compaction when estimated tokens drop to at most `L1_TARGET_RATIO` of `threshold`. `early`: done
+	 * below the threshold, for whatever it saves above `STALE_FOLD_MIN`.
 	 */
-	#tryPruneToolResults(session: Session, threshold: number): boolean {
+	#tryPruneToolResults(session: Session, threshold: number, early = false): boolean {
 		const entries = this.#store.contextEntries(session.id);
 		const keep = Math.min(KEEP_RECENT_TOKENS, Math.floor(threshold / 4));
 		let kept = 0;
@@ -329,7 +338,12 @@ export class ContextKeeper {
 		}
 		if (prunedCount === 0 || savedTokens === 0) return false;
 		const estimatedAfter = Math.max(0, session.contextTokens - savedTokens);
-		if (estimatedAfter > Math.floor(threshold * L1_TARGET_RATIO)) return false;
+		if (
+			early
+				? savedTokens < STALE_FOLD_MIN
+				: estimatedAfter > Math.floor(threshold * L1_TARGET_RATIO)
+		)
+			return false;
 		this.#store.tx(() => {
 			const base =
 				saved ?? takeSnapshot(session, this.#home, this.#placement(session), this.#extras());
@@ -344,6 +358,14 @@ export class ContextKeeper {
 			);
 		});
 		return true;
+	}
+
+	/** Whether the session's last request is too long ago for the provider to hold its prompt cache still. */
+	#cacheGone(session: Session): boolean {
+		const last = this.#store
+			.contextEntries(session.id)
+			.findLast((entry) => entry.role === "assistant");
+		return last?.role === "assistant" && Date.now() - last.message.timestamp > CACHE_FRESH_MS;
 	}
 
 	/**

@@ -116,7 +116,7 @@ export function permissionModeOf(options: SessionOptions): PermissionMode {
 }
 
 /** The most tokens the default compaction threshold reaches, however large the model's window is. */
-export const COMPACT_CAP = 300_000;
+export const COMPACT_CAP = 200_000;
 
 /**
  * The context size at which a session's history is compacted unless the session sets its own: 80% of
