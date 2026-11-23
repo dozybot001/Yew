@@ -890,7 +890,7 @@ const zh = {
 	receive_refuse_hint: "不收其他会话的信",
 	letterQuota: "发信额度",
 	letterQuotaHelp:
-		"你每给这个会话发一条消息或做一个决定，它最多发这么多封信。留空用默认值：主对话 30 封，其他会话 10 封。",
+		"你每给这个会话发一条消息或做一个决定，它最多发这么多封信。留空用默认值：主对话 60 封，其他会话 30 封。",
 	lettersLeft: "到你下一条消息前还能发 {n} 封",
 	budgetSection: "费用",
 	dailyBudget: "每日费用上限（美元）",
@@ -2115,7 +2115,7 @@ const en: Record<MessageKey, string> = {
 	receive_refuse_hint: "Letters from other sessions are turned away",
 	letterQuota: "Letter quota",
 	letterQuotaHelp:
-		"Each time you message this session or make a decision for it, it may send up to this many letters. Leave it empty for the default: 30 for the main conversation, 10 for others.",
+		"Each time you message this session or make a decision for it, it may send up to this many letters. Leave it empty for the default: 60 for the main conversation, 30 for others.",
 	lettersLeft: "{n} left until your next message",
 	budgetSection: "Spending",
 	dailyBudget: "Daily spending limit (USD)",

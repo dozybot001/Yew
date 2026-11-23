@@ -80,8 +80,8 @@ export type ReceivePolicy = (typeof RECEIVE_POLICIES)[number];
  * Letters a session may send between two messages or decisions from the person, so sessions cannot
  * keep writing to each other without the person.
  */
-export const DEFAULT_LETTER_QUOTA = 10;
-export const MAIN_LETTER_QUOTA = 30;
+export const DEFAULT_LETTER_QUOTA = 30;
+export const MAIN_LETTER_QUOTA = 60;
 
 export function letterQuotaOf(options: SessionOptions, isMain: boolean): number {
 	return options.letterQuota ?? (isMain ? MAIN_LETTER_QUOTA : DEFAULT_LETTER_QUOTA);
