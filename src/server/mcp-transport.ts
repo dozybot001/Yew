@@ -71,7 +71,7 @@ export class StdioTransport implements Transport {
 		const child = box
 			? spawn(box.line, { ...options, shell: true })
 			: spawn(config.command as string, config.args ?? [], options);
-		if (box) child.once("exit", () => box.finish());
+		if (box) child.once("exit", () => void box.finish());
 		return new StdioTransport(child);
 	}
 

@@ -463,7 +463,7 @@ export const sandboxedRun: RunScript = async (plan, env) => {
 	for (const name of box.unset) delete environment[name];
 	Object.assign(environment, box.env);
 	const result = await runWith({ line: box.line }, plan, environment);
-	const { blocked } = box.finish();
+	const { blocked } = await box.finish();
 	return result.ok
 		? result
 		: { ...result, err: [result.err, ...blocked.slice(0, 3)].join("\n").trim() };

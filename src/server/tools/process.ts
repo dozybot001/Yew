@@ -5,7 +5,14 @@ import { containersNote, type GuardMode, guardedArgs } from "../guard.ts";
 import { newId } from "../ids.ts";
 import { gitSettingsNote } from "../permissions/guard-mode.ts";
 import { checkRepositories, snapshotRepositories } from "../repositories.ts";
-import { activeSandbox, OUTSIDE_GIT, quote, type SiteQuestion, sandboxed } from "../sandbox.ts";
+import {
+	activeSandbox,
+	admitSetup,
+	OUTSIDE_GIT,
+	quote,
+	type SiteQuestion,
+	sandboxed,
+} from "../sandbox.ts";
 
 export const MAX_LINES = 2000;
 export const MAX_BYTES = 50 * 1024;
@@ -213,11 +220,13 @@ export async function startCommand(options: {
 			resolve({ exitCode: null, signal: null });
 		});
 		child.on("close", (exitCode, signal) => resolve({ exitCode, signal }));
-	}).then((result) => {
+	}).then(async (result) => {
 		// When a command failed, what the sandbox kept from it goes after the output, so the session
 		// sees why.
-		const { blocked, notes } = box?.finish() ?? { blocked: [], notes: [] };
+		const { blocked, notes } = box ? await box.finish() : { blocked: [], notes: [] };
 		const auditNotes = gitAudit ? checkRepositories(gitAudit) : [];
+		// The repository an approved setup made is not one a command in the sandbox left behind.
+		if (gitAudit && options.repository) admitSetup(options.repository);
 		// A repository's settings refused by the sandbox or the guard: say when they are let through.
 		// A container engine refused by the guard: say who can open it.
 		const rendered = box || guarded ? output.render() : "";

@@ -1,6 +1,15 @@
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { existsSync, mkdirSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
+import {
+	existsSync,
+	lstatSync,
+	mkdirSync,
+	readFileSync,
+	realpathSync,
+	renameSync,
+	symlinkSync,
+	writeFileSync,
+} from "node:fs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 import { after, describe, test } from "node:test";
@@ -8,8 +17,12 @@ import { fileURLToPath } from "node:url";
 import { McpHub } from "../src/server/mcp.ts";
 import { PermissionEngine } from "../src/server/permissions/engine.ts";
 import {
+	admitRepository,
 	checkRepositories,
+	closedPaths,
 	gitInternals,
+	noteRepositories,
+	settleRepositories,
 	snapshotRepositories,
 } from "../src/server/repositories.ts";
 import { RoleFiles } from "../src/server/role-files.ts";
@@ -33,7 +46,8 @@ import { newStore, sessionInput, tempDir } from "./helpers/store.ts";
 
 /**
  * The system sandbox: its configuration, and everyday work in it. Whether it holds against a command
- * trying to get out is tested separately, with probes of its own.
+ * trying to get out is tested separately, with probes of its own; the two ways to leave git a
+ * program to run that were found there are kept here, so they stay closed.
  */
 
 const base = realpathSync(tempDir("yew-sandbox-"));
@@ -79,36 +93,25 @@ describe("sandbox configuration", () => {
 		assert.equal(files.allowGitConfig, false);
 	});
 
-	test("on macOS repositories' git settings are covered by patterns; on Linux every repository there is listed", () => {
-		assert.ok(gitInternals("/w", "darwin").includes("/w/.git/**/hooks"));
-		assert.ok(gitInternals("/w", "darwin").includes("/w/**/.git/**/config"));
-		const repo = join(base, "repo-linux");
-		// The working folder's own repository, with a submodule and a worktree.
-		mkdirSync(join(repo, ".git", "hooks"), { recursive: true });
-		writeFileSync(join(repo, ".git", "config"), "");
-		mkdirSync(join(repo, ".git", "modules", "lib", "hooks"), { recursive: true });
-		writeFileSync(join(repo, ".git", "modules", "lib", "config"), "");
-		mkdirSync(join(repo, ".git", "worktrees", "other"), { recursive: true });
-		writeFileSync(join(repo, ".git", "worktrees", "other", "config.worktree"), "");
-		// A repository further down, a submodule's checkout (its .git a file) and one in dependencies.
-		mkdirSync(join(repo, "tools", "inner", ".git", "hooks"), { recursive: true });
-		writeFileSync(join(repo, "tools", "inner", ".git", "config"), "");
-		mkdirSync(join(repo, "lib"), { recursive: true });
-		writeFileSync(join(repo, "lib", ".git"), "gitdir: ../.git/modules/lib\n");
-		mkdirSync(join(repo, "node_modules", "dep", ".git", "hooks"), { recursive: true });
-		assert.deepEqual(gitInternals(repo, "linux").sort(), [
-			join(repo, ".git", "config"),
-			join(repo, ".git", "hooks"),
-			join(repo, ".git", "modules", "lib", "config"),
-			join(repo, ".git", "modules", "lib", "hooks"),
-			join(repo, ".git", "worktrees", "other", "config.worktree"),
-			join(repo, "lib", ".git"),
-			join(repo, "tools", "inner", ".git", "config"),
-			join(repo, "tools", "inner", ".git", "hooks"),
-		]);
+	test("on macOS a repository's hooks, settings and the files that send git elsewhere are covered by patterns, in any case", () => {
+		const patterns = gitInternals("/w", "darwin");
+		assert.ok(patterns.includes("/w/.git/**/[hH][oO][oO][kK][sS]"));
+		assert.ok(patterns.includes("/w/**/.git/**/[cC][oO][nN][fF][iI][gG]"));
+		assert.ok(patterns.includes("/w/.git/**/[cC][oO][mM][mM][oO][nN][dD][iI][rR]"));
+		assert.ok(patterns.includes("/w/**/.git/**/[gG][iI][tT][dD][iI][rR]"));
+		// bubblewrap takes no patterns: there the paths that exist are listed.
+		assert.deepEqual(gitInternals("/w", "linux"), []);
 	});
 
-	test("after a command, a hook it added or changed is moved aside, and what it made is said", () => {
+	test("what is closed by name has its characters taken as they are", () => {
+		const odd = join(work, "app", "[id]", ".git");
+		const closed = commandFilesystem(places, policy, { writable: [work] }, "linux", [
+			odd,
+		]).denyWrite;
+		assert.ok(closed.some((entry) => typeof entry !== "string" && entry.path === odd));
+	});
+
+	test("after an approved repository setup, a hook it added or changed is moved aside, and what it made is said", () => {
 		const folder = join(base, "repo-after");
 		const git = join(folder, ".git");
 		mkdirSync(join(git, "hooks"), { recursive: true });
@@ -315,6 +318,290 @@ const folder = (name: string) => {
 	mkdirSync(path, { recursive: true });
 	return path;
 };
+
+/** A git folder as git lays one out, without running git: enough for git to take it for one. */
+const layOut = (git: string, parts: { hooks?: boolean; config?: boolean } = {}) => {
+	mkdirSync(join(git, "objects"), { recursive: true });
+	mkdirSync(join(git, "refs"));
+	writeFileSync(join(git, "HEAD"), "ref: refs/heads/main\n");
+	if (parts.hooks !== false) mkdirSync(join(git, "hooks"));
+	if (parts.config !== false) writeFileSync(join(git, "config"), "[core]\n\tbare = false\n");
+};
+const ASIDE = ".blocked-by-yew";
+
+describe("the repositories in a command's folders", () => {
+	test("before a command, the hooks and settings that are there and the .git files are listed to close", async () => {
+		const repo = folder("repo-closed");
+		// The working folder's own repository, with a submodule and a worktree.
+		layOut(join(repo, ".git"));
+		layOut(join(repo, ".git", "modules", "lib"));
+		const other = join(repo, ".git", "worktrees", "other");
+		mkdirSync(other, { recursive: true });
+		writeFileSync(join(other, "HEAD"), "ref: refs/heads/other\n");
+		writeFileSync(join(other, "commondir"), "../..\n");
+		writeFileSync(join(other, "gitdir"), "/elsewhere/other/.git\n");
+		writeFileSync(join(other, "config.worktree"), "");
+		// A repository further down, a submodule's checkout (its .git a file) and one in dependencies.
+		layOut(join(repo, "tools", "inner", ".git"));
+		mkdirSync(join(repo, "lib"));
+		writeFileSync(join(repo, "lib", ".git"), "gitdir: ../.git/modules/lib\n");
+		layOut(join(repo, "node_modules", "dep", ".git"));
+		// A bare repository, and a repository whose git folder is kept beside it.
+		layOut(join(repo, "store.git"));
+		layOut(join(repo, "kept", "git"), { hooks: false });
+		mkdirSync(join(repo, "apart"));
+		writeFileSync(join(repo, "apart", ".git"), "gitdir: ../kept/git\n");
+		const before = await noteRepositories([repo]);
+		assert.deepEqual([...before.closed].sort(), [
+			join(repo, ".git", "config"),
+			join(repo, ".git", "hooks"),
+			join(repo, ".git", "modules", "lib", "config"),
+			join(repo, ".git", "modules", "lib", "hooks"),
+			join(other, "commondir"),
+			join(other, "config.worktree"),
+			join(other, "gitdir"),
+			join(repo, "apart", ".git"),
+			join(repo, "kept", "git", "config"),
+			join(repo, "lib", ".git"),
+			join(repo, "store.git", "config"),
+			join(repo, "store.git", "hooks"),
+			join(repo, "tools", "inner", ".git", "config"),
+			join(repo, "tools", "inner", ".git", "hooks"),
+		]);
+		assert.deepEqual(closedPaths(before, "linux"), before.closed);
+		// On macOS the patterns close what is inside a .git: one path in each such git folder holds
+		// it in place. What no pattern covers is closed by name.
+		assert.deepEqual(closedPaths(before, "darwin").sort(), [
+			join(repo, ".git", "hooks"),
+			join(repo, ".git", "modules", "lib", "hooks"),
+			join(other, "config.worktree"),
+			join(repo, "apart", ".git"),
+			join(repo, "kept", "git", "config"),
+			join(repo, "lib", ".git"),
+			join(repo, "store.git", "config"),
+			join(repo, "store.git", "hooks"),
+			join(repo, "tools", "inner", ".git", "hooks"),
+		]);
+		// Only so many git folders are held in place; what no pattern covers stays closed.
+		assert.deepEqual(closedPaths(before, "darwin", 1).sort(), [
+			join(repo, ".git", "hooks"),
+			join(repo, "apart", ".git"),
+			join(repo, "kept", "git", "config"),
+			join(repo, "lib", ".git"),
+			join(repo, "store.git", "config"),
+			join(repo, "store.git", "hooks"),
+		]);
+		// Nothing changed, so nothing is moved.
+		assert.deepEqual(await settleRepositories(before), []);
+	});
+
+	test("a .git a command made is moved aside: a file that points elsewhere, a folder, a folder moved into place", async () => {
+		const work = folder("left-made");
+		layOut(join(work, ".git"));
+		const before = await noteRepositories([work]);
+		layOut(join(work, "tools", "g"));
+		mkdirSync(join(work, "sub"));
+		writeFileSync(join(work, "sub", ".git"), "gitdir: ../tools/g\n");
+		layOut(join(work, "made", ".git"));
+		layOut(join(work, "prepared"));
+		mkdirSync(join(work, "moved"));
+		renameSync(join(work, "prepared"), join(work, "moved", ".git"));
+		const notes = await settleRepositories(before);
+		for (const place of ["sub", "made", "moved"]) {
+			assert.ok(!existsSync(join(work, place, ".git")), place);
+			assert.ok(existsSync(join(work, place, `.git${ASIDE}`)), place);
+			assert.ok(notes.some((note) => note.includes(`appeared at ${join(work, place)} `)));
+		}
+		// The folder laid out as a git folder is one no longer: git takes none without a HEAD.
+		assert.ok(!existsSync(join(work, "tools", "g", "HEAD")));
+		assert.ok(existsSync(join(work, "tools", "g", `HEAD${ASIDE}`)));
+		// One line each, and one that says how such things are made.
+		assert.equal(notes.length, 5);
+		assert.match(notes.at(-1) ?? "", /outside_sandbox/);
+		assert.ok(existsSync(join(work, ".git", "HEAD")), "the repository that was there stays");
+		// What was moved aside is not there before the next command: put back, it is moved again.
+		const again = await noteRepositories([work]);
+		assert.deepEqual(await settleRepositories(again), []);
+		renameSync(join(work, "made", `.git${ASIDE}`), join(work, "made", ".git"));
+		renameSync(join(work, "tools", "g", `HEAD${ASIDE}`), join(work, "tools", "g", "HEAD"));
+		assert.equal((await settleRepositories(again)).length, 3);
+		assert.ok(!existsSync(join(work, "made", ".git")));
+		assert.ok(!existsSync(join(work, "tools", "g", "HEAD")));
+	});
+
+	test("a repository that was there stays wherever it is moved; what is put in its place is moved aside", async () => {
+		const work = folder("left-replaced");
+		layOut(join(work, ".git"));
+		layOut(join(work, "packages", "inner", ".git"));
+		const before = await noteRepositories([work]);
+		renameSync(join(work, "packages", "inner"), join(work, "packages", "old"));
+		layOut(join(work, "packages", "inner", ".git"));
+		const notes = await settleRepositories(before);
+		assert.equal(notes.length, 2);
+		assert.ok(existsSync(join(work, "packages", "old", ".git", "HEAD")));
+		assert.ok(!existsSync(join(work, "packages", "inner", ".git")));
+		assert.ok(existsSync(join(work, "packages", "inner", `.git${ASIDE}`)));
+	});
+
+	test("hooks, settings or a commondir that appear in a repository are moved aside, a link as it is", async () => {
+		const work = folder("left-parts");
+		layOut(join(work, ".git"), { hooks: false });
+		layOut(join(work, "other", ".git"), { hooks: false });
+		const elsewhere = join(work, "elsewhere");
+		mkdirSync(elsewhere);
+		writeFileSync(join(elsewhere, "pre-commit"), "#!/bin/sh\n", { mode: 0o755 });
+		const before = await noteRepositories([work]);
+		mkdirSync(join(work, ".git", "hooks"));
+		writeFileSync(join(work, ".git", "hooks", "pre-commit"), "#!/bin/sh\n");
+		writeFileSync(join(work, ".git", "commondir"), "../elsewhere\n");
+		symlinkSync(elsewhere, join(work, "other", ".git", "hooks"));
+		const notes = await settleRepositories(before);
+		assert.equal(notes.length, 3);
+		assert.ok(!existsSync(join(work, ".git", "hooks")));
+		assert.ok(existsSync(join(work, ".git", `hooks${ASIDE}`, "pre-commit")));
+		assert.ok(!existsSync(join(work, ".git", "commondir")));
+		assert.ok(existsSync(join(work, ".git", "config")), "the settings that were there stay");
+		// The link is moved, and nothing it points to is touched.
+		assert.ok(lstatSync(join(work, "other", ".git", `hooks${ASIDE}`)).isSymbolicLink());
+		assert.equal(lstatSync(join(elsewhere, "pre-commit")).mode & 0o777, 0o755);
+	});
+
+	test("a submodule's git folder moved into a repository, and a folder dressed as a git folder, lose their HEAD", async () => {
+		const work = folder("left-inside");
+		layOut(join(work, ".git"));
+		layOut(join(work, ".git", "modules", "lib"));
+		mkdirSync(join(work, "lib"));
+		writeFileSync(join(work, "lib", ".git"), "gitdir: ../.git/modules/lib\n");
+		mkdirSync(join(work, "src", "deep"), { recursive: true });
+		const before = await noteRepositories([work]);
+		layOut(join(work, "prepared"));
+		renameSync(join(work, "prepared"), join(work, ".git", "modules", "planted"));
+		layOut(join(work, "src"));
+		// Dressing a folder up does not hide what is put further down in it.
+		writeFileSync(join(work, "src", "deep", ".git"), "gitdir: ../../src\n");
+		const notes = await settleRepositories(before);
+		assert.equal(notes.length, 4);
+		assert.ok(existsSync(join(work, ".git", "modules", "planted", `HEAD${ASIDE}`)));
+		assert.ok(existsSync(join(work, "src", `HEAD${ASIDE}`)));
+		assert.ok(existsSync(join(work, "src", "deep", `.git${ASIDE}`)));
+		assert.ok(existsSync(join(work, ".git", "modules", "lib", "HEAD")));
+		assert.ok(existsSync(join(work, "lib", ".git")));
+	});
+
+	test("a .git file is followed the way git follows it, or not at all", async () => {
+		const work = folder("left-files");
+		layOut(join(work, ".git"));
+		mkdirSync(join(work, "dangling"));
+		writeFileSync(join(work, "dangling", ".git"), "gitdir: ../nowhere\n");
+		mkdirSync(join(work, "node_modules", "deep"), { recursive: true });
+		const before = await noteRepositories([work]);
+		assert.deepEqual(await settleRepositories(before), [], "one that led nowhere stays as it is");
+		// Text that reads as the repository that was there, and that git takes elsewhere: cut short
+		// at a NUL, or through a link, where `..` is not the folder the text names.
+		layOut(join(work, "prepared"));
+		layOut(join(work, "node_modules", ".git"));
+		symlinkSync(join(work, "node_modules", "deep"), join(work, "link"));
+		for (const [name, text] of [
+			["cut", `gitdir: ${work}/prepared\0/../.git\n`],
+			["linked", `gitdir: ${work}/link/../.git\n`],
+			["long", `gitdir: ${work}/.git/${"./".repeat(5000)}../prepared\n`],
+		] as const) {
+			mkdirSync(join(work, name));
+			writeFileSync(join(work, name, ".git"), text);
+		}
+		// And the one that led nowhere now leads somewhere.
+		layOut(join(work, "nowhere"));
+		await settleRepositories(before);
+		for (const name of ["cut", "linked", "long", "dangling"]) {
+			assert.ok(!existsSync(join(work, name, ".git")), name);
+			assert.ok(existsSync(join(work, name, `.git${ASIDE}`)), name);
+		}
+	});
+
+	test("what the limits kept from being read is left alone, and a repository an approved setup made stays", async () => {
+		const work = folder("left-limits");
+		layOut(join(work, "far", ".git"));
+		const before = await noteRepositories([work], { folders: 1, ms: 1000, fresh: 100 });
+		assert.ok(before.beyond.has(join(work, "far")));
+		layOut(join(work, ".git"));
+		const limited = await settleRepositories(before);
+		assert.equal(limited.length, 2);
+		assert.ok(existsSync(join(work, `.git${ASIDE}`)));
+		assert.ok(existsSync(join(work, "far", ".git", "HEAD")));
+		// A git init or clone the person approved while the command ran.
+		layOut(join(work, "cloned", ".git"));
+		layOut(join(work, "mirror.git"));
+		admitRepository(before, join(work, "cloned"));
+		admitRepository(before, join(work, "mirror.git"));
+		assert.deepEqual(await settleRepositories(before), []);
+		assert.ok(existsSync(join(work, "cloned", ".git", "HEAD")));
+		assert.ok(existsSync(join(work, "mirror.git", "HEAD")));
+	});
+});
+
+/** git as the person runs it outside the sandbox, without their own settings. */
+const personGit = (cwd: string, ...args: string[]) =>
+	execFileSync("git", ["-c", "user.name=Yew", "-c", "user.email=yew@example.com", ...args], {
+		cwd,
+		env: { ...process.env, GIT_CONFIG_GLOBAL: "/dev/null", GIT_CONFIG_NOSYSTEM: "1" },
+		stdio: "pipe",
+	});
+
+describe("a command in the sandbox leaves git no program to run", { skip }, () => {
+	/** A repository with one commit, and the steps that put a hook where git will find it. */
+	const planted = (name: string, how: "commondir" | "git-file") => {
+		const repo = folder(name);
+		personGit(repo, "init", "-q", "-b", "main");
+		personGit(repo, "commit", "-q", "--allow-empty", "-m", "First");
+		const marker = join(base, `${name}-ran`);
+		const steps = [
+			"mkdir -p .cache/g/hooks sub",
+			"cp -R .git/objects .git/refs .git/HEAD .cache/g/",
+			`printf '#!/bin/sh\\ntouch %s\\n' '${marker}' > .cache/g/hooks/pre-commit`,
+			"chmod +x .cache/g/hooks/pre-commit",
+			how === "commondir"
+				? `printf '%s\\n' "$PWD/.cache/g" > .git/commondir`
+				: "printf 'gitdir: ../.cache/g\\n' > sub/.git",
+			"true",
+		].join("; ");
+		const commit = () =>
+			personGit(
+				how === "commondir" ? repo : join(repo, "sub"),
+				"commit",
+				"-q",
+				"--allow-empty",
+				"-m",
+				"Next",
+			);
+		return { repo, marker, steps, commit };
+	};
+
+	for (const how of ["commondir", "git-file"] as const) {
+		const what =
+			how === "commondir"
+				? "a commondir that sends the repository to hooks of the command's making"
+				: "a .git file in a subfolder that points to a git folder of the command's making";
+		test(`${what}: the person's commit does not run them`, async () => {
+			// The same steps outside the sandbox do run the hook: this is a way that works.
+			const open = planted(`plant-open-${how}`, how);
+			execFileSync("sh", ["-c", open.steps], { cwd: open.repo });
+			open.commit();
+			assert.ok(existsSync(open.marker), "outside the sandbox the hook runs");
+
+			const closed = planted(`plant-closed-${how}`, how);
+			const result = await run(closed.steps, closed.repo);
+			assert.equal(result.code, 0, result.output);
+			closed.commit();
+			assert.ok(!existsSync(closed.marker), result.output);
+			assert.ok(!existsSync(join(closed.repo, ".git", "commondir")));
+			assert.ok(!existsSync(join(closed.repo, "sub", ".git")));
+			if (how === "git-file") {
+				assert.ok(existsSync(join(closed.repo, "sub", `.git${ASIDE}`)));
+				assert.match(result.output, /A repository appeared at .*sub while the command ran/);
+			}
+		});
+	}
+});
 
 describe("everyday work in the sandbox", { skip }, () => {
 	test("it is the sandbox commands run in", () => {

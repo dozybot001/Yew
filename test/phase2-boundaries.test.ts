@@ -176,7 +176,8 @@ describe("phase 2.1: multi-directory workspaces (extraDirs)", () => {
 		assert.ok(fsCfg.allowWrite?.includes(rwDir));
 		assert.ok(
 			fsCfg.denyWrite?.some(
-				(p) => typeof p === "string" && p.includes(rwDir) && p.includes(".git/**/hooks"),
+				(p) =>
+					typeof p === "string" && p.includes(rwDir) && p.includes(".git/**/[hH][oO][oO][kK][sS]"),
 			),
 		);
 		assert.ok(fsCfg.denyRead?.includes(hiddenInsideRw));

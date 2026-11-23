@@ -6,7 +6,14 @@ import { delimiter, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import type { SandboxAskCallback, SandboxRuntimeConfig } from "@anthropic-ai/sandbox-runtime";
 import { secretLocations } from "./permissions/paths.ts";
-import { checkRepositories, gitInternals, snapshotRepositories } from "./repositories.ts";
+import {
+	admitRepository,
+	closedPaths,
+	gitInternals,
+	noteRepositories,
+	type Repositories,
+	settleRepositories,
+} from "./repositories.ts";
 import { LOCAL_INSTALL } from "./updates.ts";
 
 /**
@@ -19,7 +26,9 @@ import { LOCAL_INSTALL } from "./updates.ts";
  * - write only in the session's working folder, the sandbox's own caches and the temporary
  *   folders; never in Yew Harness's data folder, its program, what starts at login, or the hooks and
  *   settings of a git repository (the library protects shell profiles and `.git/hooks`,
- *   `.git/config` itself; this adds those of submodules and worktrees);
+ *   `.git/config` itself; this adds those of submodules, worktrees and bare repositories, and the
+ *   files that send git elsewhere for them). A repository it makes does not stay: when it ends,
+ *   what was not there before is moved aside (repositories.ts);
  * - read what the person can, except Yew Harness's data folder, the keychain files, the folders the
  *   person keeps from sessions (a setting) and, unless a setting allows them, the usual credential
  *   files and the SSH agent;
@@ -117,9 +126,13 @@ const PRIVATE_RANGES = [
 /** What tells a program where the SSH agent is. */
 const AGENT_VARIABLES = ["SSH_AUTH_SOCK", "SSH_AGENT_PID"];
 
+/**
+ * A path as the system has it: links followed, names in the case they are stored in. The sandbox's
+ * rules are matched against that, so a folder typed in another case would otherwise go unprotected.
+ */
 const real = (path: string) => {
 	try {
-		return realpathSync(path);
+		return realpathSync.native(path);
 	} catch {
 		return path;
 	}
@@ -217,12 +230,16 @@ function ownPort(port: number): string[] {
 	return [`127.0.0.1:${port}`, `localhost:${port}`, `[::1]:${port}`];
 }
 
-/** The file system part of one command's configuration: the base plus what the command is granted. */
+/**
+ * The file system part of one command's configuration: the base plus what the command is granted.
+ * `closed` is what noteRepositories found to close in the folders it may write.
+ */
 export function commandFilesystem(
 	places: SandboxPlaces,
 	policy: SandboxPolicy,
 	grant: SandboxGrant = {},
 	platform: NodeJS.Platform = process.platform,
+	closed: string[] = [],
 ): SandboxRuntimeConfig["filesystem"] {
 	const writable = (grant.writable ?? []).map(real);
 	const user = real(places.userHome);
@@ -240,6 +257,8 @@ export function commandFilesystem(
 			join(user, ".config", "systemd", "user"),
 			join(user, ".config", "autostart"),
 			...writable.flatMap((folder) => gitInternals(folder, platform)),
+			// Names on disk, whatever characters they hold.
+			...closed.map((path) => ({ path, literal: true as const })),
 			...policy.hidden,
 		],
 		denyRead: [
@@ -350,6 +369,8 @@ interface Running {
 	refused: Set<string>;
 	/** Questions on their way to the person, one per site. */
 	asking: Map<string, Promise<boolean>>;
+	/** What the folders it may write held when it started. */
+	repositories: Repositories | null;
 }
 
 interface Active {
@@ -523,10 +544,10 @@ export interface Sandboxed {
 	/** Variables to leave out of it. */
 	unset: string[];
 	/**
-	 * Call once the command has ended: the files and sites the sandbox kept from it, and on Linux
-	 * what it did to the repositories in its folder (checkRepositories), one line each.
+	 * Call once the command has ended: the files and sites the sandbox kept from it, and what was
+	 * moved aside of the repositories it left in its folders (settleRepositories), one line each.
 	 */
-	finish(): { blocked: string[]; notes: string[] };
+	finish(): Promise<{ blocked: string[]; notes: string[] }>;
 }
 
 /**
@@ -554,16 +575,23 @@ export async function sandboxed(
 		current.manager.updateConfig(config);
 		current.applied = applied;
 	}
-	// On Linux what a command does to the repositories in its folder is looked at when it ends.
+	// The repositories in its folders are noted now, and what it leaves there is looked at when it ends.
 	const writable = (options.grant?.writable ?? []).map(real);
-	const repositories =
-		current.kind === "linux" && writable.length > 0 ? snapshotRepositories(writable) : null;
+	const repositories = writable.length > 0 ? await noteRepositories(writable) : null;
 	// The id ties the command's connections to its allow list: random, never guessable.
 	const id = randomBytes(16).toString("base64url");
 	const line = await current.manager.wrapWithSandbox(
 		command,
 		undefined,
-		{ filesystem: commandFilesystem(current.places, policy, options.grant) },
+		{
+			filesystem: commandFilesystem(
+				current.places,
+				policy,
+				options.grant,
+				process.platform,
+				repositories ? closedPaths(repositories) : [],
+			),
+		},
 		undefined,
 		{ commandId: id, commandText: options.text ?? command },
 	);
@@ -574,23 +602,16 @@ export async function sandboxed(
 		allowed,
 		refused: new Set(),
 		asking: new Map(),
+		repositories,
 	});
 	if (allowed.length > 0)
 		current.manager.registerCommandNetworkLists(id, { allowedDomains: allowed });
-	let finished: { blocked: string[]; notes: string[] } | null = null;
-	return {
-		line,
-		env: sandboxEnvironment(current.places),
-		unset: policy.credentials ? [] : AGENT_VARIABLES,
-		finish: () => {
-			if (finished) return finished;
-			running.delete(id);
-			if (active !== current) {
-				finished = { blocked: [], notes: [] };
-				return finished;
-			}
+	const finish = async () => {
+		running.delete(id);
+		let blocked: string[] = [];
+		if (active === current) {
 			current.manager.unregisterCommandNetworkLists(id);
-			const blocked = current.manager
+			blocked = current.manager
 				.getSandboxViolationStore()
 				.getViolationsForCommand(id)
 				.map((violation) => violation.line)
@@ -599,10 +620,38 @@ export async function sandboxed(
 				.filter((line) => /\b(file-|network)/.test(line));
 			// Leftovers of commands (Linux mount points) go once none is running.
 			if (running.size === 0) current.manager.cleanupAfterCommand();
-			finished = { blocked, notes: repositories ? checkRepositories(repositories) : [] };
+		}
+		// Whatever became of the sandbox meanwhile, what the command left is looked at.
+		let notes: string[] = [];
+		try {
+			notes = repositories ? await settleRepositories(repositories) : [];
+		} catch (error) {
+			notes = [
+				`Yew Harness could not look through the folders for repositories the command left (${(error as Error).message}). Check for a new .git before using git there.`,
+			];
+		}
+		return { blocked, notes };
+	};
+	let finished: Promise<{ blocked: string[]; notes: string[] }> | null = null;
+	return {
+		line,
+		env: sandboxEnvironment(current.places),
+		unset: policy.credentials ? [] : AGENT_VARIABLES,
+		finish: () => {
+			finished ??= finish();
 			return finished;
 		},
 	};
+}
+
+/**
+ * A repository an approved setup made outside the sandbox: the commands running in the sandbox take
+ * it as there before they started, so it is not moved aside when they end.
+ */
+export function admitSetup(folder: string): void {
+	for (const command of running.values()) {
+		if (command.repositories) admitRepository(command.repositories, real(folder));
+	}
 }
 
 /** A word for a shell command line, in single quotes. */
