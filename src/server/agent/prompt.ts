@@ -39,6 +39,8 @@ export interface ContextSnapshot {
 	 * keeps the snapshot, so it stays the same until the next compaction (prompt caching).
 	 */
 	told?: Told;
+	/** The language set for Yew when the snapshot was taken; absent in older snapshots, which read as "system". */
+	language?: ReplyLanguage;
 	/** Layer-1 compaction boundary: large/image tool results with seq < this are folded when sent to the model. */
 	prunedBeforeSeq?: number;
 }
@@ -55,12 +57,27 @@ export interface Told {
 	extraDirs?: ExtraDir[];
 	/** Absent in what was told before a change of role became an update. */
 	role?: string;
+	/** Absent in what was told before the reply language followed the settings. */
+	language?: ReplyLanguage;
 }
 
 export interface SessionRef {
 	id: string;
 	name: string;
 }
+
+/** The language set for Yew: one of the two the interface has, or whatever the system uses. */
+export type ReplyLanguage = "system" | "zh" | "en";
+
+/**
+ * The language a session replies in, by the language set for Yew. With "system" the service cannot
+ * tell which one the interface shows, so the session goes by what the person writes.
+ */
+export const REPLY_LANGUAGE: Record<ReplyLanguage, string> = {
+	system: "Reply in the language the person writes in.",
+	zh: "Reply in Simplified Chinese, the language the person set for Yew, unless they ask for another.",
+	en: "Reply in English, the language the person set for Yew, unless they ask for another.",
+};
 
 /** Where the session stands among the others: the main conversation, who opened it, its team. */
 export interface Placement {
@@ -388,7 +405,7 @@ export function systemPrompt(
 	parts.push(sessionsSection(session, snapshot));
 	if (snapshot.main?.id === session.id) parts.push(MAIN_ROLE);
 	parts.push(`How to work:
-- Reply in the language the person writes in.
+- ${REPLY_LANGUAGE[snapshot.language ?? "system"]}
 - Check the actual state before you change anything.
 - After a change, run the project's own checks or tests when it has them. Never say something works unless you checked.
 - For work with several steps, keep the task list current with the todo tool.`);

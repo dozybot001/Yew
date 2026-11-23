@@ -728,6 +728,10 @@ const zh = {
 	"letterReason_person-refused": "你拒收了",
 	letterReason_archived: "收信的会话已归档",
 	fromCli: "命令行",
+	ownInstructions: "固定说明",
+	ownInstructionsHelp:
+		"每个会话开始时都会读到的说明，比如你的习惯和要守的规矩。存在 Yew Harness 数据目录的 AGENTS.md 里，会话自己改不了；改了以后，进行中的会话在下一条消息时收到新的内容，压缩上下文之后也照样带着。",
+	ownInstructionsPlaceholder: "例如：回复简短；提交信息用英文",
 	letterFrom: "{name} 来信",
 	sentByYew: "Yew Harness 代发",
 	letterTo: "{from} → {to}",
@@ -1975,6 +1979,10 @@ const en: Record<MessageKey, string> = {
 	"letterReason_person-refused": "You refused it",
 	letterReason_archived: "The recipient was archived",
 	fromCli: "Command line",
+	ownInstructions: "Standing instructions",
+	ownInstructionsHelp:
+		"Instructions every session reads when it starts, such as your habits and the rules to keep. They are kept in AGENTS.md in Yew Harness's data folder, which sessions cannot change. After a change, sessions under way get the new text with their next message, and it stays with them after the context is shortened.",
+	ownInstructionsPlaceholder: "For example: keep replies short; write commit messages in English",
 	letterFrom: "From {name}",
 	sentByYew: "Sent by Yew Harness",
 	letterTo: "{from} → {to}",

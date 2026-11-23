@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
-import { realpathSync, rmSync } from "node:fs";
+import { existsSync, readFileSync, realpathSync, rmSync } from "node:fs";
+import { join } from "node:path";
 import { describe, test } from "node:test";
 import { pickFolder } from "../src/server/folder-picker.ts";
 import { createApp } from "../src/server/http/app.ts";
@@ -622,5 +623,28 @@ describe("api: duplicating a session", () => {
 		store.setStatus(session.id, "working");
 		const busy = await call("POST", `/api/sessions/${session.id}/duplicate`);
 		assert.equal(busy.status, 409);
+	});
+});
+
+describe("the person's standing instructions", () => {
+	test("are read from and written to AGENTS.md in Yew's folder; an empty text removes it", async () => {
+		const { store } = newStore();
+		const home = realpathSync(tempDir("yew-home-"));
+		const app = createApp({ store, log: () => {}, data: { home } });
+		const put = (content: string) =>
+			app.request("/api/settings/instructions", {
+				method: "PUT",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ content }),
+			});
+		const get = async () =>
+			(await (await app.request("/api/settings/instructions")).json()).content;
+		assert.equal(await get(), "");
+		assert.equal((await put("Keep replies short.")).status, 200);
+		assert.equal(readFileSync(join(home, "AGENTS.md"), "utf8"), "Keep replies short.\n");
+		assert.equal(await get(), "Keep replies short.\n");
+		assert.equal((await put("  ")).status, 200);
+		assert.equal(existsSync(join(home, "AGENTS.md")), false);
+		assert.equal((await put("x".repeat(20_001))).status, 400);
 	});
 });

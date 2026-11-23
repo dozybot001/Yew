@@ -174,6 +174,13 @@ export const spentToday = () =>
 
 export const loadRolesFolder = () => api<RolesFolderState>("GET", "/api/settings/roles-folder");
 
+/** The person's own instructions for every session (`AGENTS.md` in Yew's folder). */
+export const loadOwnInstructions = () =>
+	api<{ content: string }>("GET", "/api/settings/instructions").then((result) => result.content);
+
+export const saveOwnInstructions = (content: string) =>
+	api<{ content: string }>("PUT", "/api/settings/instructions", { content });
+
 export async function saveSettings(patch: SettingsPatch): Promise<void> {
 	const settings = await api<Settings>("PATCH", "/api/settings", patch);
 	setState({ settings });

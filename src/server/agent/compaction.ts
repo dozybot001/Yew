@@ -17,6 +17,7 @@ import {
 	type Session,
 } from "../../shared/types.ts";
 import type { ModelGateway, ModelInfo, ToolSpec } from "../model/gateway.ts";
+import { SETTING_DEFAULTS } from "../settings.ts";
 import type { Store } from "../store.ts";
 import {
 	estimateTokens,
@@ -38,6 +39,8 @@ import {
 	type Placement,
 	RENEW_ASK,
 	RENEW_PROMPT,
+	REPLY_LANGUAGE,
+	type ReplyLanguage,
 	type SessionRef,
 	SUMMARY_ASK,
 	SUMMARY_PROMPT,
@@ -171,6 +174,18 @@ export class ContextKeeper {
 	 * A saved snapshot as the system prompt reads it. Snapshots from before a field existed learn it
 	 * quietly; the prompt reads the same either way.
 	 */
+	#language(): ReplyLanguage {
+		return this.#store.getSetting("language", SETTING_DEFAULTS.language);
+	}
+
+	/** The session's environment as it is now, with the language set for Yew. */
+	#take(session: Session, placement: Placement): ContextSnapshot {
+		return {
+			...takeSnapshot(session, this.#home, placement, this.#extras()),
+			language: this.#language(),
+		};
+	}
+
 	#promptOf(session: Session, saved: ContextSnapshot, placement: Placement): ContextSnapshot {
 		const { told: _told, ...prompt } = {
 			...saved,
@@ -197,13 +212,13 @@ export class ContextKeeper {
 		const placement = this.#placement(session);
 		const saved = this.#store.getContextSnapshot<ContextSnapshot>(session.id);
 		if (!saved) {
-			const snapshot = takeSnapshot(session, this.#home, placement, this.#extras());
+			const snapshot = this.#take(session, placement);
 			this.#store.setContextSnapshot(session.id, snapshot);
 			return snapshot;
 		}
 		// A session switched between chat and code gets a fresh environment: folder, git status and files.
 		if (saved.cwd !== session.cwd) {
-			const snapshot = takeSnapshot(session, this.#home, placement, this.#extras());
+			const snapshot = this.#take(session, placement);
 			this.#store.setContextSnapshot(session.id, snapshot);
 			this.#store.appendEntry(session.id, {
 				role: "system",
@@ -238,6 +253,10 @@ export class ContextKeeper {
 		const current = loadInstructions(session.cwd, this.#home, this.#extras());
 		const instructions = instructionsUpdate(told.instructions, current, session.cwd);
 		if (instructions) updates.push(instructions);
+		const language = this.#language();
+		if (language !== (told.language ?? prompt.language ?? "system")) {
+			updates.push(`The person changed Yew's language. ${REPLY_LANGUAGE[language]}`);
+		}
 		if (told.permissionMode !== mode) {
 			updates.push(`The person changed the permission mode. ${PERMISSION_MODE[mode]}`);
 		}
@@ -272,6 +291,7 @@ export class ContextKeeper {
 				team,
 				extraDirs: currentExtraDirs,
 				role: session.responsibility,
+				language,
 			},
 		};
 		if (JSON.stringify(next) !== JSON.stringify(saved)) {
@@ -340,8 +360,7 @@ export class ContextKeeper {
 		)
 			return false;
 		this.#store.tx(() => {
-			const base =
-				saved ?? takeSnapshot(session, this.#home, this.#placement(session), this.#extras());
+			const base = saved ?? this.#take(session, this.#placement(session));
 			this.#store.setContextSnapshot(session.id, { ...base, prunedBeforeSeq: firstKept.seq });
 			this.#store.setContextTokens(session.id, estimatedAfter);
 			notice(
@@ -523,10 +542,7 @@ export class ContextKeeper {
 				"compacted",
 				`Earlier history was summarized to save context (${session.contextTokens} tokens before).`,
 			);
-			this.#store.setContextSnapshot(
-				session.id,
-				takeSnapshot(session, this.#home, this.#placement(session), this.#extras()),
-			);
+			this.#store.setContextSnapshot(session.id, this.#take(session, this.#placement(session)));
 			this.#store.setContextTokens(
 				session.id,
 				remaining.reduce(
@@ -616,10 +632,7 @@ export class ContextKeeper {
 					? "Started a fresh context with a carry-over brief. Earlier history is still above."
 					: "Started a fresh context. Earlier history is still above.",
 			);
-			this.#store.setContextSnapshot(
-				session.id,
-				takeSnapshot(session, this.#home, this.#placement(session), this.#extras()),
-			);
+			this.#store.setContextSnapshot(session.id, this.#take(session, this.#placement(session)));
 			const carriedChars = summaryText.length + (openRequestNote?.length ?? 0);
 			this.#store.setContextTokens(session.id, carriedChars > 0 ? Math.ceil(carriedChars / 4) : 0);
 		});

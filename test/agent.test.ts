@@ -1004,6 +1004,25 @@ describe("agent loop", () => {
 		assert.match(update ?? "", /removed and no longer apply: docs\/AGENTS\.md\./);
 	});
 
+	test("the reply language follows the language set for Yew; a change arrives as an update", async () => {
+		const { faux, store, agents, session, contexts, capture } = setup();
+		store.setSetting("language", "zh");
+		faux.setResponses([capture(fauxAssistantMessage("ok")), capture(fauxAssistantMessage("ok"))]);
+		agents.send(session.id, "hi");
+		await agents.whenIdle(session.id);
+		const system = textOf(contexts[0]?.messages[0]);
+		assert.match(system, /Reply in Simplified Chinese, the language the person set for Yew/);
+		store.setSetting("language", "en");
+		agents.send(session.id, "again");
+		await agents.whenIdle(session.id);
+		assert.equal(textOf(contexts[1]?.messages[0]), system);
+		const updates = store
+			.listEntries(session.id, { limit: 50 })
+			.entries.filter((e) => e.role === "system");
+		assert.equal(updates.length, 1);
+		assert.match(textOf(updates[0]), /changed Yew's language\. Reply in English/);
+	});
+
 	test("a changed permission mode arrives as an update; the prompt stays the same", async () => {
 		const { faux, store, agents, session, contexts, capture } = setup();
 		faux.setResponses([capture(fauxAssistantMessage("ok")), capture(fauxAssistantMessage("ok"))]);

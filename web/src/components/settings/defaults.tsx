@@ -1,6 +1,12 @@
 import { useEffect, useId, useState } from "react";
 import { PERMISSION_MODES, type PermissionMode } from "../../../../src/shared/types.ts";
-import { loadRolesFolder, saveSettings, spentToday } from "../../actions/settings.ts";
+import {
+	loadOwnInstructions,
+	loadRolesFolder,
+	saveOwnInstructions,
+	saveSettings,
+	spentToday,
+} from "../../actions/settings.ts";
 import { formatCost, permissionHint, t, useLang } from "../../i18n.ts";
 import { getState, type RolesFolderState, useAppState } from "../../state.ts";
 import { Dialog } from "../dialog.tsx";
@@ -46,6 +52,19 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	}, []);
 	const rolesId = useId();
 	const rolesErrorId = useId();
+	// Null until it is read: nothing is saved over a text that was never shown.
+	const [savedOwn, setSavedOwn] = useState<string | null>(null);
+	const [own, setOwn] = useState("");
+	useEffect(() => {
+		loadOwnInstructions()
+			.then((content) => {
+				setSavedOwn(content);
+				setOwn(content);
+			})
+			.catch(() => {});
+	}, []);
+	const ownId = useId();
+	const ownDirty = savedOwn !== null && own !== savedOwn;
 	const rolesLines = rolesFolderLines(roles.trim() === savedRoles ? rolesState : null);
 	const savedBudget = settings?.dailyBudget ? String(settings.dailyBudget) : "";
 	const [budget, setBudget] = useState(savedBudget);
@@ -70,6 +89,10 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 	const traceMainId = useId();
 	const sandbox = useAppState((state) => state.health?.sandbox ?? "none");
 	const save = useAction(async () => {
+		if (ownDirty) {
+			await saveOwnInstructions(own);
+			setSavedOwn(own);
+		}
 		await saveSettings({
 			...(mode !== savedMode ? { defaultPermissionMode: mode } : {}),
 			...(workspace !== savedWorkspace ? { defaultWorkspaceId: workspace || null } : {}),
@@ -116,6 +139,7 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 		workspace !== savedWorkspace ||
 		log.trim() !== (settings?.decisionLog ?? "") ||
 		roles.trim() !== savedRoles ||
+		ownDirty ||
 		budget !== savedBudget ||
 		memory !== savedMemory ||
 		hidden !== savedHidden ||
@@ -213,6 +237,18 @@ export function DefaultsDialog({ onClose }: { onClose: () => void }) {
 					onChange={(event) => setRoles(event.target.value)}
 				/>
 				{rolesLines.hint && <span className="hint">{rolesLines.hint}</span>}
+			</Field>
+			<Field label={t("ownInstructions")} htmlFor={ownId} info={t("ownInstructionsHelp")}>
+				<textarea
+					id={ownId}
+					className="textarea"
+					spellCheck={false}
+					rows={4}
+					placeholder={t("ownInstructionsPlaceholder")}
+					value={own}
+					disabled={savedOwn === null}
+					onChange={(event) => setOwn(event.target.value)}
+				/>
 			</Field>
 			<Field label={t("memoryDirs")} htmlFor={memoryId} info={t("memoryDirsHelp")}>
 				<textarea

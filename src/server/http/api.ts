@@ -1,5 +1,6 @@
-import { existsSync, mkdirSync } from "node:fs";
+import { existsSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
+import { join } from "node:path";
 import { Hono } from "hono";
 import { RELAY_URL } from "../../remote/protocol.ts";
 import type {
@@ -103,6 +104,8 @@ export function parseRules(value: unknown[]): PermissionRule[] {
 }
 
 const MAX_WORKSPACES = 50;
+/** The person's own instructions, in characters: within what sessions are given of instruction files. */
+const OWN_INSTRUCTIONS_MAX = 20_000;
 /** How far back the usage page can look. */
 const MAX_USAGE_DAYS = 90;
 
@@ -513,6 +516,28 @@ export function api(deps: ApiDeps): Hono<AppEnv> {
 	app.get("/settings/roles-folder", (c) => {
 		const none: RoleFilesState = { folder: null, files: 0, commits: "none", problem: null };
 		return c.json(deps.roleFiles?.state() ?? none);
+	});
+
+	// The person's own instructions for every session: `AGENTS.md` in Yew's folder. Sessions cannot
+	// write there; the person edits it here. An empty text removes the file.
+	app.get("/settings/instructions", (c) => {
+		const file = deps.yewHome ? join(deps.yewHome, "AGENTS.md") : null;
+		return c.json({ content: file && existsSync(file) ? readFileSync(file, "utf8") : "" });
+	});
+
+	app.put("/settings/instructions", async (c) => {
+		if (!deps.yewHome) throw invalid("This Yew Harness has no data folder.", "content");
+		const content = optString(await readJson(c), "content", OWN_INSTRUCTIONS_MAX) ?? "";
+		const file = join(deps.yewHome, "AGENTS.md");
+		if (content.trim()) {
+			// Written beside the file and moved over it, so a session never reads half of it.
+			const next = `${file}.${process.pid}.tmp`;
+			writeFileSync(next, content.endsWith("\n") ? content : `${content}\n`, { mode: 0o600 });
+			renameSync(next, file);
+		} else {
+			rmSync(file, { force: true });
+		}
+		return c.json({ content: content.trim() ? content : "" });
 	});
 
 	app.patch("/settings", async (c) => {
