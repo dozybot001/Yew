@@ -69,6 +69,8 @@ describe("sandbox configuration", () => {
 		const denied = files.denyWrite;
 		assert.ok(denied.includes(places.home));
 		assert.ok(denied.includes(realpathSync(INSTALL_DIR)));
+		// The copy installed from a checkout, with what is beside it in its folder.
+		assert.ok(denied.includes(join(homedir(), ".yew-install")));
 		assert.ok(denied.includes(join(homedir(), "Library", "LaunchAgents")));
 		assert.ok(denied.includes(join(homedir(), "Applications", "Yew.app")));
 		assert.ok(denied.includes(join(homedir(), ".config", "systemd", "user")));

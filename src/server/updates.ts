@@ -62,6 +62,12 @@ export const SERVICE_PATHS = [
  */
 export const COMMIT_FILE = "COMMIT";
 
+/**
+ * In the person's home folder: where scripts/install-local.mjs keeps the copy this computer runs,
+ * with the copies on their way in and out beside it. The system sandbox closes the whole folder.
+ */
+export const LOCAL_INSTALL = ".yew-install";
+
 export interface Build {
 	/** The short commit. */
 	build: string;

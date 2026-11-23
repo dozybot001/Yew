@@ -7,6 +7,7 @@ import { fileURLToPath } from "node:url";
 import type { SandboxAskCallback, SandboxRuntimeConfig } from "@anthropic-ai/sandbox-runtime";
 import { secretLocations } from "./permissions/paths.ts";
 import { checkRepositories, gitInternals, snapshotRepositories } from "./repositories.ts";
+import { LOCAL_INSTALL } from "./updates.ts";
 
 /**
  * The system sandbox for sessions' commands and the stdio MCP servers people add. It is Anthropic's
@@ -231,6 +232,9 @@ export function commandFilesystem(
 			real(places.home),
 			...appWebData(places, platform),
 			real(places.install),
+			// The copy this computer runs when it is installed from a checkout, whichever copy runs
+			// now: a copy left beside it would be taken for the one before it.
+			real(join(user, LOCAL_INSTALL)),
 			join(user, "Library", "LaunchAgents"),
 			join(user, "Applications", "Yew.app"),
 			join(user, ".config", "systemd", "user"),

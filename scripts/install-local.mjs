@@ -12,10 +12,14 @@
 //   ~/.yew-install/current/.previous   the one before it
 //   ~/.yew-install/current/.next       one being prepared
 //
-// The last two are inside the first because the system sandbox keeps sessions' commands from writing
-// to the folder Yew Harness is installed in: what is in there, they cannot change. The folder's path
-// stays the same from one copy to the next, so the app, the `yew` command and a restart all reach the
-// new copy.
+// The system sandbox keeps sessions' commands from writing anywhere in ~/.yew-install, and in the
+// folder the running Yew Harness is installed in wherever that is, which is why the last two are
+// inside the first. The folder's path stays the same from one copy to the next, so the app, the `yew`
+// command and a restart all reach the new copy.
+//
+// The copy is a commit, but this script and the module it loads run from the working tree, as any
+// `npm run` here does. It stops when they are not as the commit at HEAD has them, so nothing half
+// written runs while the copies change places.
 import { spawnSync } from "node:child_process";
 import {
 	existsSync,
@@ -44,16 +48,19 @@ In the default folder, the Mac app and a linked 'yew' command are pointed at
 the copy. A restart is needed when the service's code changed; when only the
 interface changed, reloading the page is enough.
 
+The script itself runs from the working tree: it stops when it, or the module
+it loads, has changes that are not committed.
+
 Options:
       --back         Return to the copy that ran before
       --dir <folder> Where the copies are kept (default ~/.yew-install); the
-                     app and the 'yew' command are left alone in another folder
+                     app and the 'yew' command are left alone in another
+                     folder, and the system sandbox closes only the copy in use
       --no-check     Do not run the demo story first
   -h, --help         Show this help
 `;
 
 const checkout = fileURLToPath(new URL("../", import.meta.url));
-const { COMMIT_FILE, buildAt, buildIn } = await import("../src/server/updates.ts");
 
 function fail(message) {
 	process.stderr.write(`install-local: ${message}\n`);
@@ -210,7 +217,25 @@ if (args.positionals.length > 1 || (args.values.back && args.positionals.length 
 	process.exit(2);
 }
 
-const dir = resolve(args.values.dir ?? join(homedir(), ".yew-install"));
+// What runs from the working tree: this script, and the module it loads with what that one loads.
+const OWN_FILES = ["scripts/install-local.mjs", "src/server/updates.ts", "src/server/errors.ts"];
+const own = spawnSync("git", ["status", "--porcelain", "--", ...OWN_FILES], {
+	cwd: checkout,
+	encoding: "utf8",
+});
+if (own.status !== 0) fail("this folder is not a checkout git can read");
+if (own.stdout.trim() !== "") {
+	const changed = own.stdout
+		.trimEnd()
+		.split("\n")
+		.map((line) => line.slice(3));
+	fail(
+		`${changed.join(", ")} ${changed.length === 1 ? "has" : "have"} changes that are not committed. This script runs them: commit or undo them first.`,
+	);
+}
+const { COMMIT_FILE, LOCAL_INSTALL, buildAt, buildIn } = await import("../src/server/updates.ts");
+
+const dir = resolve(args.values.dir ?? join(homedir(), LOCAL_INSTALL));
 const current = join(dir, "current");
 const machine = args.values.dir === undefined;
 mkdirSync(dir, { recursive: true });
