@@ -69,6 +69,11 @@ export interface AgentsOptions {
 	version: string;
 	/** The tools sessions may be offered; a function is asked every time, for tools that come and go. */
 	tools?: ToolDefinition[] | (() => ToolDefinition[]);
+	/**
+	 * Waited for before a turn's first request, so tools that are still being set up are in it and
+	 * the tool list does not change a few requests later. It limits its own wait.
+	 */
+	toolsReady?: () => Promise<void>;
 	log?: (line: string) => void;
 	/** How often streaming drafts go to the interface. */
 	draftIntervalMs?: number;
@@ -156,6 +161,7 @@ export class Agents {
 	readonly #permissions: PermissionEngine;
 	readonly #home: string;
 	readonly #allTools: () => ToolDefinition[];
+	readonly #toolsReady: () => Promise<void>;
 	readonly #log: (line: string) => void;
 	readonly #draftInterval: number;
 	readonly #live = new Map<string, Live>();
@@ -191,6 +197,7 @@ export class Agents {
 		this.#permissions = options.permissions;
 		this.#home = options.home;
 		const tools = options.tools ?? ALL_TOOLS;
+		this.#toolsReady = options.toolsReady ?? (async () => {});
 		this.attachments = options.attachments ?? new AttachmentStore(options.store, options.home);
 		const readAttachment = this.attachments.readTool();
 		this.#allTools = () => {
@@ -581,6 +588,7 @@ export class Agents {
 			let cutReplies = 0;
 			let stopHooks = 0;
 			if (resume) await this.#calls.resume(sessionId, live);
+			await this.#toolsReady();
 			this.#deliver(sessionId);
 			for (let step = 0; ; step++) {
 				if (signal.aborted) break;

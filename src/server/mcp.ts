@@ -324,6 +324,7 @@ export class McpHub {
 	#definitions: ToolDefinition[] = [];
 	/** Settles when the servers being connected now have connected or failed. */
 	#connecting: Promise<void> = Promise.resolve();
+	readonly #waited = new WeakSet<Promise<void>>();
 
 	constructor(options: McpHubOptions) {
 		this.#options = options;
@@ -368,10 +369,12 @@ export class McpHub {
 						auth ? () => auth.bearer(name, config.url as string) : null,
 					)
 				: StdioTransport.start(config, env, this.#options.yewHome, name);
+		// In the order of their names, whenever each server connected: a model request starts with the
+		// tool list, and the provider's prompt cache is only read while that start stays the same.
 		const offer = () => {
-			this.#definitions = [...this.#servers.values()].flatMap((server) =>
-				server.tools.map((tool) => this.#definition(server, tool)),
-			);
+			this.#definitions = [...this.#servers.values()]
+				.flatMap((server) => server.tools.map((tool) => this.#definition(server, tool)))
+				.sort((a, b) => (a.name < b.name ? -1 : a.name > b.name ? 1 : 0));
 		};
 		// The tools of removed servers go at once; each new server's tools come when it has connected.
 		offer();
@@ -402,6 +405,24 @@ export class McpHub {
 		const earlier = this.#connecting;
 		this.#connecting = Promise.all([earlier, connecting]).then(() => {});
 		await this.#connecting;
+	}
+
+	/**
+	 * Resolves when the servers being connected now have connected or failed, after `ms` at the
+	 * latest. A set of servers that took longer once is not waited for again.
+	 */
+	async settled(ms: number): Promise<void> {
+		const connecting = this.#connecting;
+		if (this.#waited.has(connecting)) return;
+		let timer: NodeJS.Timeout | undefined;
+		await Promise.race([
+			connecting.catch(() => {}),
+			new Promise<void>((resolve) => {
+				timer = setTimeout(resolve, ms);
+			}),
+		]);
+		clearTimeout(timer);
+		this.#waited.add(connecting);
 	}
 
 	/**

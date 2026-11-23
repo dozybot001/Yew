@@ -151,6 +151,29 @@ describe("common official servers", () => {
 });
 
 describe("MCP servers", () => {
+	test("tools keep their order when a server is connected again", async () => {
+		const yewHome = home({
+			zeta: { command: process.execPath, args: [server] },
+			alpha: { command: process.execPath, args: [server] },
+		});
+		const hub = new McpHub({ yewHome, version: "0.0.0", log: () => {} });
+		try {
+			void hub.refresh();
+			// Waiting for the servers that are connecting ends when they have connected.
+			await hub.settled(20_000);
+			const names = hub.tools().map((tool) => tool.name);
+			assert.equal(names.length, 6);
+			assert.deepEqual(names, [...names].sort());
+			await hub.reconnect("alpha");
+			assert.deepEqual(
+				hub.tools().map((tool) => tool.name),
+				names,
+			);
+		} finally {
+			hub.stop();
+		}
+	});
+
 	test("a stdio server is started, its tools are offered by name, and a call goes through", async () => {
 		const yewHome = home({
 			test: { command: process.execPath, args: [server], env: { GREETING: "你好" } },

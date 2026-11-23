@@ -13,6 +13,8 @@ const EVENT_RETENTION_MS = 7 * 24 * 60 * 60 * 1000;
 const LETTER_SWEEP_MS = 2000;
 /** How often the service checks whether phone access was turned on or off. */
 const REMOTE_SYNC_MS = 5000;
+/** The longest a turn's first request waits for MCP servers that are still connecting. */
+const MCP_WAIT_MS = 8000;
 
 const SERVE_HELP = `Usage: yew serve [options]
 
@@ -261,6 +263,7 @@ export function serveCommand(): Command {
 				version: VERSION,
 				log,
 				tools: () => [...ALL_TOOLS, ...extraTools, ...mcp.tools()],
+				toolsReady: () => mcp.settled(MCP_WAIT_MS),
 				userHome: homedir(),
 				readReplies: true,
 			});
