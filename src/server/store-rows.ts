@@ -52,6 +52,7 @@ export interface SessionRow {
 	outcome: TaskOutcome | null;
 	interventions: number;
 	letters_sent: number;
+	capped_day: string | null;
 	last_activity_at: number;
 	created_at: number;
 	updated_at: number;
@@ -159,6 +160,7 @@ export function toSession(row: SessionRow): Session {
 		outcome: row.outcome,
 		interventions: row.interventions,
 		lettersSent: row.letters_sent,
+		cappedDay: row.capped_day,
 		lastActivityAt: row.last_activity_at,
 		createdAt: row.created_at,
 		updatedAt: row.updated_at,

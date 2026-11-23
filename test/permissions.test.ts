@@ -42,6 +42,7 @@ function session(overrides: Partial<Session> = {}): Session {
 		outcome: null,
 		interventions: 0,
 		lettersSent: 0,
+		cappedDay: null,
 		lastActivityAt: 0,
 		createdAt: 0,
 		updatedAt: 0,

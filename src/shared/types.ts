@@ -210,6 +210,11 @@ export interface Session {
 	interventions: number;
 	/** Letters sent since the person's last message or decision; the quota counts these. */
 	lettersSent: number;
+	/**
+	 * The local day (YYYY-MM-DD) the session stopped at a daily spending limit; null when it did not,
+	 * or went on since.
+	 */
+	cappedDay: string | null;
 	lastActivityAt: number;
 	createdAt: number;
 	updatedAt: number;
@@ -497,6 +502,8 @@ export interface PermissionNote {
 	risk?: ConfirmReason[];
 	/** Review mode: the check allowed it, and why. */
 	reviewed?: string;
+	/** Review mode: what the check was asked about. */
+	checked?: ConfirmReason[];
 }
 
 /**

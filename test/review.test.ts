@@ -71,7 +71,10 @@ describe("the automatic mode's check", () => {
 		assert.deepEqual(store.pendingApprovals(session.id), []);
 		assert.equal(existsSync(join(cwd, "build")), false);
 		const [call] = store.toolCallsByStatus(session.id, ["done"]);
-		assert.deepEqual(call?.detail?.permission, { reviewed: "你让它删掉 build 目录" });
+		assert.deepEqual(call?.detail?.permission, {
+			reviewed: "你让它删掉 build 目录",
+			checked: ["delete-files"],
+		});
 		// It read the person's words and the step, with its own instructions; nothing else.
 		assert.ok(textOf(seen[0]).includes(REVIEW_PROMPT.slice(0, 80)));
 		assert.equal(seen[0]?.tools?.length ?? 0, 0);

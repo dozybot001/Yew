@@ -416,4 +416,11 @@ CREATE TABLE unsent (
 	place TEXT PRIMARY KEY,
 	text TEXT NOT NULL
 ) STRICT;`,
+	// The day a session stopped at a daily spending limit, on the session so the interface can show
+	// it. It was kept in a setting before.
+	`ALTER TABLE sessions ADD COLUMN capped_day TEXT;
+UPDATE sessions SET capped_day = (
+	SELECT json_extract(value, '$."' || sessions.id || '"') FROM settings WHERE key = 'cappedSessions'
+);
+DELETE FROM settings WHERE key = 'cappedSessions';`,
 ];

@@ -279,7 +279,10 @@ export class Calls {
 					signal: live.controller.signal,
 				});
 				if (verdict.allow) {
-					this.#notePermission(row.id, { reviewed: verdict.reason });
+					this.#notePermission(row.id, {
+						reviewed: verdict.reason,
+						checked: decision.request.reasons ?? [],
+					});
 					this.#recordReview(sessionId, decision.request, verdict.reason);
 					approved.push({ row, tool });
 					continue;
@@ -347,7 +350,13 @@ export class Calls {
 				});
 				return;
 			}
-			this.#store.updateToolCall(row.id, { status: "running", startedAt: started });
+			// How it was allowed is on the row from the start, so the interface can show a push as one.
+			const allowed = this.#permissionNotes.get(row.id);
+			this.#store.updateToolCall(row.id, {
+				status: "running",
+				startedAt: started,
+				...(allowed ? { detail: { permission: allowed as unknown as JsonObject } } : {}),
+			});
 			let result: ToolResult;
 			try {
 				result = await tool.run(row.args, this.#toolContext(sessionId, row, live));
@@ -437,8 +446,10 @@ export class Calls {
 		const current = this.#permissionNotes.get(callId) ?? {};
 		const risk = [...new Set([...(current.risk ?? []), ...(note.risk ?? [])])];
 		const reviewed = [current.reviewed, note.reviewed].filter((text) => text !== undefined);
+		const checked = [...new Set([...(current.checked ?? []), ...(note.checked ?? [])])];
 		this.#permissionNotes.set(callId, {
 			...(risk.length > 0 ? { risk } : {}),
+			...(checked.length > 0 ? { checked } : {}),
 			...(reviewed.length > 0 ? { reviewed: reviewed.filter(Boolean).join(" ") } : {}),
 		});
 	}
@@ -470,7 +481,7 @@ export class Calls {
 			signal: live.controller.signal,
 		});
 		if (!verdict.allow) return { ...request, review: verdict.reason };
-		this.#notePermission(callId, { reviewed: verdict.reason });
+		this.#notePermission(callId, { reviewed: verdict.reason, checked: request.reasons ?? [] });
 		this.#recordReview(sessionId, request, verdict.reason);
 		return true;
 	}

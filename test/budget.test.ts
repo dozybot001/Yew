@@ -104,10 +104,13 @@ describe("daily spending limits", () => {
 		assert.equal(stopped?.data?.code, "budget-reached");
 		assert.equal(stopped?.data?.scope, "session");
 		assert.equal(store.getSession(a.id).status, "idle");
+		// The session carries the day it stopped, which is how the interface knows.
+		assert.equal(store.getSession(a.id).cappedDay, localDay(Date.now()));
 
 		agents.continue(a.id);
 		await agents.whenIdle(a.id);
 		assert.equal(replies(a.id).length, 1);
+		assert.equal(store.getSession(a.id).cappedDay, null);
 		const extra = store.getSession(a.id).options.budgetExtra;
 		assert.equal(extra?.day, localDay(Date.now()));
 		assert.ok(Math.abs((extra?.amount ?? 0) - 1.2) < 1e-9);

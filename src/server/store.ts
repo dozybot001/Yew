@@ -998,6 +998,27 @@ export class Store {
 		return rows.map(toSession);
 	}
 
+	/** Marks the day a session stopped at a daily spending limit; null takes the mark off. */
+	setCappedDay(id: string, day: string | null): void {
+		this.tx(() => {
+			const changed = this.#q(
+				"UPDATE sessions SET capped_day = ? WHERE id = ? AND capped_day IS NOT ?",
+			).run(day, id, day);
+			if (changed.changes > 0) this.#emitSession(id);
+		});
+	}
+
+	/** Sessions stopped at a daily spending limit, each with the day it stopped. */
+	cappedSessions(): [string, string][] {
+		const rows = this.#q(
+			"SELECT id, capped_day FROM sessions WHERE capped_day IS NOT NULL",
+		).all() as {
+			id: string;
+			capped_day: string;
+		}[];
+		return rows.map((row) => [row.id, row.capped_day]);
+	}
+
 	bumpUnread(id: string): Session {
 		return this.tx(() => {
 			this.#q("UPDATE sessions SET unread = unread + 1 WHERE id = ?").run(id);

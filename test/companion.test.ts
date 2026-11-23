@@ -120,6 +120,38 @@ describe("what the floating Yew says", () => {
 		assert.ok(POSES.working.includes(busy.pose));
 	});
 
+	test("she shows an empty wallet for a session stopped at a spending limit", () => {
+		const capped = { ...session("a", "idle"), cappedDay: "2026-11-23" } as Session;
+		const mood = companionMood({
+			...base,
+			sessions: [capped, session("b", "working")],
+			waiting: 0,
+		});
+		assert.equal(mood.pose, "wallet");
+		assert.deepEqual(mood.line, { kind: "capped", count: 1, name: "a" });
+		assert.deepEqual(mood.target, { kind: "session", id: "a" });
+		// Going again after the person wrote to it: the mark stays until the turn ends.
+		const again = companionMood({
+			...base,
+			sessions: [{ ...capped, status: "working" } as Session],
+			waiting: 0,
+		});
+		assert.equal(again.line.kind, "working");
+	});
+
+	test("a call that ran unasked or passed the check gets the rocket when it pushes", () => {
+		const call = { id: "c", tool: "shell", status: "running", createdAt: 1 } as ToolCallView;
+		const noted = (permission: object) => ({
+			c: { ...call, detail: { permission } } as unknown as ToolCallView,
+		});
+		assert.equal(activeToolPose(noted({ risk: ["push"] })), "launch");
+		assert.equal(
+			activeToolPose(noted({ reviewed: "fine", checked: ["publish-package"] })),
+			"launch",
+		);
+		assert.equal(activeToolPose(noted({ risk: ["delete-files"] })), activeToolPose({ c: call }));
+	});
+
 	test("she shows an empty wallet while a request to raise a spending limit waits", () => {
 		const input = { ...base, sessions: [], waiting: 2, permission: true, budget: true };
 		for (let turn = 0; turn < 5; turn++) {

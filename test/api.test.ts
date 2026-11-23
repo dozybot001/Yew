@@ -638,7 +638,8 @@ describe("the person's standing instructions", () => {
 				body: JSON.stringify({ content }),
 			});
 		const get = async () =>
-			(await (await app.request("/api/settings/instructions")).json()).content;
+			((await (await app.request("/api/settings/instructions")).json()) as { content: string })
+				.content;
 		assert.equal(await get(), "");
 		assert.equal((await put("Keep replies short.")).status, 200);
 		assert.equal(readFileSync(join(home, "AGENTS.md"), "utf8"), "Keep replies short.\n");

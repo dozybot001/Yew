@@ -14,6 +14,7 @@
 import type {
 	Approval,
 	ConfirmReason,
+	PermissionNote,
 	PermissionRequest,
 	Session,
 	ToolCallView,
@@ -24,7 +25,7 @@ export type Greeting = "morning" | "afternoon" | "evening";
 
 export type CompanionLine =
 	| { kind: "waiting"; count: number }
-	| { kind: "error" | "review" | "working"; count: number; name: string | null }
+	| { kind: "error" | "capped" | "review" | "working"; count: number; name: string | null }
 	/** A new version to install, or one installed that a restart takes up. */
 	| { kind: "update" | "restart"; version: string }
 	| { kind: "clear"; night: boolean };
@@ -133,7 +134,8 @@ const SHIPPING: readonly ConfirmReason[] = ["push", "publish-package", "publish-
 
 /**
  * The pose of the tool running now in the open transcript, the latest when several run; null when
- * none does. A call the person was asked about because it pushes or publishes gets the rocket.
+ * none does. A call that pushes or publishes gets the rocket, whether the person was asked about it,
+ * the check allowed it or nothing was asked.
  */
 export function activeToolPose(
 	toolCalls: Record<string, ToolCallView> | undefined,
@@ -149,12 +151,18 @@ export function activeToolPose(
 	}
 	if (!latest) return null;
 	const id = latest.id;
-	const ships = Object.values(approvals).some(
-		(approval) =>
-			approval.toolCallId === id &&
-			approval.kind === "permission" &&
-			(approval.request as PermissionRequest).reasons?.some((reason) => SHIPPING.includes(reason)),
-	);
+	// Not asked about: skip mode notes what it would have asked, the automatic mode what it checked.
+	const note = (latest.detail as { permission?: PermissionNote } | null)?.permission;
+	const ships =
+		[...(note?.risk ?? []), ...(note?.checked ?? [])].some((reason) => SHIPPING.includes(reason)) ||
+		Object.values(approvals).some(
+			(approval) =>
+				approval.toolCallId === id &&
+				approval.kind === "permission" &&
+				(approval.request as PermissionRequest).reasons?.some((reason) =>
+					SHIPPING.includes(reason),
+				),
+		);
 	return ships ? "launch" : poseForTool(latest.tool);
 }
 
@@ -214,13 +222,18 @@ export function companionMood(input: {
 	const live = [...input.sessions]
 		.filter((session) => session.archivedAt === null)
 		.sort((a, b) => b.updatedAt - a.updatedAt);
-	for (const kind of ["error", "review", "working"] as const) {
+	for (const kind of ["error", "capped", "review", "working"] as const) {
 		const status = kind === "review" ? "needs_review" : kind;
-		const matching = live.filter((session) => session.status === status);
+		// Stopped at a daily spending limit and not going again: nothing waits, so only she says it.
+		const matching = live.filter((session) =>
+			kind === "capped"
+				? session.cappedDay != null && session.status !== "working"
+				: session.status === status,
+		);
 		const only = matching.length === 1 ? (matching[0] as Session) : null;
 		if (matching.length > 0) {
 			return {
-				pose: pick(POSES[kind], now, turn),
+				pose: kind === "capped" ? (greeting ? "greeting" : "wallet") : pick(POSES[kind], now, turn),
 				greeting,
 				line: { kind, count: matching.length, name: only?.name ?? null },
 				target: only ? { kind: "session", id: only.id } : null,
