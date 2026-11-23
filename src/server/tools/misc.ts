@@ -124,7 +124,7 @@ export function parseQuestions(args: JsonObject): Question[] {
 }
 
 /**
- * The choices a model wrote for a question that came without any (CHOICES_PROMPT), checked like a
+ * The choices a model wrote for a question a reply ended with (REPLY_QUESTION_PROMPT), checked like a
  * session's own: JSON with "options" and perhaps "recommended", anywhere in its reply. Null when that
  * is not what it wrote, or when it gave fewer than two: one choice is no choice.
  */

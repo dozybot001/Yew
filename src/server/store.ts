@@ -1261,19 +1261,6 @@ export class Store {
 		});
 	}
 
-	/**
-	 * Replaces what a pending request shows: Yew adds the choices to a question it took from a reply.
-	 * Null when the request was answered or withdrawn meanwhile.
-	 */
-	amendApproval(id: string, request: PermissionRequest | QuestionRequest): Approval | null {
-		return this.tx(() => {
-			const changed = this.#q(
-				"UPDATE approvals SET request = ? WHERE id = ? AND status = 'pending'",
-			).run(JSON.stringify(request), id);
-			return changed.changes > 0 ? this.#emitApproval(id) : null;
-		});
-	}
-
 	cancelApproval(id: string): Approval {
 		return this.tx(() => {
 			this.#q(

@@ -86,6 +86,11 @@ export interface AgentsOptions {
 	hooks?: Hooks;
 	/** Per-session message attachments; one is made when not given. */
 	attachments?: AttachmentStore;
+	/**
+	 * Whether a model reads the end of each reply for a question to the person (reply-question.ts).
+	 * `yew serve` turns it on; not when not given, so tests can script every model request.
+	 */
+	readReplies?: boolean;
 }
 
 /** How many times the Stop hooks may send a session back to work in one turn. */
@@ -260,6 +265,9 @@ export class Agents {
 			gateway: this.#gateway,
 			log: this.#log,
 			mainId: () => this.post.mainSessionId(),
+			isRunning: (id) => this.isRunning(id),
+			settled: (id) => this.#wake(id),
+			enabled: options.readReplies ?? false,
 		});
 	}
 
@@ -834,6 +842,8 @@ export class Agents {
 	 */
 	#wake(sessionId: string): void {
 		if (this.isRunning(sessionId) || this.#held.isPaused(sessionId)) return;
+		// Its last reply may ask the person something: letters wait until that is known.
+		if (this.#replyQuestions.reading(sessionId)) return;
 		let session: Session;
 		try {
 			session = this.#store.getSession(sessionId);

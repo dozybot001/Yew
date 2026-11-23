@@ -17,6 +17,8 @@ export function setup(
 		idleMs?: number;
 		maxSteps?: number;
 		tools?: ToolDefinition[];
+		/** Have a model read the end of each reply for a question to the person. */
+		readReplies?: boolean;
 	} = {},
 ) {
 	const faux = fauxProvider();
@@ -41,6 +43,7 @@ export function setup(
 		log: () => {},
 		...(options.maxSteps ? { maxSteps: options.maxSteps } : {}),
 		...(options.tools ? { tools: options.tools } : {}),
+		...(options.readReplies ? { readReplies: true } : {}),
 	});
 	const session = store.createSession({
 		name: "test",

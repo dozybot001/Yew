@@ -1,30 +1,49 @@
-import type { Approval, QuestionRequest, Session } from "../../shared/types.ts";
+import type { JsonObject } from "../../shared/messages.ts";
+import type { Approval, Question, QuestionRequest, Session } from "../../shared/types.ts";
 import type { ModelGateway } from "../model/gateway.ts";
 import type { Store } from "../store.ts";
 import { choicesFrom } from "../tools/misc.ts";
-import { CHOICES_PROMPT } from "./prompt.ts";
+import { clip } from "./context.ts";
+import { REPLY_QUESTION_PROMPT } from "./prompt.ts";
 import { sideCall } from "./side.ts";
 
-/** Words a reply uses to offer a next step instead of asking outright. */
-const OFFER =
-	/如需|需要的话|要不要|是否需要|告诉我|说一声|let me know|tell me if|shall i|should i|would you like|do you want/i;
+/** How much of the end of a reply the model reads. */
+const REPLY_END_CHARS = 3000;
+const MAX_QUESTION_CHARS = 600;
 
 /**
- * The question a reply ends with, if it ends with one: its last paragraph (outside code) when that asks
- * something or offers a next step. A session that asks the person this way goes idle, so Yew puts the
- * question in the approval center for it: Yew's code carries this, not a rule in the prompt.
+ * What a model made of the end of a reply (REPLY_QUESTION_PROMPT): the question it asks the person,
+ * with choices when the model wrote usable ones. Null when the reply asks nothing, and when what the
+ * model wrote is not the JSON it was asked for.
  */
-export function askedInReply(text: string): string | null {
-	const prose = text.replace(/```[\s\S]*?(```|$)/g, "").trim();
-	const last =
-		prose
-			.split(/\n\s*\n/)
-			.at(-1)
-			?.trim() ?? "";
-	if (!last) return null;
-	const end = last.replace(/[\s*_`)\]）」』"'”’]+$/u, "");
-	if (!/[?？]$/.test(end) && !OFFER.test(last)) return null;
-	return last.length > 600 ? `…${last.slice(-600)}` : last;
+export function questionFrom(text: string): Question | null {
+	const start = text.indexOf("{");
+	const end = text.lastIndexOf("}");
+	if (start < 0 || end < start) return null;
+	let wrote: JsonObject;
+	try {
+		wrote = JSON.parse(text.slice(start, end + 1)) as JsonObject;
+	} catch {
+		return null;
+	}
+	const question = typeof wrote.question === "string" ? wrote.question.trim() : "";
+	if (wrote.asks !== true || !question) return null;
+	return { question: clip(question, MAX_QUESTION_CHARS), ...(choicesFrom(text) ?? {}) };
+}
+
+/** What the session is told when its question became a card, so it knows where the answer comes from. */
+export function cardNote(question: Question): string {
+	const options = (question.options ?? []).map((option, index) => {
+		const detail = option.detail ? ` (${option.detail})` : "";
+		return `"${option.label}"${detail}${index === question.recommended ? ", chosen to start with" : ""}`;
+	});
+	return [
+		`Your last reply left the person a question, so Yew put it in their approval center as a card: "${question.question}"`,
+		options.length > 0
+			? `The card offers these answers: ${options.join("; ")}. The person can also write their own.`
+			: "The card has no fixed answers: the person writes one.",
+		"Their answer arrives as their next message to you. If they write to you first, the card is withdrawn.",
+	].join("\n");
 }
 
 export interface ReplyQuestionsOptions {
@@ -33,6 +52,11 @@ export interface ReplyQuestionsOptions {
 	log: (line: string) => void;
 	/** The main conversation's id, if there is one. */
 	mainId: () => string | null;
+	isRunning: (sessionId: string) => boolean;
+	/** A reply has been read: letters that waited for the reading can start the session now. */
+	settled: (sessionId: string) => void;
+	/** False to leave replies unread. */
+	enabled: boolean;
 }
 
 /** The questions Yew puts in the approval center for sessions that asked at the end of a reply. */
@@ -41,77 +65,85 @@ export class ReplyQuestions {
 	readonly #gateway: ModelGateway;
 	readonly #log: (line: string) => void;
 	readonly #mainId: () => string | null;
-	/** Sessions whose question from a reply is getting its choices: stopped when the question goes. */
-	readonly #choosing = new Map<string, AbortController>();
+	readonly #isRunning: (sessionId: string) => boolean;
+	readonly #settled: (sessionId: string) => void;
+	readonly #enabled: boolean;
+	/** Sessions whose latest reply is being read: stopped when the person steps in. */
+	readonly #reading = new Map<string, AbortController>();
 
 	constructor(options: ReplyQuestionsOptions) {
 		this.#store = options.store;
 		this.#gateway = options.gateway;
 		this.#log = options.log;
 		this.#mainId = options.mainId;
+		this.#isRunning = options.isRunning;
+		this.#settled = options.settled;
+		this.#enabled = options.enabled;
+	}
+
+	/** Whether the session's latest reply is still being read. Letters wait until it is. */
+	reading(sessionId: string): boolean {
+		return this.#reading.has(sessionId);
 	}
 
 	/**
-	 * A code session's last reply that nobody else reads, ending with a question or an offer, becomes a
-	 * question in the approval center, and the session shows that it waits. The latest such question
-	 * replaces an older one; the person's next message, or continuing, takes it away.
+	 * A code session ended its turn with a reply that nobody else reads. A model reads the end of it,
+	 * the provider's small one when it has one, and says whether it asks the person something: no list
+	 * of words decides that. A question goes to the approval center with the likely answers as its
+	 * choices, the session shows that it waits, and the session is told that the card is there. The
+	 * latest such question replaces an older one; the person's next message, or continuing, takes it
+	 * away.
 	 */
 	ask(session: Session, said: string): void {
-		if (!session.cwd || session.archivedAt !== null || session.id === this.#mainId()) {
-			return;
-		}
-		const older = this.pending(session.id);
-		const asked = askedInReply(said);
-		if (asked) {
-			this.drop(session.id);
-			const card = this.#store.createApproval({
-				sessionId: session.id,
-				toolCallId: null,
-				kind: "question",
-				request: { questions: [{ question: asked }], fromReply: true },
+		if (!this.#enabled) return;
+		if (!session.cwd || session.archivedAt !== null || session.id === this.#mainId()) return;
+		// An older question stands until this reply is found to ask a new one.
+		if (this.pending(session.id).length > 0) this.#store.setStatus(session.id, "waiting", null);
+		if (!said.trim()) return;
+		this.#reading.get(session.id)?.abort();
+		const reading = new AbortController();
+		this.#reading.set(session.id, reading);
+		this.#read(session, said, reading.signal)
+			.catch((error: unknown) =>
+				this.#log(
+					`session ${session.id}: its reply was not read for a question: ${(error as Error).message}`,
+				),
+			)
+			.finally(() => {
+				if (this.#reading.get(session.id) !== reading) return;
+				this.#reading.delete(session.id);
+				this.#settled(session.id);
 			});
-			const choosing = new AbortController();
-			this.#choosing.set(session.id, choosing);
-			this.#offerChoices(session, card.id, asked, said, choosing.signal)
-				.catch((error: unknown) =>
-					this.#log(
-						`session ${session.id}: no choices for its question: ${(error as Error).message}`,
-					),
-				)
-				.finally(() => {
-					if (this.#choosing.get(session.id) === choosing) this.#choosing.delete(session.id);
-				});
-		}
-		if (asked || older.length > 0) this.#store.setStatus(session.id, "waiting", null);
 	}
 
-	/**
-	 * Gives a question taken from a reply its choices, so the person answers with one click. A model
-	 * writes them from the end of the reply: the provider's small one when it has one, else the
-	 * session's own. The card is there meanwhile, and
-	 * stays as it is when this fails, when the question has no fixed answers, or when the person has
-	 * answered by then.
-	 */
-	async #offerChoices(
-		session: Session,
-		approvalId: string,
-		asked: string,
-		said: string,
-		signal: AbortSignal,
-	): Promise<void> {
+	async #read(session: Session, said: string, signal: AbortSignal): Promise<void> {
 		const wrote = await sideCall({
 			store: this.#store,
 			gateway: this.#gateway,
 			session,
-			systemPrompt: CHOICES_PROMPT,
-			content: `The end of the reply:\n${said.slice(-3000)}\n\nThe question:\n${asked}`,
+			systemPrompt: REPLY_QUESTION_PROMPT,
+			content: `The end of the reply:\n${said.slice(-REPLY_END_CHARS)}`,
 			signal,
 		});
-		const choices = wrote === null ? null : choicesFrom(wrote);
-		if (!choices || signal.aborted) return;
-		this.#store.amendApproval(approvalId, {
-			questions: [{ question: asked, ...choices }],
-			fromReply: true,
+		const question = wrote === null ? null : questionFrom(wrote);
+		if (!question || signal.aborted) return;
+		// Archived or at work again meanwhile: the question is no longer what the session waits on.
+		if (this.#store.getSession(session.id).archivedAt !== null || this.#isRunning(session.id))
+			return;
+		this.#store.tx(() => {
+			for (const older of this.pending(session.id)) this.#store.cancelApproval(older.id);
+			this.#store.createApproval({
+				sessionId: session.id,
+				toolCallId: null,
+				kind: "question",
+				request: { questions: [question], fromReply: true },
+			});
+			// Yew's word to the session, like a change of its name: not the person's, and no client shows it as theirs.
+			this.#store.appendEntry(session.id, {
+				role: "system",
+				message: { role: "system", content: cardNote(question), timestamp: Date.now() },
+			});
+			this.#store.setStatus(session.id, "waiting", null);
 		});
 	}
 
@@ -121,9 +153,10 @@ export class ReplyQuestions {
 			.filter((approval) => (approval.request as QuestionRequest).fromReply === true);
 	}
 
+	/** The person stepped in: the reading stops and the questions from replies go. */
 	drop(sessionId: string): void {
-		this.#choosing.get(sessionId)?.abort();
-		this.#choosing.delete(sessionId);
+		this.#reading.get(sessionId)?.abort();
+		this.#reading.delete(sessionId);
 		for (const approval of this.pending(sessionId)) this.#store.cancelApproval(approval.id);
 	}
 }

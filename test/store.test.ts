@@ -197,31 +197,6 @@ describe("transcript and events", () => {
 		);
 	});
 
-	test("a pending request can be given its choices; an answered one is left alone", () => {
-		const { store, events } = newStore();
-		const session = store.createSession(sessionInput());
-		const approval = store.createApproval({
-			sessionId: session.id,
-			toolCallId: null,
-			kind: "question",
-			request: { questions: [{ question: "推吗？" }], fromReply: true },
-		});
-		const before = events.length;
-		const request = {
-			questions: [{ question: "推吗？", options: [{ label: "推" }, { label: "先不推" }] }],
-			fromReply: true,
-		};
-		assert.deepEqual(store.amendApproval(approval.id, request)?.request, request);
-		assert.deepEqual(store.getApproval(approval.id).request, request);
-		// The session's page and the approval center both hear of it.
-		assert.equal(events.length, before + 2);
-		store.resolveApproval(approval.id, { answer: "推" });
-		const answered = events.length;
-		assert.equal(store.amendApproval(approval.id, { questions: [{ question: "改了" }] }), null);
-		assert.equal(events.length, answered);
-		assert.deepEqual(store.getApproval(approval.id).request, request);
-	});
-
 	test("restart recovery keeps a question taken from a reply waiting for the person", () => {
 		const { store } = newStore();
 		const session = store.createSession(sessionInput());

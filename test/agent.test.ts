@@ -4,18 +4,12 @@ import { existsSync, readFileSync, realpathSync, writeFileSync } from "node:fs";
 import { join } from "node:path";
 import { describe, test } from "node:test";
 import { SUMMARY_HEADING } from "../src/server/agent/context.ts";
-import { askedInReply } from "../src/server/agent/reply-question.ts";
+import { questionFrom } from "../src/server/agent/reply-question.ts";
 import { fauxAssistantMessage, fauxToolCall } from "../src/server/model/testing.ts";
 import { choicesFrom } from "../src/server/tools/misc.ts";
 import { ALL_TOOLS } from "../src/server/tools/registry.ts";
 import { type ToolDefinition, text } from "../src/server/tools/types.ts";
-import {
-	defaultCompactAt,
-	type Entry,
-	type PermissionRequest,
-	type QuestionRequest,
-	questionsOf,
-} from "../src/shared/types.ts";
+import { defaultCompactAt, type Entry, type PermissionRequest } from "../src/shared/types.ts";
 import { setup } from "./helpers/agent.ts";
 import { tempDir } from "./helpers/store.ts";
 
@@ -395,78 +389,160 @@ describe("agent loop", () => {
 		assert.match(textOf(contexts[0]?.messages.at(-1)), /The person answered: 先停一下/);
 	});
 
-	test("Yew finds the question a reply ends with, outside code and closing marks", () => {
-		assert.equal(askedInReply("做完了。\n\n要我顺便更新文档吗？"), "要我顺便更新文档吗？");
-		assert.equal(askedInReply("Done.\n\n**Shall I push it?**"), "**Shall I push it?**");
-		assert.equal(askedInReply("没有推送；需要的话说一声。"), "没有推送；需要的话说一声。");
-		assert.equal(askedInReply("做完了，测试都通过。"), null);
-		assert.equal(askedInReply("改成这样：\n\n```js\nconst ok = a ? b : c?\n```"), null);
-		assert.equal(askedInReply(""), null);
+	test("what a model made of the end of a reply is checked: it asks, and says what", () => {
+		assert.deepEqual(questionFrom('{"asks":true,"question":"要推到两个仓库吗？","options":[]}'), {
+			question: "要推到两个仓库吗？",
+		});
+		assert.deepEqual(
+			questionFrom(
+				'```json\n{"asks":true,"question":"Push it?","options":[{"label":"Push it"},{"label":"Not now"}],"recommended":1}\n```',
+			),
+			{
+				question: "Push it?",
+				options: [{ label: "Push it" }, { label: "Not now" }],
+				recommended: 0,
+			},
+		);
+		assert.equal(questionFrom('{"asks":false}'), null);
+		assert.equal(questionFrom('{"asks":false,"question":"要推吗？"}'), null);
+		assert.equal(questionFrom('{"asks":true,"question":"  "}'), null);
+		assert.equal(questionFrom('{"asks":"yes","question":"要推吗？"}'), null);
+		assert.equal(questionFrom("收到。"), null);
+		assert.equal(questionFrom('{"asks":true,"question":"要推吗'), null);
 	});
 
-	test("a question left at the end of a reply goes to the approval center and gets choices; picking one continues the session", async () => {
-		const { faux, store, agents, session, contexts, capture } = setup();
+	test("a question at the end of a reply goes to the approval center with choices, and the session is told; picking one continues it", async () => {
+		const { faux, store, agents, session, contexts, capture } = setup({ readReplies: true });
 		faux.setResponses([
 			fauxAssistantMessage("改好了，检查都通过。\n\n没有推送。要推到 Gitee 和 GitHub 吗？"),
-			// Apart from the conversation, Yew asks the session's model for the choices.
+			// Apart from the conversation, a model reads the end of the reply.
 			capture(
 				fauxAssistantMessage(
-					'{"options":[{"label":"推送","detail":"推到两个仓库"},{"label":"先不推"}],"recommended":1}',
+					'{"asks":true,"question":"改好了，还没有推送。要推到 Gitee 和 GitHub 吗？","options":[{"label":"推送","detail":"推到两个仓库"},{"label":"先不推"}],"recommended":1}',
 				),
 			),
 			capture(fauxAssistantMessage("好，推送了。")),
 		]);
 		agents.send(session.id, "改一下按钮");
 		await agents.whenIdle(session.id);
+		await until(() => store.pendingApprovals(session.id).length === 1);
 		const [card] = store.pendingApprovals(session.id);
 		assert.ok(card);
 		assert.equal(card.toolCallId, null);
 		assert.equal(store.getSession(session.id).status, "waiting");
-		const request = () => store.getApproval(card.id).request as QuestionRequest;
-		await until(() => questionsOf(request())[0]?.options !== undefined);
-		assert.deepEqual(request(), {
+		assert.deepEqual(card.request, {
 			questions: [
 				{
-					question: "没有推送。要推到 Gitee 和 GitHub 吗？",
+					question: "改好了，还没有推送。要推到 Gitee 和 GitHub 吗？",
 					options: [{ label: "推送", detail: "推到两个仓库" }, { label: "先不推" }],
 					recommended: 0,
 				},
 			],
 			fromReply: true,
 		});
-		// It was asked with the end of the reply alone, not with the conversation.
-		const asked = contexts[0]?.messages.filter((message) => message.role === "user") ?? [];
-		assert.equal(asked.length, 1);
-		assert.match(textOf(asked[0]), /The question:\\n没有推送。要推到 Gitee 和 GitHub 吗？/);
-		assert.equal(store.contextEntries(session.id).length, 2);
+		// It was read with the end of the reply alone, not with the conversation.
+		const read = contexts[0]?.messages.filter((message) => message.role === "user") ?? [];
+		assert.equal(read.length, 1);
+		assert.match(textOf(read[0]), /"The end of the reply:\\n改好了，检查都通过。/);
+		// The session is told, in Yew's words and not as a message of the person's.
+		const told = store.contextEntries(session.id).at(-1);
+		assert.equal(told?.role, "system");
+		const note = told?.role === "system" ? String(told.message.content) : "";
+		assert.match(note, /put it in their approval center as a card: "改好了，还没有推送。/);
+		assert.match(note, /"推送" \(推到两个仓库\), chosen to start with; "先不推"/);
 		agents.answer(card.id, { answers: [{ choices: [0] }] });
 		await agents.whenIdle(session.id);
-		assert.match(textOf(contexts[1]?.messages.at(-1)), /"推送"/);
+		const next = contexts[1]?.messages ?? [];
+		assert.match(textOf(next.at(-1)), /"推送"/);
+		assert.match(textOf(next.at(-2)), /approval center as a card/);
+		await until(
+			() => faux.getPendingResponseCount() === 0 || store.getSession(session.id).status === "idle",
+		);
 		assert.equal(store.pendingApprovals(session.id).length, 0);
-		assert.equal(store.getSession(session.id).status, "idle");
 	});
 
-	test("a question from a reply stays as it is when no choices come; the person's own words answer it", async () => {
-		const { faux, store, agents, session, contexts, capture } = setup();
+	test("a reply that asks nothing leaves no card; a question without fixed answers is answered in the person's words", async () => {
+		const { faux, store, agents, session, contexts, capture } = setup({ readReplies: true });
+		faux.setResponses([
+			fauxAssistantMessage("做完了，测试都通过。需要别的再说。"),
+			fauxAssistantMessage('{"asks":false}'),
+		]);
+		agents.send(session.id, "跑一下测试");
+		await agents.whenIdle(session.id);
+		await until(() => faux.getPendingResponseCount() === 0);
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		assert.equal(store.pendingApprovals(session.id).length, 0);
+		assert.equal(store.getSession(session.id).status, "idle");
+		assert.equal(store.contextEntries(session.id).at(-1)?.role, "assistant");
+
 		faux.setResponses([
 			fauxAssistantMessage("新的会话叫什么名字？"),
-			fauxAssistantMessage('{"options":[]}'),
+			fauxAssistantMessage('{"asks":true,"question":"新的会话叫什么名字？","options":[]}'),
 			capture(fauxAssistantMessage("好，建好了。")),
+			fauxAssistantMessage('{"asks":false}'),
 		]);
 		agents.send(session.id, "建一个会话");
 		await agents.whenIdle(session.id);
+		await until(() => store.pendingApprovals(session.id).length === 1);
 		const [card] = store.pendingApprovals(session.id);
 		assert.ok(card);
-		await until(() => faux.getPendingResponseCount() === 1);
-		await new Promise((resolve) => setTimeout(resolve, 20));
-		assert.deepEqual(store.getApproval(card.id).request, {
+		assert.deepEqual(card.request, {
 			questions: [{ question: "新的会话叫什么名字？" }],
 			fromReply: true,
 		});
+		const told = store.contextEntries(session.id).at(-1);
+		assert.match(
+			told?.role === "system" ? String(told.message.content) : "",
+			/The card has no fixed answers: the person writes one\./,
+		);
 		agents.answer(card.id, { answers: [{ choices: [], text: "官网" }] });
 		await agents.whenIdle(session.id);
 		assert.match(textOf(contexts[0]?.messages.at(-1)), /官网/);
-		assert.equal(store.getSession(session.id).status, "idle");
+		await until(() => faux.getPendingResponseCount() === 0);
+		await until(() => store.getSession(session.id).status === "idle");
+	});
+
+	test("writing to the session while its reply is read stops the reading, and withdraws a card that is there", async () => {
+		const { faux, store, agents, session } = setup({ readReplies: true });
+		let release: () => void = () => {};
+		const held = new Promise<void>((resolve) => {
+			release = resolve;
+		});
+		let reached: () => void = () => {};
+		const reading = new Promise<void>((resolve) => {
+			reached = resolve;
+		});
+		faux.setResponses([
+			fauxAssistantMessage("要现在推送吗？"),
+			async () => {
+				reached();
+				await held;
+				return fauxAssistantMessage('{"asks":true,"question":"要现在推送吗？","options":[]}');
+			},
+			fauxAssistantMessage("好，先不推。"),
+			fauxAssistantMessage('{"asks":true,"question":"那什么时候推？","options":[]}'),
+			fauxAssistantMessage("明白。"),
+			fauxAssistantMessage('{"asks":false}'),
+		]);
+		agents.send(session.id, "改一下按钮");
+		await agents.whenIdle(session.id);
+		// The person writes before the reading is done: no card comes of it.
+		await reading;
+		agents.send(session.id, "先别推");
+		release();
+		await agents.whenIdle(session.id);
+		await until(() => store.pendingApprovals(session.id).length === 1);
+		const [card] = store.pendingApprovals(session.id);
+		assert.deepEqual(card?.request, {
+			questions: [{ question: "那什么时候推？" }],
+			fromReply: true,
+		});
+		// The person writes instead of answering the card: it is withdrawn.
+		agents.send(session.id, "下周");
+		assert.equal(store.pendingApprovals(session.id).length, 0);
+		assert.equal(store.getApproval(card?.id ?? "").status, "cancelled");
+		await agents.whenIdle(session.id);
+		await until(() => faux.getPendingResponseCount() === 0);
 	});
 
 	test("choices a model wrote are checked: two at least, six at most, the recommended one among them", () => {
@@ -490,28 +566,98 @@ describe("agent loop", () => {
 		assert.equal(choicesFrom('{"options":["a","b"'), null);
 	});
 
-	test("writing to the session takes the question away; replies without a question or in chats leave none", async () => {
-		const { faux, store, agents, session } = setup();
-		faux.setResponses([
-			fauxAssistantMessage("如需推送，告诉我即可。"),
-			fauxAssistantMessage('{"options":["推送","先不推"]}'),
-			fauxAssistantMessage("好的，先不推。"),
+	test("a letter that arrives while a reply is read waits: for the person when the reply asks, else for the reading", async () => {
+		const gate = () => {
+			let open: () => void = () => {};
+			const opened = new Promise<void>((resolve) => {
+				open = resolve;
+			});
+			return { open, opened };
+		};
+		const letter = (agents: ReturnType<typeof setup>["agents"], to: string) =>
+			agents.post.send({ kind: "cli" }, { to, kind: "notice", summary: "构建好了" });
+
+		// The reply asks: the letter waits with the session until the person has answered.
+		const asks = setup({ readReplies: true });
+		const reading = gate();
+		const held = gate();
+		asks.faux.setResponses([
+			fauxAssistantMessage("要现在推送吗？"),
+			async () => {
+				reading.open();
+				await held.opened;
+				return fauxAssistantMessage('{"asks":true,"question":"要现在推送吗？","options":[]}');
+			},
+			asks.capture(fauxAssistantMessage("推送了，也看到构建好了。")),
 		]);
-		agents.send(session.id, "改一下");
-		await agents.whenIdle(session.id);
-		const [card] = store.pendingApprovals(session.id);
-		assert.ok(card);
-		await until(() => faux.getPendingResponseCount() === 1);
-		agents.send(session.id, "先不推");
-		await agents.whenIdle(session.id);
-		assert.equal(store.getApproval(card.id).status, "cancelled");
-		assert.equal(store.pendingApprovals(session.id).length, 0);
+		asks.agents.send(asks.session.id, "改一下按钮");
+		await asks.agents.whenIdle(asks.session.id);
+		await reading.opened;
+		letter(asks.agents, asks.session.id);
+		assert.equal(
+			asks.agents.isRunning(asks.session.id),
+			false,
+			"not started while the reply is read",
+		);
+		held.open();
+		await until(() => asks.store.pendingApprovals(asks.session.id).length === 1);
+		assert.equal(asks.agents.isRunning(asks.session.id), false);
+		assert.equal(asks.agents.post.mail.queuedFor(asks.session.id).length, 1);
+		const [card] = asks.store.pendingApprovals(asks.session.id);
+		asks.agents.answer(card?.id ?? "", { answers: [{ choices: [], text: "推" }] });
+		await asks.agents.whenIdle(asks.session.id);
+		assert.match(textOf(asks.contexts[0]?.messages), /构建好了/);
+		assert.equal(asks.agents.post.mail.queuedFor(asks.session.id).length, 0);
+
+		// The reply asks nothing: the letter starts the session once that is known.
+		const plain = setup({ readReplies: true });
+		const reading2 = gate();
+		const held2 = gate();
+		plain.faux.setResponses([
+			fauxAssistantMessage("做完了，测试都通过。"),
+			async () => {
+				reading2.open();
+				await held2.opened;
+				return fauxAssistantMessage('{"asks":false}');
+			},
+			plain.capture(fauxAssistantMessage("看到了，构建好了。")),
+		]);
+		plain.agents.send(plain.session.id, "跑一下测试");
+		await plain.agents.whenIdle(plain.session.id);
+		await reading2.opened;
+		letter(plain.agents, plain.session.id);
+		assert.equal(plain.agents.isRunning(plain.session.id), false);
+		held2.open();
+		await until(() => plain.contexts.length === 1);
+		await plain.agents.whenIdle(plain.session.id);
+		assert.match(textOf(plain.contexts[0]?.messages), /构建好了/);
+		assert.equal(plain.store.pendingApprovals(plain.session.id).length, 0);
+	});
+
+	test("replies of a chat and of the main conversation are not read for a question", async () => {
 		// A chat without a working folder talks with the person; its questions stay in the conversation.
-		const chat = setup({ cwd: false });
-		chat.faux.setResponses([fauxAssistantMessage("你好！今天想聊点什么？")]);
+		const chat = setup({ cwd: false, readReplies: true });
+		chat.faux.setResponses([
+			fauxAssistantMessage("你好！今天想聊点什么？"),
+			fauxAssistantMessage('{"asks":true,"question":"今天想聊点什么？","options":[]}'),
+		]);
 		chat.agents.send(chat.session.id, "你好");
 		await chat.agents.whenIdle(chat.session.id);
-		assert.equal(chat.store.pendingApprovals(chat.session.id).length, 0);
+		// The main conversation asks with cards of its own.
+		const main = setup({ readReplies: true });
+		main.store.setSetting("mainSessionId", main.session.id);
+		main.faux.setResponses([
+			fauxAssistantMessage("要现在推送吗？"),
+			fauxAssistantMessage('{"asks":true,"question":"要现在推送吗？","options":[]}'),
+		]);
+		main.agents.send(main.session.id, "改一下");
+		await main.agents.whenIdle(main.session.id);
+		await new Promise((resolve) => setTimeout(resolve, 20));
+		for (const { faux, store, session } of [chat, main]) {
+			assert.equal(faux.getPendingResponseCount(), 1, "no model was asked about the reply");
+			assert.equal(store.pendingApprovals(session.id).length, 0);
+			assert.equal(store.getSession(session.id).status, "idle");
+		}
 	});
 
 	test("stopping while waiting cancels the approval and leaves a valid transcript", async () => {

@@ -6,7 +6,9 @@
 
 ### 变更
 
-- 给会话起名字、给回复末尾的问题写选项，改由服务商的小模型来做，原来用会话自己的模型。小模型按服务商写定：DeepSeek 用 DeepSeek V4.1 Flash，MiniMax 用 MiniMax-M3.1-Flash，Z.AI 用 GLM-5.3-Flash，Xiaomi 用 MiMo-V2.6-Flash，Ant Ling 用 Ling 2.6 Flash，Anthropic 用 Claude Haiku 5.5，OpenAI 用 GPT-6 Luna，Google 用 Gemini Flash-Lite，Mistral 用 Mistral Small。请求照旧发给会话所用的服务商，用同一个 API Key；小模型没答出来时，会话自己的模型再答一次。别的服务商和自定义服务商没有写定小模型，会话的模型本来就比小模型便宜的也一样，照旧用会话自己的模型。费用照旧记在这个会话的用量里。
+- 会话在回复末尾留给你的问题，改由模型判断要不要进审批中心。原来看回复的最后一段有没有问号或「告诉我」「需要的话」这类字眼，一句客套话也会出一张卡，换个说法的提问又会漏掉；现在每一轮结束时另发一次很短的请求，让模型读回复的末尾，判断是不是在等你回答，是的话同一次请求里写出问题和两到四个选项，卡出来时就带着选项。卡在回复结束后一两秒出现；这次请求没答出来就不出卡，回复照旧在会话里。主对话和没有工作目录的会话照旧不出这种卡。
+- 出了这种卡，会话自己会知道：记录里多一条给会话的系统消息，写明问题、卡上的选项、你的回答会作为下一条消息到达，你直接写消息的话卡会撤回。原来会话不知道自己的问题被做成了卡。这条消息在网页的详细视图里看得到。
+- 给会话起名字和上面这次判断，由服务商的小模型来做，原来用会话自己的模型。小模型按服务商写定：DeepSeek 用 DeepSeek V4.1 Flash，MiniMax 用 MiniMax-M3.1-Flash，Z.AI 用 GLM-5.3-Flash，Xiaomi 用 MiMo-V2.6-Flash，Ant Ling 用 Ling 2.6 Flash，Anthropic 用 Claude Haiku 5.5，OpenAI 用 GPT-6 Luna，Google 用 Gemini Flash-Lite，Mistral 用 Mistral Small。请求照旧发给会话所用的服务商，用同一个 API Key；小模型没答出来时，会话自己的模型再答一次。别的服务商和自定义服务商没有写定小模型，会话的模型本来就比小模型便宜的也一样，照旧用会话自己的模型。费用照旧记在这个会话的用量里。
 
 ## [1.11.0] - 2026-11-22
 

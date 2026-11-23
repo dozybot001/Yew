@@ -289,6 +289,7 @@ export function serveCommand(): Command {
 				log,
 				tools: () => [...ALL_TOOLS, ...extraTools, ...mcp.tools()],
 				userHome: homedir(),
+				readReplies: true,
 			});
 			agents.attachments.pruneOrphans();
 			const { RemoteAccess } = await import("../remote/access.ts");
